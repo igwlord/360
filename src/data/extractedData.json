@@ -1,0 +1,1731 @@
+{
+  "PROVIDER_GROUPS_DATA": [
+    {
+      "id": "perfumeria",
+      "title": "Perfumería & Limpieza",
+      "contacts": [
+        {
+          "id": "p_1",
+          "company": "UNILEVER: CIF",
+          "brand": "CIF",
+          "name": "MICAELA ORTIELLI / FLOR OLIVER",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MICAELA ORTIELLI / FLOR OLIVER"
+        },
+        {
+          "id": "p_2",
+          "company": "UNILEVER: SKIP",
+          "brand": "SKIP",
+          "name": "MICAELA ORTIELLI / FLOR OLIVER",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MICAELA ORTIELLI / FLOR OLIVER"
+        },
+        {
+          "id": "p_3",
+          "company": "UNILEVER: ALA Y SKIP",
+          "brand": "ALA Y SKIP",
+          "name": "MICAELA ORTIELLI / FLOR OLIVER",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MICAELA ORTIELLI / FLOR OLIVER"
+        },
+        {
+          "id": "p_4",
+          "company": "UNILEVER: DOVE",
+          "brand": "DOVE",
+          "name": "MICAELA ORTIELLI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MICAELA ORTIELLI"
+        },
+        {
+          "id": "p_6",
+          "company": "LOREAL: ELVIVE",
+          "brand": "ELVIVE",
+          "name": "MICAELA ORTIELLI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MICAELA ORTIELLI"
+        },
+        {
+          "id": "p_11",
+          "company": "COLGATE-PALMOLIVE",
+          "brand": "COLGATE",
+          "name": "CECILIA ALVAREZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CECILIA ALVAREZ"
+        },
+        {
+          "id": "p_12",
+          "company": "COLGATE-PALMOLIVE",
+          "brand": "PALMOLIVE",
+          "name": "CECILIA ALVAREZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CECILIA ALVAREZ"
+        },
+        {
+          "id": "p_13",
+          "company": "HALEON S.A.",
+          "brand": "SENSODYNE/HYND'S",
+          "name": "Florencia Croas",
+          "role": "Marketing",
+          "email": "florencia.m.croas@haleon.com",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CECILIA ALVAREZ"
+        },
+        {
+          "id": "p_71",
+          "company": "UNILEVER DE ARGENTINA (BESTFOODS)",
+          "brand": "Hellmann's, Knorr y Maizena",
+          "name": "GISEL DI NATALE",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GISEL DI NATALE"
+        },
+        {
+          "id": "p_72",
+          "company": "UNILEVER DE ARG.(FOODS SOLUTION)",
+          "brand": "Knorr Professional, Hellmann's, Fanacoa, Carte D'Or, Maizena, Savora y Wilde",
+          "name": "GISEL DI NATALE",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GISEL DI NATALE"
+        },
+        {
+          "id": "p_110",
+          "company": "UNILEVER DE ARG.(FOODS SOLUTION)",
+          "brand": "Knorr Professional, Hellmann's, Fanacoa, Carte D'Or, Maizena, Savora y Wilde",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        }
+      ]
+    },
+    {
+      "id": "alimentos",
+      "title": "Alimentos & Bebidas",
+      "contacts": [
+        {
+          "id": "p_5",
+          "company": "AYUDÍN: MORTIMER",
+          "brand": "MORTIMER",
+          "name": "MICAELA ORTIELLI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MICAELA ORTIELLI"
+        },
+        {
+          "id": "p_7",
+          "company": "ACONCAGUA",
+          "brand": "ACONCAGUA",
+          "name": "MICAELA ORTIELLI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MICAELA ORTIELLI"
+        },
+        {
+          "id": "p_8",
+          "company": "MAPA - VIRULANA",
+          "brand": "MAPA-VIRULANA",
+          "name": "MICAELA ORTIELLI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MICAELA ORTIELLI"
+        },
+        {
+          "id": "p_9",
+          "company": "CMPC",
+          "brand": "SOFTYS/PAÑALES",
+          "name": "CECILIA ALVAREZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CECILIA ALVAREZ"
+        },
+        {
+          "id": "p_10",
+          "company": "CMPC",
+          "brand": "SOFTYS/PAPELES HIGIÉNICOS",
+          "name": "CECILIA ALVAREZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CECILIA ALVAREZ"
+        },
+        {
+          "id": "p_14",
+          "company": "CANNON",
+          "brand": "CANNON",
+          "name": "CECILIA ALVAREZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CECILIA ALVAREZ"
+        },
+        {
+          "id": "p_15",
+          "company": "PORTA HERMANOS SA",
+          "brand": "BIACOHOL",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_16",
+          "company": "SWIFT",
+          "brand": "SWIFT",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_17",
+          "company": "SWIFT CARNES",
+          "brand": "Swift",
+          "name": "GASTON ROMERO",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GASTON ROMERO"
+        },
+        {
+          "id": "p_18",
+          "company": "SWIFT CONGELADOS",
+          "brand": "SWIFT CONGELADOS",
+          "name": "GERMAN GENTILE",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GERMAN GENTILE"
+        },
+        {
+          "id": "p_19",
+          "company": "QUICKFOOD",
+          "brand": "QUICKFOOD",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_20",
+          "company": "QUICKFOOD SALCHICHAS",
+          "brand": "SEBASTIAN GONZALEZ",
+          "name": "GASTON LESCANO (TONY)",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GASTON LESCANO (TONY)"
+        },
+        {
+          "id": "p_21",
+          "company": "QUICKFOOD CONGELADOS",
+          "brand": "QUICKFOOD CONGELADOS",
+          "name": "GERMAN GENTILE",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GERMAN GENTILE"
+        },
+        {
+          "id": "p_22",
+          "company": "UNION GANADERA",
+          "brand": "UNION GANADERA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_23",
+          "company": "UNION GANADERA CONGELADOS",
+          "brand": "CAMILA QUIROZ",
+          "name": "GERMAN GENTILE",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GERMAN GENTILE"
+        },
+        {
+          "id": "p_24",
+          "company": "UNION GANADERA SALCHICHAS",
+          "brand": "CAMILA QUIROZ",
+          "name": "GASTON LESCANO (TONY)",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GASTON LESCANO (TONY)"
+        },
+        {
+          "id": "p_25",
+          "company": "MOLINO RIOS",
+          "brand": "MOLINO RIOS",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_26",
+          "company": "MOLINO RIOS (LA SALTEÑA) CONGELADOS",
+          "brand": "MOLINO RIOS (LA SALTEÑA) CONGELADOS",
+          "name": "GERMAN GENTILE",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GERMAN GENTILE"
+        },
+        {
+          "id": "p_27",
+          "company": "MOLINO RIOS (LA SALTEÑA) TAPAS & PASTAS",
+          "brand": "Santiago Del Castillo",
+          "name": "GASTON LESCANO (TONY)",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GASTON LESCANO (TONY)"
+        },
+        {
+          "id": "p_28",
+          "company": "OTROS PROVEEDORES/CUENTAS",
+          "brand": "OTROS PROVEEDORES/CUENTAS",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_29",
+          "company": "MC CAIN CONGELADOS",
+          "brand": "CAROLINA MARMOLINI",
+          "name": "GERMAN GENTILE",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "1126744157",
+          "isFavorite": false,
+          "buyer": "GERMAN GENTILE"
+        },
+        {
+          "id": "p_30",
+          "company": "MASTELLONE LÁCTEOS (La Serenísima, Danonino, Danette, Actimel, Vidacol, Ser, entre otros)",
+          "brand": "MASTELLONE LÁCTEOS (La Serenísima, Danonino, Danette, Actimel, Vidacol, Ser, entre otros)",
+          "name": "LUCAS BOGGIO",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "LUCAS BOGGIO"
+        },
+        {
+          "id": "p_31",
+          "company": "DANONE",
+          "brand": "DANONE",
+          "name": "YAMILA BIRGINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "YAMILA BIRGINI"
+        },
+        {
+          "id": "p_32",
+          "company": "MOLFINO (LA PAULINA)",
+          "brand": "MOLFINO (LA PAULINA)",
+          "name": "LUCAS BOGGIO",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "LUCAS BOGGIO"
+        },
+        {
+          "id": "p_33",
+          "company": "PROVEEDORES/CUENTAS ¡en crecimiento!",
+          "brand": "PROVEEDORES/CUENTAS ¡en crecimiento!",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_34",
+          "company": "MILKAUT",
+          "brand": "belen braunsolanet",
+          "name": "YAMILA BIRGINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "YAMILA BIRGINI"
+        },
+        {
+          "id": "p_35",
+          "company": "ILOLAY",
+          "brand": "victoria beltramo",
+          "name": "YAMILA BIRGINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "YAMILA BIRGINI"
+        },
+        {
+          "id": "p_36",
+          "company": "NUTRICIA BAGÓ",
+          "brand": "Nicolas Djordjevic",
+          "name": "YAMILA BIRGINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "11 3682-6493",
+          "isFavorite": false,
+          "buyer": "YAMILA BIRGINI"
+        },
+        {
+          "id": "p_37",
+          "company": "ADECOAGRO (LAS TRES NIÑAS)",
+          "brand": "ADECOAGRO (LAS TRES NIÑAS)",
+          "name": "LUCAS BOGGIO",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "LUCAS BOGGIO"
+        },
+        {
+          "id": "p_38",
+          "company": "ADLER SANTA ROSA - BAVARIA",
+          "brand": "Sofia Ruano",
+          "name": "YAMILA BIRGINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "YAMILA BIRGINI"
+        },
+        {
+          "id": "p_39",
+          "company": "BEBIDAS SIN ALCOHOL",
+          "brand": "BEBIDAS SIN ALCOHOL",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_40",
+          "company": "MONDELEZ",
+          "brand": "TANG/CLIGHT",
+          "name": "AGUSTIN GUIDO TOUCEDA",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "AGUSTIN GUIDO TOUCEDA"
+        },
+        {
+          "id": "p_41",
+          "company": "FEMSA",
+          "brand": "COCA / AGUAS",
+          "name": "AGUSTIN GUIDO TOUCEDA",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "AGUSTIN GUIDO TOUCEDA"
+        },
+        {
+          "id": "p_42",
+          "company": "PEPSICO DE ARGENTINA SRL",
+          "brand": "Pepsi, 7Up, Gatorade, Mirinda y Rockstar",
+          "name": "LAURA MARINE",
+          "role": "Marketing",
+          "email": "Laura.Marine@pepsico.com",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "AGUSTIN GUIDO TOUCEDA"
+        },
+        {
+          "id": "p_43",
+          "company": "BEBIDAS CON ALCOHOL",
+          "brand": "BEBIDAS CON ALCOHOL",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_44",
+          "company": "CEPAS",
+          "brand": "GANCIA/TERMA/AMARGO OBRERO",
+          "name": "EZEQUIEL PEROLINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "EZEQUIEL PEROLINI"
+        },
+        {
+          "id": "p_45",
+          "company": "PEÑAFLOR",
+          "brand": "TRAPICHE/NAVARRO CORREAS/SANTA ANA/JHONNIE WALKER/J&B/SMIRNOFF/TANQUERAY/WHITE HORSE/VAT 69/GORDON'S/BAILEYS",
+          "name": "EZEQUIEL PEROLINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "EZEQUIEL PEROLINI"
+        },
+        {
+          "id": "p_46",
+          "company": "CCU (CERVEZAS)",
+          "brand": "SCHNEIDER/IMPERIAL/MILLER/HEINEKEIN/AMSTEL/SOL/GROLSCH/WARSTEINER/SALTA CAUTIVAS/SALTA/ISENBECK/SANTA FE/IGUANA/CORBODA/NORTE/BLUE MOON",
+          "name": "EZEQUIEL PEROLINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "EZEQUIEL PEROLINI"
+        },
+        {
+          "id": "p_47",
+          "company": "CCU (SIDRAS)",
+          "brand": "1888/LA VICTORIA/PEHUENIA/SIDRA REAL",
+          "name": "EZEQUIEL PEROLINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "EZEQUIEL PEROLINI"
+        },
+        {
+          "id": "p_48",
+          "company": "CHANDON",
+          "brand": "CHANDON",
+          "name": "EZEQUIEL PEROLINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "EZEQUIEL PEROLINI"
+        },
+        {
+          "id": "p_49",
+          "company": "PR RICARD",
+          "brand": "PR RICARD",
+          "name": "EZEQUIEL PEROLINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "EZEQUIEL PEROLINI"
+        },
+        {
+          "id": "p_50",
+          "company": "BRANCA",
+          "brand": "BRANCA",
+          "name": "EZEQUIEL PEROLINI",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "EZEQUIEL PEROLINI"
+        },
+        {
+          "id": "p_51",
+          "company": "R.P.B S.A.",
+          "brand": "BAGGIO/POSTA DE OLIVO/BODEGA RPB",
+          "name": "AGUSTIN GUIDO TOUCEDA",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "AGUSTIN GUIDO TOUCEDA"
+        },
+        {
+          "id": "p_52",
+          "company": "REGIONAL TRADE S.A.",
+          "brand": "LUNA NEGRA/FRESITA",
+          "name": "MAXIMILIANO LANTERI",
+          "role": "Marketing",
+          "email": "mlanteri@regionaltrade.com.ar",
+          "phone": "1162551484",
+          "isFavorite": false,
+          "buyer": "EZEQUIEL PEROLINI"
+        },
+        {
+          "id": "p_53",
+          "company": "PORTA HERMANOS SA",
+          "brand": "1882 FERNETVICENTE PORTA/NIKOV VODKA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_54",
+          "company": "BAGLEY ARGENTINA S.A",
+          "brand": "BAGLEY ARGENTINA S.A",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_55",
+          "company": "ARCOR (GOLOSINAS, CHOCOLATES, ETC)",
+          "brand": "ARCOR (GOLOSINAS, CHOCOLATES, ETC)",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_56",
+          "company": "ARCOR (SECOS)",
+          "brand": "ARCOR (SECOS)",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_57",
+          "company": "MONDELEZ ARGENTINA S.A. (TERRABUSI)",
+          "brand": "MONDELEZ ARGENTINA S.A. (TERRABUSI)",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_58",
+          "company": "NESTLE ARGENTINA (SECOS)",
+          "brand": "NESTLE ARGENTINA (SECOS)",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_59",
+          "company": "NESTLE ARGENTINA (GASTRONOMIA)",
+          "brand": "NESTLE ARGENTINA (GASTRONOMIA)",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_60",
+          "company": "GEORGALOS HNOS S.A.I.C.A.",
+          "brand": "GEORGALOS HNOS S.A.I.C.A.",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_61",
+          "company": "COMPAÑIA DE ALIMENTOS FARGO S.A.",
+          "brand": "COMPAÑIA DE ALIMENTOS FARGO S.A.",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_62",
+          "company": "FERRERO ARGENTINA S.A",
+          "brand": "FERRERO ARGENTINA S.A",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_63",
+          "company": "LEDESMA (Edulcorantes)",
+          "brand": "LEDESMA (Edulcorantes)",
+          "name": "MARTIN RUIZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "MARTIN RUIZ"
+        },
+        {
+          "id": "p_64",
+          "company": "MOLINO CAÑUELA (Bizcochos)",
+          "brand": "MAMA COCINA/CAÑUELAS PUREZA",
+          "name": "CAMILA ALVAREZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CAMILA ALVAREZ"
+        },
+        {
+          "id": "p_65",
+          "company": "MOLINO RIO DE LA PLATA",
+          "brand": "MATARAZZO/LUCCHETTI/COCINERO /FAVORITA /BLANCAFLOR",
+          "name": "Delfina Thibaud",
+          "role": "Marketing",
+          "email": "Delfina.thibaud@molinos.com.ar",
+          "phone": "1158628110",
+          "isFavorite": false,
+          "buyer": "CAMILA ALVAREZ"
+        },
+        {
+          "id": "p_66",
+          "company": "CACHAMAY",
+          "brand": "CACHAMATE",
+          "name": "CAMILA ALVAREZ",
+          "role": "Marketing",
+          "email": "perissinotto@experta.com.ar",
+          "phone": "1161583364",
+          "isFavorite": false,
+          "buyer": "CAMILA ALVAREZ"
+        },
+        {
+          "id": "p_67",
+          "company": "LAS MARIAS",
+          "brand": "MAÑANITA/TARAGUI/UNION",
+          "name": "CAMILA ALVAREZ",
+          "role": "Marketing",
+          "email": "Pannaratone@lasmarias.com.ar",
+          "phone": "1164047018",
+          "isFavorite": false,
+          "buyer": "CAMILA ALVAREZ"
+        },
+        {
+          "id": "p_68",
+          "company": "PLAYADITO",
+          "brand": "PLAYADITO",
+          "name": "CAMILA ALVAREZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CAMILA ALVAREZ"
+        },
+        {
+          "id": "p_69",
+          "company": "ROSAMONTE",
+          "brand": "ROSAMONTE",
+          "name": "CAMILA ALVAREZ",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "CAMILA ALVAREZ"
+        },
+        {
+          "id": "p_70",
+          "company": "LA CUMBRE SAN LUIS",
+          "brand": "HILERET",
+          "name": "GISEL DI NATALE",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "GISEL DI NATALE"
+        },
+        {
+          "id": "p_73",
+          "company": "COMPAÑIA INTRODUCTORA DE BS AS SA",
+          "brand": "DOS ANCLAS",
+          "name": "ROCIO MARTINEZ SEREIJO",
+          "role": "Marketing",
+          "email": "martinez@dosanclas.com.ar",
+          "phone": "1135894335",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_74",
+          "company": "CABRALES S.A.",
+          "brand": "CABRALES",
+          "name": "NICOLE BAR",
+          "role": "Marketing",
+          "email": "Nbar@cabrales.com",
+          "phone": "1144077830",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_75",
+          "company": "INDUSTRIAS QUIMICAS Y MINERAS TIMBO",
+          "brand": "CELUSAL",
+          "name": "JUAN DUARTE",
+          "role": "Marketing",
+          "email": "Jduarte@timbo.com.ar",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_76",
+          "company": "MORIXE HERMANOS S.A.C.e.I.",
+          "brand": "MORIXE",
+          "name": "GUSTAVO PEREZ",
+          "role": "Marketing",
+          "email": "gperez@morixe.com.ar",
+          "phone": "1141746145",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_77",
+          "company": "GDC ARGENTINA S.A",
+          "brand": "ALCO/GOMEZ DA COSTA",
+          "name": "SEBASTIAN BAUZA",
+          "role": "Marketing",
+          "email": "sebastianbauza@nauterra.com.ar",
+          "phone": "1164980540",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_78",
+          "company": "PILAGA S.A.",
+          "brand": "PILAGA S.A.",
+          "name": "LUCAS POLO",
+          "role": "Marketing",
+          "email": "lpolo@adecoagro.com",
+          "phone": "1164075333",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_79",
+          "company": "COPECA S.A.",
+          "brand": "PUGLISI",
+          "name": "ROBERTO RUIZ",
+          "role": "Marketing",
+          "email": "r.ruisenior@gmail.com",
+          "phone": "1145397277",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_80",
+          "company": "DOS HERMANOS S.A.",
+          "brand": "DOS HERMANOS",
+          "name": "MARIA SOL AGOSTI",
+          "role": "Marketing",
+          "email": "sol.agosti@dos-hermanos.com",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_81",
+          "company": "REGIONAL TRADE S.A.",
+          "brand": "BAHIA",
+          "name": "MAXIMILIANO LANTERI",
+          "role": "Marketing",
+          "email": "mlanteri@regionaltrade.com.ar",
+          "phone": "1162551484",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_82",
+          "company": "LA SIBILA S.A",
+          "brand": "LA SIBILA S.A",
+          "name": "GUILLERMO SAUDAN",
+          "role": "Marketing",
+          "email": "guille_saudan@hotmail.com",
+          "phone": "1151853885",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_83",
+          "company": "PEPSICO DE ARGENTINA SRL",
+          "brand": "Lay's, Quaker, Doritos, Cheetos, 3D's, Pep, Pehuamar, Twistos y Toddy.",
+          "name": "LAURA MARINE",
+          "role": "Marketing",
+          "email": "Laura.Marine@pepsico.com",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_84",
+          "company": "SWIFT ARGENTINA S.A.",
+          "brand": "SWIFT UNTABLES PICADILLOS/PATÉ",
+          "name": "VALERIA LINGUA",
+          "role": "Marketing",
+          "email": "valeria.lingua@minervafoods.com",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_85",
+          "company": "DOS SANTOS PEREIRA & CIA.S.A.",
+          "brand": "GENTLEMAN",
+          "name": "ROBERTO RUIZ",
+          "role": "Marketing",
+          "email": "r.ruisenior@gmail.com",
+          "phone": "1145397277",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_86",
+          "company": "LOS CINCO HISPANOS S.A.",
+          "brand": "KRACHITOS SNACKS/ CAFÉ",
+          "name": "MATIAS BRUSCO",
+          "role": "Marketing",
+          "email": "mbrusco@5hispanos.com",
+          "phone": "1123477487",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_87",
+          "company": "PRODUCTOS DARAMA SRL",
+          "brand": "DARAMA",
+          "name": "JULIO ERYSZEWICZ",
+          "role": "Marketing",
+          "email": "info@productosdarama.com.ar",
+          "phone": "1164632630",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_88",
+          "company": "DON HECTOR S.A.",
+          "brand": "CROPPERS",
+          "name": "STEFANIA RIBICHINI",
+          "role": "Marketing",
+          "email": "sribichini@croppers.com.ar",
+          "phone": "5493513400719",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_89",
+          "company": "LOPREITE HUGO RODOLFO",
+          "brand": "LOPREITE HUGO RODOLFO",
+          "name": "NICOLAS CONTARDI",
+          "role": "Marketing",
+          "email": "nicolas.contardi@grupoinsa.com.ar",
+          "phone": "1156450160",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_90",
+          "company": "CONDIMENTOS ARGENTINOS SRL",
+          "brand": "SAN BERNARDINO/BELDIET",
+          "name": "ALVARO LAUDO",
+          "role": "Marketing",
+          "email": "alvaro@lesac.com.ar",
+          "phone": "1154107936",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_91",
+          "company": "SEMILLAS Y CEREALES S.R.L",
+          "brand": "SEMILLAS Y CEREALES S.R.L",
+          "name": "GASTON GARCIA ARREDONDO",
+          "role": "Marketing",
+          "email": "gastongarciaarredondo@gmail.com",
+          "phone": "1158108160",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_92",
+          "company": "NIZA S.A.",
+          "brand": "NIZA S.A.",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_93",
+          "company": "LA VIRGINIA",
+          "brand": "LA VIRGINIA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_94",
+          "company": "LA CUMBRE SAN LUIS S.A.",
+          "brand": "LA CUMBRE SAN LUIS S.A.",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_95",
+          "company": "DORADA S.A",
+          "brand": "DÁNICA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_96",
+          "company": "CASTELL S.A.",
+          "brand": "CASTELL",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_97",
+          "company": "MENOYO S.A.",
+          "brand": "MENOYO",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_98",
+          "company": "PRODUCCIONES REGIONALES SA (INT)",
+          "brand": "PRODUCCIONES REGIONALES SA (INT)",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_99",
+          "company": "R.P.B S.A.",
+          "brand": "BAGGIO/POSTA DE OLIVO/BODEGA RPB",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_100",
+          "company": "CAREAGA HNOS Y TEGLIA S.RL.",
+          "brand": "LA ABADIA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_101",
+          "company": "PORTA HERMANOS SA",
+          "brand": "CASALTA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_102",
+          "company": "DESARROLLO DE ALIMENTOS NAT. S.R.L.",
+          "brand": "DESARROLLO DE ALIMENTOS NAT. S.R.L.",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_103",
+          "company": "MARCOLINI Y RAMONEDA S.A.I.C",
+          "brand": "LEGUMBRES AMONEDA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_104",
+          "company": "MERISANT ARGENTINA SRL",
+          "brand": "EQUAL SWEET/SUCARLY/CHUKER",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_105",
+          "company": "NORDESTE SRL",
+          "brand": "DOÑA PUPA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_106",
+          "company": "DULFIX S.A.",
+          "brand": "EMETH",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_107",
+          "company": "NATURALMENTE ALIMENTOS S.A.",
+          "brand": "BEEPURE",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_108",
+          "company": "MOL. TRES ARROYOS",
+          "brand": "KNORR/CICA",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_109",
+          "company": "AGRO ACEITUNERA S.A.",
+          "brand": "NUCETE/CÉLIBA/CAUCETE",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_111",
+          "company": "BLANCANUEZ S.A.",
+          "brand": "BLANCA NUEZ",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_112",
+          "company": "Swift",
+          "brand": "Swift",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_113",
+          "company": "Swift",
+          "brand": "Swift",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        },
+        {
+          "id": "p_114",
+          "company": "Swift",
+          "brand": "Swift",
+          "name": "-",
+          "role": "Marketing",
+          "email": "-",
+          "phone": "-",
+          "isFavorite": false,
+          "buyer": "-"
+        }
+      ]
+    }
+  ],
+  "RATE_CARD_DATA": [
+    {
+      "id": "t_1",
+      "category": "General",
+      "item": "FORMATO",
+      "specs": "DETALLE",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_2",
+      "category": "Out store",
+      "item": "Stoppers / Cuchillas",
+      "specs": "35x100 cm",
+      "price": 0,
+      "unit": "Brillante. 4/0",
+      "notes": "Microcorrugado plástico"
+    },
+    {
+      "id": "t_3",
+      "category": "Out store",
+      "item": "Cubrecolumnas",
+      "specs": "10x70 cm",
+      "price": 0,
+      "unit": "Brillante. 4/0",
+      "notes": "PAI 0,5mm. Con cinta bifaz para amurar a rack"
+    },
+    {
+      "id": "t_4",
+      "category": "Out store",
+      "item": "Floor Graphic",
+      "specs": "",
+      "price": 0,
+      "unit": "Brillante. 4/0",
+      "notes": "Vinilo de piso alto transito. Requiere instalación en tienda."
+    },
+    {
+      "id": "t_5",
+      "category": "Out store",
+      "item": "Header Rack",
+      "specs": "115x9,5 cm",
+      "price": 0,
+      "unit": "Brillante. 4/0",
+      "notes": "PAI 0,5mm. Con cinta bifaz para amurar a rack"
+    },
+    {
+      "id": "t_6",
+      "category": "Out store",
+      "item": "Cenefas",
+      "specs": "115x7 cm",
+      "price": 0,
+      "unit": "Brillante. 4/0",
+      "notes": "Cartulina duplex 260gr."
+    },
+    {
+      "id": "t_7",
+      "category": "Out store",
+      "item": "Cubrepallets",
+      "specs": "100x40 cm",
+      "price": 0,
+      "unit": "Brillante. 4/0",
+      "notes": "Microcorrugado plástico con borde “dentado” para encastrar con otro cubrepallet"
+    },
+    {
+      "id": "t_8",
+      "category": "Out store",
+      "item": "Salientes en Altura // Indicador de pasillo",
+      "specs": "45x100 cm**",
+      "price": 0,
+      "unit": "Brillante. 4/4",
+      "notes": "PAI 2mm. **con termodoblado + cinta bifaz para poder amurar/pegar al rack."
+    },
+    {
+      "id": "t_9",
+      "category": "Out store",
+      "item": "Movies // Saltarines",
+      "specs": "12x12 cm",
+      "price": 0,
+      "unit": "Brillante. 4/0",
+      "notes": "Cartulina duplex 260gr. Lleva soporte plástico detrás con cinta bifaz, tal cual imagen de referencia"
+    },
+    {
+      "id": "t_10",
+      "category": "Out store",
+      "item": "Fly banners",
+      "specs": "250 cm",
+      "price": 0,
+      "unit": "Brillante. 4/4",
+      "notes": "Modelo Pluma"
+    },
+    {
+      "id": "t_11",
+      "category": "Out store",
+      "item": "Afiche de vidriera",
+      "specs": "50x70 cm",
+      "price": 0,
+      "unit": "Mate 4/4",
+      "notes": "Hoja brillante"
+    },
+    {
+      "id": "t_12",
+      "category": "Out store",
+      "item": "Salientes de oferta",
+      "specs": "29,7x21 cm",
+      "price": 0,
+      "unit": "45751",
+      "notes": ""
+    },
+    {
+      "id": "t_13",
+      "category": "Out store",
+      "item": "Punteras gráficas",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_14",
+      "category": "Out store",
+      "item": "Murales",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_15",
+      "category": "Out store",
+      "item": "Door Media // Puertas de ingreso",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_16",
+      "category": "Out store",
+      "item": "Changueras",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_17",
+      "category": "Out store",
+      "item": "Arco de pasillo",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_18",
+      "category": "Out store",
+      "item": "Category window",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_19",
+      "category": "Medios",
+      "item": "FORMATO",
+      "specs": "DETALLE",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_20",
+      "category": "Medios",
+      "item": "Wall Tv",
+      "specs": "1920x1080px",
+      "price": 0,
+      "unit": "-",
+      "notes": "Todas las tiendas"
+    },
+    {
+      "id": "t_21",
+      "category": "Medios",
+      "item": "Pantalla LED",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_22",
+      "category": "Medios",
+      "item": "Audios en sucursal",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": "10 seg"
+    },
+    {
+      "id": "t_23",
+      "category": "Digital",
+      "item": "FORMATO",
+      "specs": "Diseño Gráfico",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_24",
+      "category": "Digital",
+      "item": "Banner mobile",
+      "specs": "921x745px",
+      "price": 0,
+      "unit": "-",
+      "notes": "Espacio de la home de la web page"
+    },
+    {
+      "id": "t_25",
+      "category": "Digital",
+      "item": "Banner desktop",
+      "specs": "1366x550px",
+      "price": 0,
+      "unit": "-",
+      "notes": "Espacio de la home de la web page"
+    },
+    {
+      "id": "t_26",
+      "category": "Digital",
+      "item": "Destacados",
+      "specs": "377x303",
+      "price": 0,
+      "unit": "-",
+      "notes": "Destacados en home //  sección inferiro de la página"
+    },
+    {
+      "id": "t_27",
+      "category": "Digital",
+      "item": "Landing page sorteo",
+      "specs": "-",
+      "price": 0,
+      "unit": "-",
+      "notes": "Publicaciones 1:1 con comunicación a comerciantes"
+    },
+    {
+      "id": "t_28",
+      "category": "Digital",
+      "item": "Grupos de difusión",
+      "specs": "1:1",
+      "price": 0,
+      "unit": "-",
+      "notes": "Publicaciones 1:1 con comunicación a clientes - COMERCIANTES"
+    },
+    {
+      "id": "t_29",
+      "category": "Digital",
+      "item": "Canal de Whatsapp",
+      "specs": "1:1",
+      "price": 0,
+      "unit": "-",
+      "notes": "Publicaciones 1:1 con comunicación todos los clientes"
+    },
+    {
+      "id": "t_30",
+      "category": "Digital",
+      "item": "Redes Sociales",
+      "specs": "1:1",
+      "price": 0,
+      "unit": "-",
+      "notes": "Publicaciones 1:1 con comunicación a clientes - CF"
+    },
+    {
+      "id": "t_31",
+      "category": "Digital",
+      "item": "Pauta Social Media",
+      "specs": "-",
+      "price": 300000,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_32",
+      "category": "Digital",
+      "item": "Sorteos en redes",
+      "specs": "-",
+      "price": 0,
+      "unit": "-",
+      "notes": "Publicación 1:1  // Legales"
+    },
+    {
+      "id": "t_33",
+      "category": "Digital",
+      "item": "Landing de sorteos",
+      "specs": "-",
+      "price": 0,
+      "unit": "-",
+      "notes": "Landing con formulario de registro para sorteos con condicion de compra"
+    },
+    {
+      "id": "t_34",
+      "category": "Digital",
+      "item": "Mailing Banner de publicidad",
+      "specs": "600x200px",
+      "price": 0,
+      "unit": "-",
+      "notes": "Banner de branding con link a web"
+    },
+    {
+      "id": "t_35",
+      "category": "Digital",
+      "item": "Mailing Ofertas especiales",
+      "specs": "600x949px",
+      "price": 0,
+      "unit": "-",
+      "notes": "Cuerpo de mail con ofertas especiales con link a web"
+    },
+    {
+      "id": "t_36",
+      "category": "Digital",
+      "item": "Vtex home",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_37",
+      "category": "Digital",
+      "item": "Vtex",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_38",
+      "category": "Digital",
+      "item": "Vtex",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_39",
+      "category": "Producción",
+      "item": "FORMATO",
+      "specs": "DETALLE",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_40",
+      "category": "Producción",
+      "item": "Producción de contenidos",
+      "specs": "-",
+      "price": 0,
+      "unit": "-",
+      "notes": "Jornada de grabación de 4 horas en tienda o locación con tu producto"
+    },
+    {
+      "id": "t_41",
+      "category": "Producción",
+      "item": "Generadores de contenido",
+      "specs": "-",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_42",
+      "category": "Activaciones",
+      "item": "FORMATO",
+      "specs": "DETALLE",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_43",
+      "category": "Activaciones",
+      "item": "Promotores",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_44",
+      "category": "Activaciones",
+      "item": "Stand",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_45",
+      "category": "Activaciones",
+      "item": "Cobertura de stands/activaciones",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_46",
+      "category": "Activaciones",
+      "item": "Juegos",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_47",
+      "category": "Activaciones",
+      "item": "Sonido",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_48",
+      "category": "Activaciones",
+      "item": "Stickers",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_49",
+      "category": "Activaciones",
+      "item": "Back de prensa",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_50",
+      "category": "Activaciones",
+      "item": "Ambientación",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    },
+    {
+      "id": "t_51",
+      "category": "Activaciones",
+      "item": "Merchandaising",
+      "specs": "",
+      "price": 0,
+      "unit": "-",
+      "notes": ""
+    }
+  ]
+}
