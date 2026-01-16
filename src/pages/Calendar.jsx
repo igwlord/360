@@ -217,8 +217,6 @@ const Calendar = () => {
             isOpen={!!selectedDay} 
             onClose={() => setSelectedDay(null)} 
             date={selectedDay}
-            events={getEventsForDay(selectedDay.getDate())} 
-            theme={theme}
           />
       )}
     </div>

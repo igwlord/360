@@ -8,19 +8,13 @@ import { useData } from '../../context/DataContext';
 
 const NavBar = () => {
     const { theme } = useTheme();
-    const { notifications, setNotifications } = useData(); // Destructure setNotifications
+    const { notifications } = useData(); // Destructure setNotifications
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [showNotifications, setShowNotifications] = useState(false);
 
     React.useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
-
-    const handleMarkAllRead = () => {
-        setNotifications([]);
-        setShowNotifications(false);
-    };
 
     const navItems = [
         { path: '/', label: 'Home', icon: Layout },

@@ -4,7 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { X, Plus, Clock, Tag, Trash2, Calendar as CalIcon } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 
-const DayDetailModal = ({ isOpen, onClose, date, events }) => {
+const DayDetailModal = ({ isOpen, onClose, date }) => {
     const { theme } = useTheme();
     const { setCalendarEvents, calendarEvents } = useData();
     const [newEventTitle, setNewEventTitle] = useState('');
@@ -12,8 +12,6 @@ const DayDetailModal = ({ isOpen, onClose, date, events }) => {
     const [newEventTag, setNewEventTag] = useState('meeting');
 
     if (!isOpen) return null;
-
-    const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
 
     const handleAddEvent = (e) => {
         e.preventDefault();

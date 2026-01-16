@@ -1,4 +1,5 @@
 
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { THEMES } from '../data/initialData';

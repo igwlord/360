@@ -30,12 +30,6 @@ const ContextMenu = ({ options, position, onClose }) => {
 
     if (!position) return null;
 
-    // Adjust position to not overflow viewport
-    const style = {
-        top: position.y,
-        left: position.x,
-    };
-    
     // Logic to flip if close to edge could be added here, but keeping simple for now.
 
     return (

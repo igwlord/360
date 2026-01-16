@@ -282,7 +282,6 @@ const Campaigns = () => {
                             const totalBudget = form.transactions?.reduce((acc, t) => t.type === 'initial' || t.type === 'income' ? acc + t.amount : acc, 0) || 0;
                             const executed = form.transactions?.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0) || 0;
                             const available = totalBudget - executed;
-                            const percent = totalBudget > 0 ? (executed / totalBudget) * 100 : 0;
 
                             return (
                                 <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 flex justify-between items-center">

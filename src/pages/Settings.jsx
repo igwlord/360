@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
-import { Palette, Monitor, CheckCircle, Bell, Clock, Shield, RotateCcw, Download, Upload, LogOut, User, Star } from 'lucide-react';
+import { Palette, CheckCircle, Bell, Clock, Shield, RotateCcw, Download, Upload, LogOut, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/common/Modal';
 import { useToast } from '../context/ToastContext';
@@ -73,7 +73,7 @@ const Settings = () => {
             } else {
                 addToast('Error al importar: ' + result.error, 'error');
             }
-        } catch (err) {
+        } catch {
             addToast('Error leyendo el archivo.', 'error');
         }
     };

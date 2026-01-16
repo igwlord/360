@@ -1,4 +1,5 @@
 
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { 
@@ -154,20 +155,19 @@ export const DataProvider = ({ children }) => {
   // Persistent Read/History Store
   // Format: { id: string, read: boolean, timestamp: string }
   const [notificationHistory, setNotificationHistory] = useLocalStorage('notification-history', []);
-  const [notifications, setNotifications] = React.useState([]);
+    const [notifications, setNotifications] = React.useState([]);
 
-  React.useEffect(() => {
-    if (!notificationSettings.enabled) {
-      setNotifications([]);
-      return;
-    }
+    React.useEffect(() => {
+        if (!notificationSettings.enabled) {
+          setNotifications([]);
+          return;
+        }
 
-    const today = new Date();
-    // Logic: We generate ALERTS based on live data (campaigns/events).
-    // Then we merge with HISTORY to see if they are 'read'.
-    // We also keep 'stale' notifications in history if needed, but for simplicity, allow rebuilding live ones.
-    
-    let generatedNotifications = [];
+        // Logic: We generate ALERTS based on live data (campaigns/events).
+        // Then we merge with HISTORY to see if they are 'read'.
+        // We also keep 'stale' notifications in history if needed, but for simplicity, allow rebuilding live ones.
+        
+        let generatedNotifications = [];
 
     // 1. Check Campaigns
     campaigns.forEach(c => {
@@ -243,7 +243,7 @@ export const DataProvider = ({ children }) => {
     const number = value.toString().replace(/\D/g, '');
     try {
         return new Intl.NumberFormat('es-AR').format(number);
-    } catch(e) { return value; }
+    } catch { return value; }
   };
 
   return (
