@@ -15,22 +15,87 @@ const DataContext = createContext();
 export const DataProvider = ({ children }) => {
   // --- Global State with Persistence ---
   
-  // Campaigns (with simple migration for new fields)
-  const [campaigns, setCampaigns] = useLocalStorage('campaigns-data', CAMPAIGNS_DATA.map(c => ({
-    ...c,
-    providers: c.providers || (c.providerId ? [c.providerId] : []),
-    transactions: c.transactions || [{ id: 'init', date: new Date().toISOString(), type: 'initial', amount: parseInt(typeof c.cost === 'string' ? c.cost.replace(/\D/g,'') : c.cost) || 0, note: 'Presupuesto Inicial' }]
-  })));
-  const [calendarEvents, setCalendarEvents] = useLocalStorage('calendar-events', CALENDAR_EVENTS_DATA);
+  // --- Global State with Persistence ---
   
+  // Campaigns: Ensure transactions exist. If loading old data, fill gaps.
+  const [campaigns, setCampaigns] = useLocalStorage('campaigns-data', CAMPAIGNS_DATA);
+
+  // Helper validation once loaded
+  React.useEffect(() => {
+      setCampaigns(prev => prev.map(c => ({
+          ...c,
+          providers: c.providers || (c.providerId ? [c.providerId] : []),
+          transactions: c.transactions && c.transactions.length > 0 
+              ? c.transactions 
+              : [{ id: 'init', date: new Date().toISOString(), type: 'initial', amount: parseInt(typeof c.cost === 'string' ? c.cost.replace(/\D/g,'') : c.cost) || 0, note: 'Presupuesto Inicial' }]
+      })));
+  }, []); // Run once on mount to fix data structure
+
+  // EVENTS HYBRID SYSTEM:
+  // 1. Static Events (Marketing JSON) - Always fresh from code
+  // 2. User Events (Manual adds) - Persisted in LocalStorage
+  const [userEvents, setUserEvents] = useLocalStorage('user-events-v1', []);
+  
+  // Merge for consumption
+  const calendarEvents = React.useMemo(() => {
+      // Static Marketing Events
+      const staticEvents = CALENDAR_EVENTS_DATA; // This imports from standard JSON now
+      
+      // We can also map Campaigns here if we want them as "Events" globally?
+      // For now, let's keep logic similar to before but consistent.
+      return [...staticEvents, ...userEvents];
+  }, [userEvents]);
+  
+  // Helper to add event
+  const addEvent = (evt) => setUserEvents(prev => [...prev, evt]);
+
+
   // Providers / Directory
   const [providerGroups, setProviderGroups] = useLocalStorage('provider-groups', PROVIDER_GROUPS_DATA);
   
   // Rate Card (Tarifario)
   const [rateCardItems, setRateCardItems] = useLocalStorage('rate-card-items', RATE_CARD_DATA);
 
-  // Budget
-  const budget = BUDGET_DATA;
+  // Dynamic Budget Calculation
+  const budget = React.useMemo(() => {
+    let total = 0;
+    let executed = 0;
+
+    campaigns.forEach(c => {
+        // Fallback Logic: If transactions exist, use them. If not, parse 'cost' string as Initial Budget.
+        const hasTransactions = c.transactions && c.transactions.length > 0;
+        
+        let campTotal = 0;
+        let campExecuted = 0;
+
+        if (hasTransactions) {
+            campTotal = c.transactions.reduce((acc, t) => (t.type === 'initial' || t.type === 'income') ? acc + Number(t.amount) : acc, 0);
+            campExecuted = c.transactions.reduce((acc, t) => t.type === 'expense' ? acc + Number(t.amount) : acc, 0);
+        } else {
+            // Fallback for legacy/broken data
+            campTotal = parseInt(typeof c.cost === 'string' ? c.cost.replace(/\D/g,'') : c.cost) || 0;
+            campExecuted = (campTotal * (c.progress || 0)) / 100; // Estimate execution based on progress if no tracking
+        }
+        
+        total += campTotal;
+        executed += campExecuted;
+    });
+
+    const totalM = total / 1000000;
+    const executedM = executed / 1000000;
+
+    return {
+        total: totalM, // In Millions
+        executed: executedM, // In Millions
+        percentage: total > 0 ? (executed / total) * 100 : 0
+    };
+  }, [campaigns]);
+
+  // Tasks
+  const [tasks, setTasks] = useLocalStorage('tasks-data', [
+      { id: 1, text: 'Aprobar Presupuesto Q2', done: false, date: new Date().toISOString() },
+      { id: 2, text: 'Revisar Creativos Nike', done: false, date: new Date().toISOString() },
+  ]);
 
   // --- Actions / Modifiers ---
 
@@ -249,12 +314,15 @@ export const DataProvider = ({ children }) => {
   return (
     <DataContext.Provider value={{
       campaigns,
-      setCampaigns, // Export setter if needed for future
-      calendarEvents,
-      setCalendarEvents, // Export setter
+      setCampaigns, 
+      calendarEvents, 
+      addEvent, // Exposed for new logic
+      setCalendarEvents: setUserEvents, // Backwards compat: treating "set" as setting user events for now
       providerGroups,
       rateCardItems,
       budget,
+      tasks,
+      setTasks,
       notifications,
       setNotifications,
       notificationSettings,
@@ -273,7 +341,12 @@ export const DataProvider = ({ children }) => {
         moveGroup,
         deleteGroup,
         saveRateItem,
-        deleteRateItem
+        deleteRateItem,
+        // Task Actions
+        addTask: (text) => setTasks([...tasks, { id: Date.now(), text, done: false, date: new Date().toISOString() }]),
+        toggleTask: (id) => setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)),
+        removeTask: (id) => setTasks(tasks.filter(t => t.id !== id)),
+        clearCompletedTasks: () => setTasks(tasks.filter(t => !t.done)) // Or move to archive if preferred, for now simple clear
       }
     }}>
       {children}

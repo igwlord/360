@@ -11,21 +11,24 @@ const MainLayout = ({ children }) => {
 
   // Global Shortcuts
   React.useEffect(() => {
-    const handleKeyDown = (e) => {
-        // Ignore if typing in an input
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const handleKeyDown = (e) => {
+            // Ignore if typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-        switch(e.key.toUpperCase()) {
-            case 'H': navigate('/'); break;
-            case 'C': navigate('/campaigns'); break;
-            case 'A': navigate('/calendar'); break;
-            case 'D': navigate('/directory'); break;
-            case 'T': navigate('/rate-card'); break;
-            case 'R': navigate('/reports'); break;
-            case 'S': navigate('/settings'); break;
-            default: break;
-        }
-    };
+            // Ignore if modifier keys are pressed (Ctrl, Alt, Meta/Command)
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+            switch(e.key.toUpperCase()) {
+                case 'H': navigate('/'); break;
+                case 'C': navigate('/campaigns'); break;
+                case 'A': navigate('/calendar'); break;
+                case 'D': navigate('/directory'); break;
+                case 'T': navigate('/rate-card'); break;
+                case 'R': navigate('/reports'); break;
+                case 'S': navigate('/settings'); break;
+                default: break;
+            }
+        };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);

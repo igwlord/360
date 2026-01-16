@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
-import { FileText, Download, PieChart, TrendingUp, DollarSign, Calendar, CheckSquare, Square } from 'lucide-react';
+import { FileText, Download, PieChart, TrendingUp, DollarSign, Calendar, CheckSquare, Square, Sparkles } from 'lucide-react';
+import ReportConfigModal from '../components/reports/ReportConfigModal';
+import { generateAndPrintReport } from '../utils/reportGenerator';
 
 const Reports = () => {
     const { theme } = useTheme();
@@ -15,14 +17,14 @@ const Reports = () => {
         { 
             id: 'exec', 
             title: 'Reporte Ejecutivo (Gerencia)', 
-            desc: 'Resumen de alto nivel: Presupuesto vs Ejecutado, ROI estimado y Status de Campañas Activas.',
+            desc: 'Resumen de alto nivel: Presupuesto vs Ejecutado, ROI estimado y Status de Campañas.',
             icon: TrendingUp,
             color: 'bg-blue-500'
         },
         { 
             id: 'mkt', 
             title: 'Marketing & Retail Media', 
-            desc: 'Detalle operativo: Calendario de activaciones, desglose por Marca/Categoría y Proveedores.',
+            desc: 'Operativo: Calendario de activaciones, desglose por Marca y Proveedores.',
             icon: PieChart,
             color: 'bg-purple-500'
         },
@@ -32,37 +34,134 @@ const Reports = () => {
             desc: 'Consolidado de costos, facturación proyectada y análisis de tarifario.',
             icon: DollarSign,
             color: 'bg-green-500'
+        },
+        { 
+            id: 'onepager', 
+            title: 'One-Pager (Campaña)', 
+            desc: 'Ficha técnica individual de una campaña específica: KPIs y Creativos.',
+            icon: FileText,
+            color: 'bg-orange-500'
         }
     ];
 
-    const [selectedType, setSelectedType] = useState('exec');
-    const [options, setOptions] = useState({ includeCharts: true, includeRawData: false, dateRange: 'this_month' });
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [activeModalReport, setActiveModalReport] = useState(null); // The report currently being configured
 
-    // --- CSV GENERATOR ---
-    const generateCSV = (type) => {
+    // --- DATA FILTERING LOGIC ---
+    const filterDataByDate = (camps, range, custom) => {
+        if (!range || range === 'all_time') return camps;
+        
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        
+        let filtered = camps;
+
+        // Helper to parse "YYYY-MM-DD" or similar
+        // Assuming c.date is comparable or convert to Date object
+        const getCampDate = (c) => new Date(c.startDate || c.date);
+
+        if (range === 'this_month') {
+            filtered = camps.filter(c => getCampDate(c) >= startOfMonth);
+        } else if (range === 'ytd' || range === 'this_year') {
+            filtered = camps.filter(c => getCampDate(c) >= startOfYear);
+        } else if (range === 'last_6m') {
+            const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+            filtered = camps.filter(c => getCampDate(c) >= sixMonthsAgo);
+        } else if (range === 'custom' && custom?.start && custom?.end) {
+            const s = new Date(custom.start);
+            const e = new Date(custom.end);
+            filtered = camps.filter(c => {
+                const d = getCampDate(c);
+                return d >= s && d <= e;
+            });
+        }
+        return filtered;
+    };
+
+
+    // --- AI PROMPT GENERATOR ---
+    const generateAiPrompt = (reportType, config, filteredData) => {
+        const dataset = {
+            report_type: reportType.title,
+            period: config.dateRange,
+            generated_at: new Date().toISOString(),
+            metrics: {
+                total_campaigns: filteredData.length,
+                total_budget_executed: filteredData.reduce((acc, c) => acc + (parseFloat(c.cost?.replace(/[^0-9.]/g,'')) || 0), 0),
+                active_campaigns: filteredData.filter(c => c.status === 'En Curso').length
+            },
+            data_sample: filteredData.map(c => ({ 
+                name: c.name, 
+                brand: c.brand, 
+                date: c.date, 
+                cost: c.cost, 
+                status: c.status 
+            }))
+        };
+
+        const prompt = `
+=== RETAIL MEDIA REPORT GENERATION PROMPT ===
+CONTEXTO: Eres un experto Analista de Datos y Diseñador UX especializado en Retail Media.
+OBJETIVO: Generar un reporte visual interactivo en HTML (single-file) basado en los datos proporcionados.
+
+INSTRUCCIONES DE DISEÑO:
+1. Crea un dashboard moderno, oscuro (Dark Mode), usando colores premium (#E8A631 para acentos).
+2. Usa Chart.js o similar via CDN para graficar:
+   - Distribución de Inversión por Marca (Pie Chart).
+   - Cronograma de campañas (Timeline/Gantt simplificado).
+   - Progreso de Status (Bar Chart).
+3. Incluye una sección de "Insights Ejecutivos" generada por ti basada en los datos (ej. detectar saturación).
+
+DATOS (JSON):
+${JSON.stringify(dataset, null, 2)}
+
+SALIDA ESPERADA:
+Un único bloque de código HTML completo con estilos CSS y scripts JS integrados, listo para abrir en navegador.
+=============================================
+`;
+        return prompt;
+    };
+
+
+    // --- EXPORT HANDLER ---
+    const handleGenerateReport = async (config) => {
+        // 1. Filter Data
+        const filteredCampaigns = filterDataByDate(campaigns, config.dateRange, config.customRange);
+        
+        // 2. Handle Format
+        if (config.format === 'ai_prompt') {
+            const prompt = generateAiPrompt(activeModalReport, config, filteredCampaigns);
+            try {
+                await navigator.clipboard.writeText(prompt);
+                addToast('Prompt Maestro copiado al portapapeles. Pégalo en Gemini/ChatGPT.', 'success');
+            } catch (err) {
+                console.error(err);
+                addToast('Error al copiar al portapapeles', 'error');
+            }
+        } else if (config.format === 'pdf') {
+            addToast('Generando Reporte PDF...', 'info');
+            generateAndPrintReport(activeModalReport, config, filteredCampaigns);
+        } else if (config.format === 'excel') {
+             generateCSV(activeModalReport.id, filteredCampaigns);
+        }
+
+        setActiveModalReport(null);
+    };
+
+
+    // --- CSV LOGIC (Updated to use filtered data) ---
+    const generateCSV = (typeId, data) => {
         let headers = [];
         let rows = [];
-        let fileName = 'reporte_generico.csv';
+        let fileName = `${typeId}_${new Date().toISOString().split('T')[0]}.csv`;
 
-        if (type === 'mkt') {
-            headers = ['ID', 'Nombre', 'Marca', 'Estado', 'Progreso (%)', 'Fecha', 'Costo'];
-            rows = campaigns.map(c => [c.id, c.name, c.brand, c.status, c.progress, c.date, c.cost]);
-            fileName = 'reporte_marketing_operaciones.csv';
-        } else if (type === 'finance') {
-            headers = ['Item', 'Categoría', 'Precio', 'Unidad'];
-            rows = rateCardItems.map(r => [r.item, r.category, r.price, r.unit]);
-            fileName = 'reporte_financiero_tarifario.csv';
+        if (typeId === 'mkt') {
+            headers = ['ID', 'Nombre', 'Marca', 'Estado', 'Fecha', 'Costo'];
+            rows = data.map(c => [c.id, c.name, c.brand, c.status, c.date, c.cost]);
         } else {
-            // Exec Summary (Simple Mock Rows)
-            headers = ['Métrica', 'Valor', 'Detalle'];
-            rows = [
-                ['Presupuesto Total', `${budget.total}M`, 'Anual 2026'],
-                ['Ejecutado', `${budget.executed}M`, 'YTD'],
-                ['Porcentaje Uso', `${budget.percentage.toFixed(1)}%`, 'Alert threshold set to 80%'],
-                ['Campañas Activas', campaigns.filter(c => c.status === 'En Curso').length, 'Total en curso'],
-            ];
-            fileName = 'reporte_ejecutivo_management.csv';
+             // Fallback generic
+            headers = ['KPI', 'Valor'];
+            rows = [['Campañas', data.length]];
         }
 
         const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -71,116 +170,58 @@ const Reports = () => {
         const link = document.createElement('a');
         link.setAttribute('href', url);
         link.setAttribute('download', fileName);
-        link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
-
-    const handleGenerate = () => {
-        setIsGenerating(true);
-        addToast('Generando reporte...', 'info');
-        
-        setTimeout(() => {
-            generateCSV(selectedType);
-            setIsGenerating(false);
-            addToast(`Reporte "${reportTypes.find(t => t.id === selectedType).title}" generado con éxito.`, 'success');
-        }, 1500);
+        addToast('CSV descargado correctamente', 'success');
     };
 
     return (
-        <div className="h-full flex flex-col max-w-5xl mx-auto">
-            <div className="mb-8">
-                <h1 className={`text-3xl font-bold ${theme.text}`}>Centro de Reportes</h1>
-                <p className={`${theme.textSecondary} text-sm mt-1`}>Generación de informes estratégicos y operativos</p>
+        <div className="h-full flex flex-col max-w-6xl mx-auto">
+            <div className="mb-10 text-center">
+                <h1 className={`text-4xl font-bold ${theme.text} mb-2`}>Centro de Inteligencia</h1>
+                <p className={`${theme.textSecondary} text-lg max-w-2xl mx-auto`}>
+                    Genera reportes estratégicos, analiza el rendimiento histórico o exporta datos para análisis avanzado con IA.
+                </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                
-                {/* Left: Type Selection */}
-                <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-white/50 mb-2">Tipo de Reporte</h3>
-                    {reportTypes.map(type => (
-                        <div 
-                            key={type.id}
-                            onClick={() => setSelectedType(type.id)}
-                            className={`p-4 rounded-2xl border cursor-pointer transition-all ${selectedType === type.id ? `bg-white/10 border-[#E8A631] shadow-lg shadow-orange-900/10` : 'bg-transparent border-white/10 hover:bg-white/5 opacity-70 hover:opacity-100'}`}
-                        >
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className={`p-2 rounded-lg ${type.color} text-white`}>
-                                    <type.icon size={18} />
-                                </div>
-                                <span className={`font-bold ${selectedType === type.id ? 'text-white' : 'text-white/80'}`}>{type.title.split(' ')[0]}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-5xl mx-auto w-full px-4">
+                {reportTypes.map(type => (
+                    <div 
+                        key={type.id}
+                        onClick={() => setActiveModalReport(type)}
+                        className={`group relative ${theme.cardBg} backdrop-blur-xl border border-white/10 rounded-3xl p-8 cursor-pointer hover:border-[#E8A631]/50 transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-orange-900/20`}
+                    >
+                         {/* Hover Effect Gradient */}
+                        <div className={`absolute inset-0 bg-gradient-to-br ${type.color} opacity-0 group-hover:opacity-10 rounded-3xl transition-opacity duration-300`}></div>
+
+                        <div className="flex items-start justify-between mb-6">
+                            <div className={`p-4 rounded-2xl ${type.color} text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                <type.icon size={28} />
                             </div>
-                            <p className="text-xs text-white/50 leading-relaxed">{type.desc}</p>
+                            <div className="p-2 bg-white/5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Sparkles size={16} className="text-[#E8A631]" />
+                            </div>
                         </div>
-                    ))}
-                </div>
-
-                {/* Center: Configuration */}
-                <div className={`md:col-span-2 ${theme.cardBg} backdrop-blur-xl border border-white/10 rounded-3xl p-8 flex flex-col relative overflow-hidden`}>
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-white/5 to-transparent rounded-full blur-3xl -z-10"></div>
-                    
-                    <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                        <FileText className="text-[#E8A631]" />
-                        Configuración de Exportación
-                    </h2>
-
-                    <div className="space-y-6 flex-1">
-                        {/* Date Range */}
-                        <div>
-                             <label className="text-sm font-bold text-white/70 mb-3 block">Rango de Fechas</label>
-                             <div className="grid grid-cols-3 gap-3">
-                                 {['Este Mes', 'Último Q', 'Año en Curso'].map((range) => (
-                                     <button 
-                                        key={range}
-                                        className={`px-4 py-2 rounded-xl text-sm border transition-all ${options.dateRange === range ? 'bg-white text-black border-transparent font-bold' : 'bg-black/20 border-white/10 text-white/60 hover:text-white'}`}
-                                        onClick={() => setOptions({...options, dateRange: range})}
-                                     >
-                                         {range}
-                                     </button>
-                                 ))}
-                             </div>
-                        </div>
-
-                        {/* Toggles */}
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-white/70 mb-2 block">Contenido</label>
-                            
-                            <div 
-                                onClick={() => setOptions({...options, includeCharts: !options.includeCharts})}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-white/5 cursor-pointer hover:bg-white/5 transition-colors"
-                            >
-                                {options.includeCharts ? <CheckSquare className="text-green-500" size={20} /> : <Square className="text-white/30" size={20} />}
-                                <span className="text-white">Incluir Gráficos y Visualizaciones</span>
-                            </div>
-
-                            <div 
-                                onClick={() => setOptions({...options, includeRawData: !options.includeRawData})}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-white/5 cursor-pointer hover:bg-white/5 transition-colors"
-                            >
-                                {options.includeRawData ? <CheckSquare className="text-green-500" size={20} /> : <Square className="text-white/30" size={20} />}
-                                <span className="text-white">Anexar Datos Crudos (CSV/Excel)</span>
-                            </div>
+                        
+                        <h3 className="text-xl font-bold text-white mb-3 group-hover:text-[#E8A631] transition-colors">{type.title}</h3>
+                        <p className="text-white/60 text-sm leading-relaxed mb-6">{type.desc}</p>
+                        
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/40 group-hover:text-white/80 transition-colors">
+                            <span>Configurar & Exportar</span>
+                            <span className="text-lg">→</span>
                         </div>
                     </div>
-
-                    <button 
-                        onClick={handleGenerate}
-                        disabled={isGenerating}
-                        className={`mt-8 w-full py-4 rounded-xl font-bold text-black flex items-center justify-center gap-3 transition-all ${isGenerating ? 'bg-gray-500 cursor-not-allowed' : `${theme.accentBg} hover:opacity-90 hover:scale-[1.01] shadow-xl`}`}
-                    >
-                        {isGenerating ? (
-                            <>Generando...</>
-                        ) : (
-                            <>
-                                <Download size={20} /> Descargar Reporte (.csv)
-                            </>
-                        )}
-                    </button>
-
-                </div>
+                ))}
             </div>
+
+            {/* Config Modal */}
+            <ReportConfigModal 
+                isOpen={!!activeModalReport}
+                onClose={() => setActiveModalReport(null)}
+                reportType={activeModalReport}
+                onGenerate={handleGenerateReport}
+            />
         </div>
     );
 };

@@ -1,8 +1,12 @@
 
 import extractedData from './extractedData.json';
+import marketingEvents from './marketingEvents.json';
 
 // --- DEFINICIÓN DE TEMAS VISUALES ---
 export const THEMES = {
+// ... themes logic starts later
+// (Wait, replace_file_content replaces specific lines. I need to be careful with imports which are at the top)
+
   tilo: {
     name: 'Tilo', // Dark Botanical / Forest
     bg: 'bg-[#0f291e]', // Verde Selva Profundo
@@ -58,14 +62,10 @@ export const CAMPAIGNS_DATA = [
 ];
 
 export const CALENDAR_EVENTS_DATA = [
-  { id: 'c1', title: 'Vuelta al Cole', type: 'campaign', startDay: 1, endDay: 28, color: 'bg-blue-500/80', textColor: 'text-white' }, 
-  { id: 'c2', title: 'Mes de la Limpieza', type: 'campaign', startDay: 2, endDay: 28, color: 'bg-green-500/80', textColor: 'text-white' }, 
-  { id: 'c3', title: 'Temporada Verano', type: 'campaign', startDay: 1, endDay: 15, color: 'bg-yellow-500/80', textColor: 'text-black' },
-  { id: 'm1', title: 'Día Mundial Nutella', type: 'marketing', day: 5, icon: '🍫' },
-  { id: 'm2', title: 'Fin de Semana Pizza', type: 'marketing', day: 6, icon: '🍕' },
-  { id: 'm3', title: 'Día de la Pizza', type: 'marketing', day: 9, icon: '🍕' },
-  { id: 'm4', title: 'San Valentín', type: 'marketing', day: 14, icon: '💘' },
-  { id: 'm5', title: 'Carnaval', type: 'marketing', day: 16, icon: '🎭' },
+  ...marketingEvents,
+  { id: 'c1', title: 'Vuelta al Cole (Campaña)', type: 'campaign', startDay: 1, endDay: 28, color: 'bg-blue-500/80', textColor: 'text-white' }, 
+  { id: 'c2', title: 'Mes de la Limpieza (Campaña)', type: 'campaign', startDay: 2, endDay: 28, color: 'bg-green-500/80', textColor: 'text-white' }, 
+  { id: 'c3', title: 'Temporada Verano (Campaña)', type: 'campaign', startDay: 1, endDay: 15, color: 'bg-yellow-500/80', textColor: 'text-black' }
 ];
 
 // --- DATOS REALES DE PROVEEDORES ---

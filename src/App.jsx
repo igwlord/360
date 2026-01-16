@@ -27,11 +27,14 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import NotificationsPage from './pages/NotificationsPage';
 
+import { ColorThemeProvider } from './context/ColorThemeContext';
+
 const App = () => {
   return (
     <ThemeProvider>
       <DataProvider>
-        <ToastProvider>
+        <ColorThemeProvider>
+          <ToastProvider>
           <Router>
             <AuthProvider>
               <ProtectedRoute>
@@ -52,6 +55,7 @@ const App = () => {
             </AuthProvider>
           </Router>
         </ToastProvider>
+        </ColorThemeProvider>
       </DataProvider>
     </ThemeProvider>
   );

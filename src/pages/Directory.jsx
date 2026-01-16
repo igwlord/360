@@ -10,7 +10,7 @@ import ContextMenu from '../components/common/ContextMenu';
 const Directory = () => {
     const { theme } = useTheme();
     const location = useLocation();
-    const { providerGroups, actions } = useData();
+    const { providerGroups, actions, campaigns } = useData();
     const [selectedContact, setSelectedContact] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeGroup, setActiveGroup] = useState('Todos');
@@ -49,9 +49,20 @@ const Directory = () => {
     const [contactForm, setContactForm] = useState({ id: null, groupId: '', company: '', brand: '', name: '', role: '', email: '', phone: '', website: '', buyer: '', isFavorite: false });
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, type: null, item: null });
 
+    const [sortConfig, setSortConfig] = useState({ key: 'company', direction: 'asc' });
+    const [moveModal, setMoveModal] = useState({ isOpen: false, contact: null });
+
     // Flatten contacts for "All" view or filter by group
     const getAllContacts = () => {
          return providerGroups.flatMap(g => g.contacts.map(c => ({...c, groupTitle: g.title, groupId: g.id})));
+    };
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
     };
 
     const getDisplayContacts = () => {
@@ -59,6 +70,7 @@ const Directory = () => {
             ? getAllContacts()
             : providerGroups.find(g => g.id === activeGroup)?.contacts.map(c => ({...c, groupTitle: providerGroups.find(g => g.id === activeGroup).title, groupId: activeGroup})) || [];
         
+        // Search
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             contacts = contacts.filter(c => 
@@ -67,10 +79,36 @@ const Directory = () => {
                 c.brand.toLowerCase().includes(q)
             );
         }
-        return contacts;
+
+        // Sorting
+        return contacts.sort((a, b) => {
+            if (a[sortConfig.key] < b[sortConfig.key]) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (a[sortConfig.key] > b[sortConfig.key]) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
     };
 
     const contacts = getDisplayContacts();
+
+    // Move Logic
+    const handleMoveClick = (contact) => {
+        setMoveModal({ isOpen: true, contact });
+        setContextMenu({ ...contextMenu, visible: false });
+    };
+
+    const confirmMove = (targetGroupId) => {
+        actions.moveContact(moveModal.contact.id, targetGroupId);
+        setMoveModal({ isOpen: false, contact: null });
+        // Optional: Update selected contact to reflect new group if needed
+        if (selectedContact?.id === moveModal.contact.id) {
+            const newGroupTitle = providerGroups.find(g => g.id === targetGroupId)?.title;
+            setSelectedContact({ ...selectedContact, groupId: targetGroupId, groupTitle: newGroupTitle });
+        }
+    };
 
     // Handlers
     const handleContextMenu = (e, type, item) => {
@@ -171,27 +209,63 @@ const Directory = () => {
                     </button>
                 </div>
 
-                {/* Contact List */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-                    {contacts.map((contact, idx) => (
-                        <div 
-                            key={contact.id || idx}
-                            id={`contact-${contact.id}`}
-                            onClick={() => setSelectedContact(contact)}
-                            onContextMenu={(e) => handleContextMenu(e, 'contact', contact)}
-                            className={`p-3 rounded-xl cursor-pointer transition-all flex items-center gap-3 border border-transparent ${selectedContact?.id === contact.id ? 'bg-white/10 border-white/10 shadow-lg' : 'hover:bg-white/5'}`}
-                        >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${selectedContact?.id === contact.id ? 'bg-[#E8A631] text-black' : 'bg-white/10 text-white/70'}`}>
-                                {contact.company.substring(0,2).toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className={`text-sm font-bold truncate ${selectedContact?.id === contact.id ? 'text-white' : 'text-white/90'}`}>{contact.company}</h4>
-                                <p className="text-xs text-white/50 truncate">{contact.name}</p>
-                            </div>
-                            {/* Star Icon Visible Fix */}
-                            {contact.isFavorite && <Star size={12} className="text-[#E8A631] fill-[#E8A631]" />}
+                {/* Contact List - Sortable Table */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-black/20 sticky top-0 z-10 backdrop-blur-sm">
+                            <tr>
+                                <th onClick={() => handleSort('company')} className="p-3 text-[10px] uppercase font-bold text-white/40 tracking-wider rounded-tl-xl hover:text-white cursor-pointer transition-colors group">
+                                    Empresa {sortConfig.key === 'company' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </th>
+                                <th onClick={() => handleSort('name')} className="p-3 text-[10px] uppercase font-bold text-white/40 tracking-wider hover:text-white cursor-pointer transition-colors">
+                                    Detalle {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </th>
+                                <th onClick={() => handleSort('isFavorite')} className="p-3 text-[10px] uppercase font-bold text-white/40 tracking-wider text-right rounded-tr-xl hover:text-white cursor-pointer transition-colors">
+                                    Estado {sortConfig.key === 'isFavorite' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                        {contacts.map((contact, idx) => (
+                            <tr 
+                                key={contact.id || idx}
+                                id={`contact-${contact.id}`}
+                                onClick={() => setSelectedContact(contact)}
+                                onContextMenu={(e) => handleContextMenu(e, 'contact', contact)}
+                                className={`group cursor-pointer transition-all hover:bg-white/5 ${selectedContact?.id === contact.id ? 'bg-white/10' : ''}`}
+                            >
+                                <td className="p-3 align-middle">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-105 ${selectedContact?.id === contact.id ? 'bg-[#E8A631] text-black shadow-lg' : 'bg-white/10 text-white/70'}`}>
+                                            {contact.company.substring(0,1).toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className={`text-sm font-bold truncate max-w-[120px] ${selectedContact?.id === contact.id ? 'text-white' : 'text-white/90'}`}>{contact.company}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="p-3 align-middle">
+                                    <p className="text-xs text-white/60 truncate max-w-[100px]">{contact.name}</p>
+                                    <p className="text-[10px] text-white/30 truncate">{contact.role || contact.brand}</p>
+                                </td>
+                                <td className="p-3 align-middle text-right">
+                                    {contact.isFavorite ? (
+                                        <Star size={14} className="text-[#E8A631] fill-[#E8A631] ml-auto"/>
+                                    ) : (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white/10 ml-auto group-hover:bg-white/30"></div>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                    
+                    {contacts.length === 0 && (
+                        <div className="text-center py-10 opacity-50">
+                            <p className="text-sm font-bold text-white">No se encontraron contactos</p>
+                            <p className="text-xs text-white/50">Intenta buscar con otro término</p>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
 
@@ -206,7 +280,12 @@ const Directory = () => {
                                 {selectedContact.company.substring(0,2).toUpperCase()}
                              </div>
                              <h1 className="text-3xl font-bold text-white mb-1">{selectedContact.company}</h1>
-                             <p className="text-[#E8A631] font-medium">{selectedContact.brand}</p>
+                             <div className="flex items-center justify-center gap-2">
+                                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-white/60">
+                                    {selectedContact.groupTitle || 'General'}
+                                </span>
+                                <p className="text-[#E8A631] font-medium">{selectedContact.brand}</p>
+                             </div>
                              
                              <button 
                                 onClick={() => toggleFavorite(selectedContact)}
@@ -344,20 +423,38 @@ const Directory = () => {
                                     <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2"><Layers size={14} className="text-[#E8A631]"/> Historial de Interacciones</h3>
                                     
                                     <div className="space-y-6 relative before:absolute before:left-[7px] before:top-2 before:bottom-0 before:w-[1px] before:bg-white/10">
-                                        {[
-                                            { date: '14 Ene 2026', title: 'Cierre de Presupuesto Q1', type: 'meeting', note: 'Se aprobó el incremento del 10% para campañas de Summer.' },
-                                            { date: '02 Ene 2026', title: 'Inicio de Campaña "Back to School"', type: 'campaign', note: 'Lanzamiento oficial en todas las regiones.' },
-                                            { date: '15 Dic 2025', title: 'Renegociación de Tarifas', type: 'mail', note: 'Acuerdo firmado para 2026 con tarifas preferenciales.' },
-                                        ].map((event, i) => (
-                                            <div key={i} className="pl-6 relative">
-                                                <div className={`absolute left-0 top-1 w-3.5 h-3.5 rounded-full border-2 border-[#121212] ${event.type === 'meeting' ? 'bg-purple-500' : event.type === 'campaign' ? 'bg-green-500' : 'bg-blue-500'}`}></div>
+                                        {/* Dynamic Campaigns History */}
+                                        {campaigns
+                                            .filter(c => 
+                                                // Check for provider match in 'providerId' or array 'providers'
+                                                (c.providerId === selectedContact.id) || 
+                                                (c.providers && c.providers.includes(selectedContact.id))
+                                            )
+                                            .sort((a,b) => new Date(b.startDate || b.date) - new Date(a.startDate || a.date))
+                                            .map((campaign, i) => (
+                                            <div key={campaign.id || i} className="pl-6 relative">
+                                                <div className="absolute left-0 top-1 w-3.5 h-3.5 rounded-full border-2 border-[#121212] bg-green-500"></div>
                                                 <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="text-sm font-bold text-white">{event.title}</h4>
-                                                    <span className="text-[10px] text-white/40 font-mono">{event.date}</span>
+                                                    <h4 className="text-sm font-bold text-white">{campaign.name}</h4>
+                                                    <span className="text-[10px] text-white/40 font-mono">{campaign.date}</span>
                                                 </div>
-                                                <p className="text-xs text-white/60 leading-relaxed">{event.note}</p>
+                                                <p className="text-xs text-white/60 leading-relaxed mb-1">
+                                                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${campaign.statusColor} text-white/90 mr-2`}>
+                                                        {campaign.status}
+                                                    </span>
+                                                    {campaign.brand}
+                                                </p>
+                                                {campaign.cost && <p className="text-[10px] font-mono opacity-50">Inversión: {campaign.cost}</p>}
                                             </div>
                                         ))}
+                                        
+                                        {/* Fallback if no history */}
+                                        {campaigns.filter(c => (c.providerId === selectedContact.id) || (c.providers && c.providers.includes(selectedContact.id))).length === 0 && (
+                                            <div className="pl-6 relative">
+                                                <div className="absolute left-0 top-1 w-3.5 h-3.5 rounded-full border-2 border-[#121212] bg-gray-500"></div>
+                                                <p className="text-sm text-white/50 italic">Aún no se registraron campañas con este proveedor.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -438,16 +535,37 @@ const Directory = () => {
                     onClose={() => setContextMenu({ ...contextMenu, visible: false })}
                     options={
                         contextMenu.type === 'group' ? [
-                            { label: 'Anterior', icon: <ArrowLeft size={14} />, action: () => actions.moveGroup('up', contextMenu.item.id) }, // Using 'up' for Left logic in context
+                            { label: 'Anterior', icon: <ArrowLeft size={14} />, action: () => actions.moveGroup('up', contextMenu.item.id) },
                             { label: 'Siguiente', icon: <ArrowRight size={14} />, action: () => actions.moveGroup('down', contextMenu.item.id) },
                             { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => actions.deleteGroup(contextMenu.item.id), danger: true }
                         ] : [
                             { label: 'Editar', icon: <Edit size={14} />, action: () => handleEditContact(contextMenu.item) },
+                            { label: 'Mover a...', icon: <Layers size={14} />, action: () => handleMoveClick(contextMenu.item) }, // NEW Move Action
                             { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => actions.deleteContact(contextMenu.item.id), danger: true }
                         ]
                     }
                 />
             )}
+
+            {/* Move Contact Modal */}
+            <Modal isOpen={moveModal.isOpen} onClose={() => setMoveModal({isOpen: false, contact: null})} title="Mover Contacto">
+                 <div className="space-y-4">
+                     <p className="text-sm text-white/70">Selecciona la nueva categoría para <b>{moveModal.contact?.company}</b>:</p>
+                     <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                         {providerGroups.map(g => (
+                             <button 
+                                key={g.id}
+                                onClick={() => confirmMove(g.id)}
+                                className={`flex items-center justify-between p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-colors text-left ${moveModal.contact?.groupId === g.id ? 'bg-white/10 opacity-50 cursor-default' : ''}`}
+                                disabled={moveModal.contact?.groupId === g.id}
+                             >
+                                 <span className="text-sm font-bold text-white">{g.title}</span>
+                                 {moveModal.contact?.groupId === g.id && <span className="text-xs text-white/30">Actual</span>}
+                             </button>
+                         ))}
+                     </div>
+                 </div>
+            </Modal>
         </div>
     );
 };

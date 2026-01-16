@@ -22,6 +22,7 @@ const Campaigns = () => {
     const [form, setForm] = useState({ id: null, name: '', brand: '', status: 'Planificación', dept: '', cost: '', date: '', notes: '' });
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, item: null });
     const [transType, setTransType] = useState('expense'); // 'expense' | 'income'
+    const [financeAmount, setFinanceAmount] = useState('');
 
     // Auto-open modal if navigated from Dashboard
     React.useEffect(() => {
@@ -79,18 +80,19 @@ const Campaigns = () => {
     const openEdit = (item, tab = 'details') => {
         setForm({ ...item, activeTab: tab });
         setIsModalOpen(true);
+        setFinanceAmount(''); // Reset finance input when opening
     };
 
     const handleAddTransaction = () => {
-        const amountEl = document.getElementById('quickAmount');
         const conceptEl = document.getElementById('quickConcept');
-        if (!amountEl || !conceptEl) return;
+        if (!conceptEl) return;
         
-        const amount = parseFloat(amountEl.value);
+        // Parse the formatted string (remove dots)
+        const amount = financeAmount ? parseFloat(financeAmount.replace(/\./g, '')) : 0;
         const note = conceptEl.value;
         
-        if (!amount || isNaN(amount) || !note.trim()) {
-            addToast('Completa los campos', 'error');
+        if (!amount || isNaN(amount) || amount <= 0 || !note.trim()) {
+            addToast('Completa los campos correctamente', 'error');
             return;
         }
 
@@ -102,7 +104,7 @@ const Campaigns = () => {
             ]
         }));
 
-        amountEl.value = '';
+        setFinanceAmount('');
         conceptEl.value = '';
         conceptEl.focus();
         addToast('Movimiento Agregado', 'success');
@@ -196,21 +198,24 @@ const Campaigns = () => {
                                         )}
                                     </div>
                                     
-                                    {/* Progress */}
-                                    {campaign.progress !== undefined && (
-                                        <div className="mt-4 pl-2">
-                                            <div className="flex justify-between text-[10px] text-white/40 mb-1">
-                                                <span>Progreso</span>
-                                                <span>{campaign.progress}%</span>
+                                    {/* Progress - Now based on Budget Execution */}
+                                    {(() => {
+                                        const progress = totalBudget > 0 ? Math.min(Math.round((executed / totalBudget) * 100), 100) : 0;
+                                        return (
+                                            <div className="mt-4 pl-2">
+                                                <div className="flex justify-between text-[10px] text-white/40 mb-1">
+                                                    <span>Progreso (Presupuesto)</span>
+                                                    <span>{progress}%</span>
+                                                </div>
+                                                <div className="h-1 bg-black/40 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className={`h-full rounded-full ${status === 'En Curso' ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-white/30'}`} 
+                                                        style={{ width: `${progress}%` }}
+                                                    ></div>
+                                                </div>
                                             </div>
-                                            <div className="h-1 bg-black/40 rounded-full overflow-hidden">
-                                                <div 
-                                                    className={`h-full rounded-full ${status === 'En Curso' ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-white/30'}`} 
-                                                    style={{ width: `${campaign.progress}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                 </div>
                             )})}
                         </div>
@@ -352,9 +357,18 @@ const Campaigns = () => {
                                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs">$</span>
                                           <input 
                                              id="quickAmount"
-                                             type="number"
-                                             placeholder="0.00" 
-                                             className="w-full bg-black/20 border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 placeholder:text-white/20 transition-colors text-right [&::-webkit-inner-spin-button]:appearance-none"
+                                             type="text" 
+                                             inputMode="numeric"
+                                             placeholder="0" 
+                                             value={financeAmount}
+                                             onChange={(e) => {
+                                                 // Remove existing dots and non-digits
+                                                 const raw = e.target.value.replace(/\D/g, '');
+                                                 // Format with dots
+                                                 const formatted = raw ? parseInt(raw).toLocaleString('es-AR') : '';
+                                                 setFinanceAmount(formatted);
+                                             }}
+                                             className="w-full bg-black/20 border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 placeholder:text-white/20 transition-colors text-right"
                                              onKeyDown={(e) => {
                                                 if (e.key === 'Enter') handleAddTransaction();
                                              }}

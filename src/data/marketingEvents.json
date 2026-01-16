@@ -1,0 +1,1064 @@
+[
+  {
+    "id": "mkt_0",
+    "title": "Especial: TEMPORADA VERANO MARDEL",
+    "type": "campaign",
+    "startDay": 2,
+    "endDay": 15,
+    "date": "2026-01-02",
+    "endDate": "2026-02-15",
+    "color": "bg-yellow-500/80",
+    "textColor": "text-black"
+  },
+  {
+    "id": "mkt_1",
+    "title": "Año Nuevo",
+    "type": "marketing",
+    "date": "2026-01-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_2",
+    "title": "Reyes Magos",
+    "type": "marketing",
+    "date": "2026-01-06",
+    "day": 6,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_3",
+    "title": "Especial: VUELTA AL COLE",
+    "type": "campaign",
+    "startDay": 26,
+    "endDay": 8,
+    "date": "2026-01-26",
+    "endDate": "2026-03-08",
+    "color": "bg-yellow-500/80",
+    "textColor": "text-black"
+  },
+  {
+    "id": "mkt_4",
+    "title": "Blue Monday",
+    "type": "marketing",
+    "date": "2026-01-19",
+    "day": 19,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_5",
+    "title": "Día Internacional de la Educación",
+    "type": "marketing",
+    "date": "2026-01-24",
+    "day": 24,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_6",
+    "title": "Día Mundial del Conservacionista",
+    "type": "marketing",
+    "date": "2026-01-27",
+    "day": 27,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_7",
+    "title": "Día Mundial por la Reducción de las Emisiones de CO2",
+    "type": "marketing",
+    "date": "2026-01-28",
+    "day": 28,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_8",
+    "title": "Día Escolar de la No Violencia y la Paz",
+    "type": "marketing",
+    "date": "2026-01-30",
+    "day": 30,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_9",
+    "title": "Día Mundial de los Humedales",
+    "type": "marketing",
+    "date": "2026-02-02",
+    "day": 2,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_10",
+    "title": "Día Mundial contra el Cáncer",
+    "type": "marketing",
+    "date": "2026-02-04",
+    "day": 4,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_11",
+    "title": "Día del Carnaval (carnaval de corrientes)",
+    "type": "marketing",
+    "date": "2026-02-07",
+    "day": 7,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_12",
+    "title": "Día del Carnaval (carnaval de corrientes)",
+    "type": "marketing",
+    "date": "2026-02-08",
+    "day": 8,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_13",
+    "title": "Día del Carnaval (carnaval de corrientes)",
+    "type": "marketing",
+    "date": "2026-02-09",
+    "day": 9,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_14",
+    "title": "Día del Carnaval (carnaval de corrientes)",
+    "type": "marketing",
+    "date": "2026-02-10",
+    "day": 10,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_15",
+    "title": "Día Mundial de la Radio",
+    "type": "marketing",
+    "date": "2026-02-13",
+    "day": 13,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_16",
+    "title": "San Valentín",
+    "type": "marketing",
+    "date": "2026-02-14",
+    "day": 14,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_17",
+    "title": "Carnaval",
+    "type": "marketing",
+    "date": "2026-02-16",
+    "day": 16,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_18",
+    "title": "Carnaval",
+    "type": "marketing",
+    "date": "2026-02-17",
+    "day": 17,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_19",
+    "title": "Día Mundial de la Justicia Social",
+    "type": "marketing",
+    "date": "2026-02-20",
+    "day": 20,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_20",
+    "title": "Día Internacional de la Lengua Materna",
+    "type": "marketing",
+    "date": "2026-02-21",
+    "day": 21,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_21",
+    "title": "Día Internacional del Oso Polar",
+    "type": "marketing",
+    "date": "2026-02-27",
+    "day": 27,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_22",
+    "title": "Día Mundial de la Naturaleza",
+    "type": "marketing",
+    "date": "2026-03-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_23",
+    "title": "Día Mundial de la Vida Silvestre",
+    "type": "marketing",
+    "date": "2026-03-03",
+    "day": 3,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_24",
+    "title": "Día Internacional de la Mujer",
+    "type": "marketing",
+    "date": "2026-03-08",
+    "day": 8,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_25",
+    "title": "Día Internacional de la Audición",
+    "type": "marketing",
+    "date": "2026-03-10",
+    "day": 10,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_26",
+    "title": "Día Mundial del Riñón",
+    "type": "marketing",
+    "date": "2026-03-13",
+    "day": 13,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_27",
+    "title": "Día Mundial del Sueño",
+    "type": "marketing",
+    "date": "2026-03-14",
+    "day": 14,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_28",
+    "title": "Día Mundial de los Derechos del Consumidor",
+    "type": "marketing",
+    "date": "2026-03-15",
+    "day": 15,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_29",
+    "title": "Día Internacional de la Felicidad",
+    "type": "marketing",
+    "date": "2026-03-20",
+    "day": 20,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_30",
+    "title": "Día Internacional de los Bosques",
+    "type": "marketing",
+    "date": "2026-03-21",
+    "day": 21,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_31",
+    "title": "Día Mundial del Síndrome de Down",
+    "type": "marketing",
+    "date": "2026-03-21",
+    "day": 21,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_32",
+    "title": "Día Mundial del Agua",
+    "type": "marketing",
+    "date": "2026-03-22",
+    "day": 22,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_33",
+    "title": "Día Meteorológico Mundial",
+    "type": "marketing",
+    "date": "2026-03-23",
+    "day": 23,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_34",
+    "title": "Día Mundial de la Tuberculosis",
+    "type": "marketing",
+    "date": "2026-03-24",
+    "day": 24,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_35",
+    "title": "Día Mundial del Teatro",
+    "type": "marketing",
+    "date": "2026-03-27",
+    "day": 27,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_36",
+    "title": "Día Mundial de Concienciación sobre el Autismo",
+    "type": "marketing",
+    "date": "2026-04-02",
+    "day": 2,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_37",
+    "title": "Día Mundial de la Salud",
+    "type": "marketing",
+    "date": "2026-04-07",
+    "day": 7,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_38",
+    "title": "Día Internacional del Beso",
+    "type": "marketing",
+    "date": "2026-04-13",
+    "day": 13,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_39",
+    "title": "Día Mundial del Arte",
+    "type": "marketing",
+    "date": "2026-04-15",
+    "day": 15,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_40",
+    "title": "Día Mundial de la Hemofilia",
+    "type": "marketing",
+    "date": "2026-04-17",
+    "day": 17,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_41",
+    "title": "Día Internacional de la Madre Tierra",
+    "type": "marketing",
+    "date": "2026-04-22",
+    "day": 22,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_42",
+    "title": "Día Internacional del Libro",
+    "type": "marketing",
+    "date": "2026-04-23",
+    "day": 23,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_43",
+    "title": "Día Mundial del Paludismo",
+    "type": "marketing",
+    "date": "2026-04-25",
+    "day": 25,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_44",
+    "title": "Día Internacional de la Danza",
+    "type": "marketing",
+    "date": "2026-04-29",
+    "day": 29,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_45",
+    "title": "Día del Trabajador",
+    "type": "marketing",
+    "date": "2026-05-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_46",
+    "title": "Día Mundial de la Libertad de Prensa",
+    "type": "marketing",
+    "date": "2026-05-03",
+    "day": 3,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_47",
+    "title": "Día Internacional de los Bomberos",
+    "type": "marketing",
+    "date": "2026-05-04",
+    "day": 4,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_48",
+    "title": "Día Mundial de la Higiene de Manos",
+    "type": "marketing",
+    "date": "2026-05-05",
+    "day": 5,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_49",
+    "title": "Día de la Madre",
+    "type": "marketing",
+    "date": "2026-05-10",
+    "day": 10,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_50",
+    "title": "Día Internacional de la Enfermería",
+    "type": "marketing",
+    "date": "2026-05-12",
+    "day": 12,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_51",
+    "title": "Día Internacional de la Familia",
+    "type": "marketing",
+    "date": "2026-05-15",
+    "day": 15,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_52",
+    "title": "Día Mundial del Reciclaje",
+    "type": "marketing",
+    "date": "2026-05-17",
+    "day": 17,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_53",
+    "title": "Día Mundial de las Abejas",
+    "type": "marketing",
+    "date": "2026-05-20",
+    "day": 20,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_54",
+    "title": "Día Mundial de la Diversidad Cultural",
+    "type": "marketing",
+    "date": "2026-05-21",
+    "day": 21,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_55",
+    "title": "Día Internacional de la Biodiversidad",
+    "type": "marketing",
+    "date": "2026-05-22",
+    "day": 22,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_56",
+    "title": "Revolución de Mayo",
+    "type": "marketing",
+    "date": "2026-05-25",
+    "day": 25,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_57",
+    "title": "Día Internacional de la Hamburguesa",
+    "type": "marketing",
+    "date": "2026-05-28",
+    "day": 28,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_58",
+    "title": "Día Mundial sin Tabaco",
+    "type": "marketing",
+    "date": "2026-05-31",
+    "day": 31,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_59",
+    "title": "Día Mundial de las Madres y los Padres",
+    "type": "marketing",
+    "date": "2026-06-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_60",
+    "title": "Día Mundial del Medio Ambiente",
+    "type": "marketing",
+    "date": "2026-06-05",
+    "day": 5,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_61",
+    "title": "Día Mundial de la Inocuidad de los Alimentos",
+    "type": "marketing",
+    "date": "2026-06-07",
+    "day": 7,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_62",
+    "title": "Día Mundial de los Océanos",
+    "type": "marketing",
+    "date": "2026-06-08",
+    "day": 8,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_63",
+    "title": "Día Mundial del Donante de Sangre",
+    "type": "marketing",
+    "date": "2026-06-14",
+    "day": 14,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_64",
+    "title": "Día Mundial de Toma de Conciencia del Abuso y Maltrato en la Vejez",
+    "type": "marketing",
+    "date": "2026-06-15",
+    "day": 15,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_65",
+    "title": "Día Internacional de las Remesas Familiares",
+    "type": "marketing",
+    "date": "2026-06-16",
+    "day": 16,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_66",
+    "title": "Paso a la Inmortalidad del General Martín Miguel de Güemes",
+    "type": "marketing",
+    "date": "2026-06-17",
+    "day": 17,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_67",
+    "title": "Día de la Bandera",
+    "type": "marketing",
+    "date": "2026-06-20",
+    "day": 20,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_68",
+    "title": "Día del Padre",
+    "type": "marketing",
+    "date": "2026-06-21",
+    "day": 21,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_69",
+    "title": "Día Internacional de las Mujeres en la Diplomacia",
+    "type": "marketing",
+    "date": "2026-06-24",
+    "day": 24,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_70",
+    "title": "Día Internacional contra el Abuso y el Tráfico Ilícito de Drogas",
+    "type": "marketing",
+    "date": "2026-06-26",
+    "day": 26,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_71",
+    "title": "Día Internacional del Chiste",
+    "type": "marketing",
+    "date": "2026-07-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_72",
+    "title": "Día Internacional Libre de Bolsas de Plástico",
+    "type": "marketing",
+    "date": "2026-07-03",
+    "day": 3,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_73",
+    "title": "Día Mundial del Chocolate",
+    "type": "marketing",
+    "date": "2026-07-07",
+    "day": 7,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_74",
+    "title": "Día de la Independencia",
+    "type": "marketing",
+    "date": "2026-07-09",
+    "day": 9,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_75",
+    "title": "Día Mundial del Rock",
+    "type": "marketing",
+    "date": "2026-07-13",
+    "day": 13,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_76",
+    "title": "Día Internacional de Nelson Mandela",
+    "type": "marketing",
+    "date": "2026-07-18",
+    "day": 18,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_77",
+    "title": "Día del Amigo",
+    "type": "marketing",
+    "date": "2026-07-20",
+    "day": 20,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_78",
+    "title": "Día Mundial contra la Hepatitis",
+    "type": "marketing",
+    "date": "2026-07-28",
+    "day": 28,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_79",
+    "title": "Día Internacional de la Amistad",
+    "type": "marketing",
+    "date": "2026-07-30",
+    "day": 30,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_80",
+    "title": "Día Mundial de la Alegría",
+    "type": "marketing",
+    "date": "2026-08-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_81",
+    "title": "Día de San Cayetano",
+    "type": "marketing",
+    "date": "2026-08-07",
+    "day": 7,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_82",
+    "title": "Día Internacional de los Pueblos Indígenas",
+    "type": "marketing",
+    "date": "2026-08-09",
+    "day": 9,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_83",
+    "title": "Día Internacional de la Juventud",
+    "type": "marketing",
+    "date": "2026-08-12",
+    "day": 12,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_84",
+    "title": "Paso a la Inmortalidad del Gral. José de San Martín",
+    "type": "marketing",
+    "date": "2026-08-17",
+    "day": 17,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_85",
+    "title": "Día Mundial de la Fotografía",
+    "type": "marketing",
+    "date": "2026-08-19",
+    "day": 19,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_86",
+    "title": "Día Internacional de Conmemoración y Homenaje a las Víctimas del Terrorismo",
+    "type": "marketing",
+    "date": "2026-08-21",
+    "day": 21,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_87",
+    "title": "Día Internacional del Recuerdo de la Trata de Esclavos",
+    "type": "marketing",
+    "date": "2026-08-23",
+    "day": 23,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_88",
+    "title": "Día Internacional del Actor",
+    "type": "marketing",
+    "date": "2026-08-26",
+    "day": 26,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_89",
+    "title": "Día Mundial de la Dactiloscopía",
+    "type": "marketing",
+    "date": "2026-09-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_90",
+    "title": "Día Mundial de la Salud Sexual",
+    "type": "marketing",
+    "date": "2026-09-04",
+    "day": 4,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_91",
+    "title": "Día Internacional de la Beneficencia",
+    "type": "marketing",
+    "date": "2026-09-05",
+    "day": 5,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_92",
+    "title": "Día Internacional de la Alfabetización",
+    "type": "marketing",
+    "date": "2026-09-08",
+    "day": 8,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_93",
+    "title": "Día Mundial para la Prevención del Suicidio",
+    "type": "marketing",
+    "date": "2026-09-10",
+    "day": 10,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_94",
+    "title": "Día del Programador",
+    "type": "marketing",
+    "date": "2026-09-13",
+    "day": 13,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_95",
+    "title": "Día Internacional de la Democracia",
+    "type": "marketing",
+    "date": "2026-09-15",
+    "day": 15,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_96",
+    "title": "Día Internacional de la Preservación de la Capa de Ozono",
+    "type": "marketing",
+    "date": "2026-09-16",
+    "day": 16,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_97",
+    "title": "Día de la Primavera",
+    "type": "marketing",
+    "date": "2026-09-21",
+    "day": 21,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_98",
+    "title": "Día Internacional de la Paz",
+    "type": "marketing",
+    "date": "2026-09-21",
+    "day": 21,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_99",
+    "title": "Día Mundial del Turismo",
+    "type": "marketing",
+    "date": "2026-09-27",
+    "day": 27,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_100",
+    "title": "Día Mundial del Corazón",
+    "type": "marketing",
+    "date": "2026-09-29",
+    "day": 29,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_101",
+    "title": "Día Internacional de las Personas Mayores",
+    "type": "marketing",
+    "date": "2026-10-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_102",
+    "title": "Día Internacional de la No Violencia",
+    "type": "marketing",
+    "date": "2026-10-02",
+    "day": 2,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_103",
+    "title": "Día Mundial de los Animales",
+    "type": "marketing",
+    "date": "2026-10-04",
+    "day": 4,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_104",
+    "title": "Día Mundial de los Docentes",
+    "type": "marketing",
+    "date": "2026-10-05",
+    "day": 5,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_105",
+    "title": "Día Mundial de la Salud Mental",
+    "type": "marketing",
+    "date": "2026-10-10",
+    "day": 10,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_106",
+    "title": "Día del Respeto a la Diversidad Cultural",
+    "type": "marketing",
+    "date": "2026-10-12",
+    "day": 12,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_107",
+    "title": "Día Internacional de las Mujeres Rurales",
+    "type": "marketing",
+    "date": "2026-10-15",
+    "day": 15,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_108",
+    "title": "Día Mundial de la Alimentación",
+    "type": "marketing",
+    "date": "2026-10-16",
+    "day": 16,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_109",
+    "title": "Día Internacional para la Erradicación de la Pobreza",
+    "type": "marketing",
+    "date": "2026-10-17",
+    "day": 17,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_110",
+    "title": "Día Mundial contra el Cáncer de Mama",
+    "type": "marketing",
+    "date": "2026-10-19",
+    "day": 19,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_111",
+    "title": "Día de las Naciones Unidas",
+    "type": "marketing",
+    "date": "2026-10-24",
+    "day": 24,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_112",
+    "title": "Halloween",
+    "type": "marketing",
+    "date": "2026-10-31",
+    "day": 31,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_113",
+    "title": "Día Mundial del Veganismo",
+    "type": "marketing",
+    "date": "2026-11-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_114",
+    "title": "Día de los Muertos",
+    "type": "marketing",
+    "date": "2026-11-02",
+    "day": 2,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_115",
+    "title": "Día Mundial del Payaso",
+    "type": "marketing",
+    "date": "2026-11-05",
+    "day": 5,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_116",
+    "title": "Día Mundial del Urbanismo",
+    "type": "marketing",
+    "date": "2026-11-08",
+    "day": 8,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_117",
+    "title": "Día Mundial de la Ciencia para la Paz y el Desarrollo",
+    "type": "marketing",
+    "date": "2026-11-10",
+    "day": 10,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_118",
+    "title": "Día Mundial de la Bondad",
+    "type": "marketing",
+    "date": "2026-11-13",
+    "day": 13,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_119",
+    "title": "Día Mundial de la Diabetes",
+    "type": "marketing",
+    "date": "2026-11-14",
+    "day": 14,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_120",
+    "title": "Día Internacional para la Tolerancia",
+    "type": "marketing",
+    "date": "2026-11-16",
+    "day": 16,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_121",
+    "title": "Día Universal del Niño",
+    "type": "marketing",
+    "date": "2026-11-20",
+    "day": 20,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_122",
+    "title": "Día Internacional de la Eliminación de la Violencia contra la Mujer",
+    "type": "marketing",
+    "date": "2026-11-25",
+    "day": 25,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_123",
+    "title": "Black Friday",
+    "type": "marketing",
+    "date": "2026-11-27",
+    "day": 27,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_124",
+    "title": "Día Mundial de la Lucha contra el SIDA",
+    "type": "marketing",
+    "date": "2026-12-01",
+    "day": 1,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_125",
+    "title": "Día Internacional de las Personas con Discapacidad",
+    "type": "marketing",
+    "date": "2026-12-03",
+    "day": 3,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_126",
+    "title": "Día Mundial del Suelo",
+    "type": "marketing",
+    "date": "2026-12-05",
+    "day": 5,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_127",
+    "title": "Día de los Derechos Humanos",
+    "type": "marketing",
+    "date": "2026-12-10",
+    "day": 10,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_128",
+    "title": "Día Internacional de la Solidaridad Humana",
+    "type": "marketing",
+    "date": "2026-12-20",
+    "day": 20,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_129",
+    "title": "Nochebuena",
+    "type": "marketing",
+    "date": "2026-12-24",
+    "day": 24,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_130",
+    "title": "Navidad",
+    "type": "marketing",
+    "date": "2026-12-25",
+    "day": 25,
+    "icon": "📅"
+  },
+  {
+    "id": "mkt_131",
+    "title": "Fin de Año",
+    "type": "marketing",
+    "date": "2026-12-31",
+    "day": 31,
+    "icon": "📅"
+  }
+]

@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { X, Plus, Clock, Tag, Trash2, Calendar as CalIcon } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import { useColorTheme } from '../../context/ColorThemeContext';
 
 const DayDetailModal = ({ isOpen, onClose, date }) => {
     const { theme } = useTheme();
-    const { setCalendarEvents, calendarEvents } = useData();
+    const { addEvent, calendarEvents, setCalendarEvents } = useData(); // setCalendarEvents maps to setUserEvents
+    const { getCategoryClasses } = useColorTheme();
     const [newEventTitle, setNewEventTitle] = useState('');
     const [newEventTime, setNewEventTime] = useState('09:00');
     const [newEventTag, setNewEventTag] = useState('meeting');
@@ -26,23 +28,27 @@ const DayDetailModal = ({ isOpen, onClose, date }) => {
             time: newEventTime
         };
 
-        const updatedEvents = [...calendarEvents, newEvent];
-        setCalendarEvents(updatedEvents);
+        // Correct usage: Call the add action, don't overwrite the whole list with static data
+        if (addEvent) {
+            addEvent(newEvent);
+        } else {
+            console.error("addEvent action missing in DataContext");
+            // Fallback (Risk of duplication if not careful, but better than nothing)
+            setCalendarEvents(prev => [...prev, newEvent]);
+        }
         
         setNewEventTitle('');
     };
 
     const handleDeleteEvent = (id) => {
-        const updatedEvents = calendarEvents.filter(e => e.id !== id);
-        setCalendarEvents(updatedEvents);
+        // Only delete if it's a user event (we can check by id format or just try to filter userEvents)
+        // Since setCalendarEvents updates User Events state:
+        setCalendarEvents(prevUserEvents => prevUserEvents.filter(e => e.id !== id));
     };
 
     const getTagColor = (type) => {
-        if (type === 'campaign') return 'bg-purple-500 text-white';
-        if (type === 'meeting') return 'bg-blue-500 text-white';
-        if (type === 'deadline') return 'bg-red-500 text-white';
-        if (type === 'reminder') return 'bg-yellow-500 text-black';
-        return 'bg-white/20 text-white';
+        // Use Dynamic Context if available, else fallback
+        return getCategoryClasses ? getCategoryClasses(type, 'badge') : 'bg-white/20 text-white';
     };
 
     // Filter events locally just to be sure we show current state if props lag (though context should drive it)

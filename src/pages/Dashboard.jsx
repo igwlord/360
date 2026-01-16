@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
-import { DollarSign, TrendingUp, Users, Settings, Star, Plus, Sliders, Filter, Eye, Briefcase, Activity, ArrowDownRight, Mail, Phone } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, Settings, Star, Plus, Sliders, Filter, Eye, Briefcase, Activity, ArrowDownRight, Mail, Phone, Trash2 } from 'lucide-react';
 import { DonutChart, FilterPill, VisibilityToggle } from '../components/dashboard/Widgets';
 import Modal from '../components/common/Modal';
 import Tooltip from '../components/common/Tooltip';
@@ -29,7 +29,7 @@ const Dashboard = () => {
     // ... rest of the component
 
   const { theme } = useTheme();
-  const { campaigns, budget, providerGroups } = useData();
+  const { campaigns, budget, providerGroups, tasks, actions } = useData();
   const navigate = useNavigate();
 
   // Local State for Dashboard UI
@@ -38,6 +38,8 @@ const Dashboard = () => {
   const [campaignFilter, setCampaignFilter] = useState('Todos'); 
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [selectedPartner, setSelectedPartner] = useState(null);
+  const [taskView, setTaskView] = useState('pending'); // 'pending' | 'history'
+  const [isRoiModalOpen, setIsRoiModalOpen] = useState(false);
 
   // Computed Data
   const filteredCampaigns = campaignFilter === 'Todos' ? campaigns : campaigns.filter(c => c.status === campaignFilter);
@@ -80,12 +82,21 @@ const Dashboard = () => {
                 </button>
                 {isFilterMenuOpen && (
                     <div className={`absolute right-0 top-full mt-2 w-64 ${theme.cardBg} backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 animate-in fade-in slide-in-from-top-2 z-50`}>
-                        <div className="mb-4">
-                            <h4 className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} mb-2 font-bold flex items-center gap-1`}><Filter size={10}/> Estado Campañas</h4>
-                            <div className="space-y-1">
-                                <FilterPill label="Todas" active={campaignFilter === 'Todos'} onClick={() => setCampaignFilter('Todos')} />
-                                <FilterPill label="En Curso" active={campaignFilter === 'En Curso'} onClick={() => setCampaignFilter('En Curso')} />
-                                <FilterPill label="Planificación" active={campaignFilter === 'Planificación'} onClick={() => setCampaignFilter('Planificación')} />
+                        {viewMode === 'strategic' && (
+                            <div className="mb-4 text-left">
+                                <h4 className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} mb-2 font-bold flex items-center gap-1`}><Filter size={10}/> Estado Campañas (KPIs)</h4>
+                                <div className="space-y-1">
+                                    <FilterPill label="Todas" active={campaignFilter === 'Todos'} onClick={() => setCampaignFilter('Todos')} />
+                                    <FilterPill label="En Curso" active={campaignFilter === 'En Curso'} onClick={() => setCampaignFilter('En Curso')} />
+                                    <FilterPill label="Planificación" active={campaignFilter === 'Planificación'} onClick={() => setCampaignFilter('Planificación')} />
+                                </div>
+                            </div>
+                        )}
+                        <div className="text-left">
+                            <h4 className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} mb-2 font-bold flex items-center gap-1`}><Eye size={10}/> Visualización</h4>
+                            <div className="space-y-2">
+                                <VisibilityToggle label="Top Partners" checked={true} onChange={() => {}} disabled={true} />
+                                <VisibilityToggle label="Actividad Reciente" checked={true} onChange={() => {}} disabled={true} />
                             </div>
                         </div>
                     </div>
@@ -101,13 +112,16 @@ const Dashboard = () => {
       {viewMode === 'strategic' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Main KPI Card */}
-            <div className={`md:col-span-2 ${theme.cardBg} backdrop-blur-md rounded-[24px] shadow-lg border border-white/10 p-8 flex flex-col justify-between relative overflow-hidden group min-h-[300px]`}>
-                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+            <div 
+                onClick={() => setIsRoiModalOpen(true)}
+                className={`md:col-span-2 ${theme.cardBg} backdrop-blur-md rounded-[24px] shadow-lg border border-white/10 p-8 flex flex-col justify-between relative overflow-hidden group min-h-[300px] cursor-pointer transition-all hover:scale-[1.01] hover:border-white/20`}
+            >
+                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none transition-opacity group-hover:bg-white/10"></div>
                  <div>
                     <div className="flex justify-between items-start mb-6">
                         <div>
                             <h2 className={`text-2xl font-bold ${theme.text}`}>ROI & Presupuesto</h2>
-                            <p className={`text-sm ${theme.textSecondary} mt-1`}>Análisis de rentabilidad anual</p>
+                            <p className={`text-sm ${theme.textSecondary} mt-1`}>Análisis de rentabilidad anual ({campaignFilter})</p>
                         </div>
                         <div className={`p-3 rounded-2xl bg-white/10 ${theme.accent}`}><DollarSign size={24}/></div>
                     </div>
@@ -139,7 +153,12 @@ const Dashboard = () => {
                  
                  <div className="mt-8 pt-6 border-t border-white/10 flex items-center gap-4">
                     <TrendingUp className="text-green-500" size={20} />
-                    <p className="text-white/80 text-sm">El rendimiento del Q1 está un <span className="text-green-400 font-bold">12%</span> por encima del objetivo.</p>
+                    <p className="text-white/80 text-sm">
+                        {campaignFilter === 'Todos' 
+                            ? <span>El rendimiento del Q1 está un <span className="text-green-400 font-bold">12%</span> por encima del objetivo.</span>
+                            : <span>Mostrando métricas filtradas para campañas en estado: <span className="text-[#E8A631] font-bold">{campaignFilter}</span></span>
+                        }
+                    </p>
                  </div>
             </div>
 
@@ -147,14 +166,17 @@ const Dashboard = () => {
             <div className="space-y-6">
                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-6 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer`} onClick={() => navigate('/campaigns')}>
                      <Tooltip text="Campañas actualmente en ejecución vs planificadas">
-                        <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider mb-2 cursor-help text-left`}>Campañas Activas</h3>
+                        <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider mb-2 cursor-help text-left`}>Campañas {campaignFilter === 'Todos' ? 'Activas' : campaignFilter}</h3>
                      </Tooltip>
                     <div className="flex items-end justify-between">
-                        <span className={`text-4xl font-bold ${theme.text}`}>4</span>
+                        <span className={`text-4xl font-bold ${theme.text}`}>{filteredCampaigns.length}</span>
                         <div className="text-right">
-                            <span className="text-xs text-green-400 font-bold">2 En Curso</span>
+                            <span className="text-xs text-green-400 font-bold">{filteredCampaigns.filter(c => c.status === 'En Curso').length} En Curso</span>
                             <div className="w-24 h-1.5 bg-white/10 rounded-full mt-1 overflow-hidden">
-                                <div className="h-full bg-green-500 w-1/2 rounded-full"></div>
+                                <div 
+                                    className="h-full bg-green-500 rounded-full transition-all duration-500" 
+                                    style={{ width: `${(filteredCampaigns.filter(c => c.status === 'En Curso').length / (filteredCampaigns.length || 1)) * 100}%` }}
+                                ></div>
                             </div>
                         </div>
                     </div>
@@ -164,7 +186,7 @@ const Dashboard = () => {
                    <Tooltip text="Total de proveedores con contratos activos">
                        <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider mb-2 cursor-help text-left`}>Partners Activos</h3>
                    </Tooltip>
-                   <span className={`text-4xl font-bold ${theme.text}`}>12</span>
+                   <span className={`text-4xl font-bold ${theme.text}`}>{dashboardPartners.length}</span>
                 </div>
                 
                  <div className={`${theme.accentBg} rounded-[24px] p-6 text-black flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity`} onClick={() => navigate('/reports')}>
@@ -178,11 +200,88 @@ const Dashboard = () => {
           </div>
       )}
 
-      {/* OPERATIONAL VIEW */}
+      {/* ROI Modal */}
+      <Modal isOpen={isRoiModalOpen} onClose={() => setIsRoiModalOpen(false)} title="Detalle Financiero Global" size="lg">
+            <div className="space-y-6">
+                {/* 1. Global Summary */}
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+                        <p className="text-xs text-white/50 uppercase font-bold mb-1">Presupuesto Total</p>
+                        <p className="text-2xl font-bold text-white">${budget.total.toFixed(1)}M</p>
+                    </div>
+                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+                        <p className="text-xs text-white/50 uppercase font-bold mb-1">Ejecutado</p>
+                        <p className="text-2xl font-bold text-white">${budget.executed.toFixed(1)}M</p>
+                    </div>
+                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+                        <p className="text-xs text-white/50 uppercase font-bold mb-1">Disponible</p>
+                        <p className={`text-2xl font-bold ${budget.total - budget.executed >= 0 ? 'text-green-400' : 'text-red-400'}`}>${(budget.total - budget.executed).toFixed(1)}M</p>
+                    </div>
+                </div>
+
+                {/* 2. Brand Share (Who spends the most?) */}
+                <div>
+                     <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Briefcase size={16} className={theme.accent}/> Inversión por Marca</h4>
+                     <div className="space-y-3">
+                        {Object.entries(campaigns.reduce((acc, c) => {
+                            const cost = c.transactions?.reduce((sum, t) => t.type === 'expense' ? sum + t.amount : sum, 0) || 0;
+                            if (cost > 0) acc[c.brand || 'Otros'] = (acc[c.brand || 'Otros'] || 0) + cost;
+                            return acc;
+                        }, {})).sort(([,a], [,b]) => b - a).map(([brand, amount], i, arr) => {
+                            const total = arr.reduce((sum, [,v]) => sum + v, 0);
+                            const percent = (amount / total) * 100;
+                            return (
+                                <div key={brand} className="bg-white/5 p-3 rounded-lg flex items-center justify-between group hover:bg-white/10 transition-colors">
+                                    <div className="flex-1">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="font-bold text-white text-sm">{brand}</span>
+                                            <span className="text-xs text-white/50">${(amount / 1000000).toFixed(2)}M ({percent.toFixed(0)}%)</span>
+                                        </div>
+                                        <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-500" style={{ width: `${percent}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {campaigns.every(c => !c.transactions?.some(t => t.type === 'expense')) && (
+                            <p className="text-white/30 text-xs italic">Aún no hay gastos registrados para calcular el share.</p>
+                        )}
+                     </div>
+                </div>
+
+                {/* 3. Top Expensive Campaigns */}
+                <div>
+                     <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><TrendingUp size={16} className={theme.accent}/> Top Campañas (Mayor Gasto)</h4>
+                     <div className="space-y-2">
+                        {campaigns
+                            .map(c => ({ ...c, executed: c.transactions?.reduce((sum, t) => t.type === 'expense' ? sum + t.amount : sum, 0) || 0 }))
+                            .sort((a, b) => b.executed - a.executed)
+                            .slice(0, 5)
+                            .filter(c => c.executed > 0)
+                            .map((c, i) => (
+                                <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-6 h-6 rounded-full ${c.statusColor} flex items-center justify-center text-[10px] font-bold text-white/80`}>{i + 1}</div>
+                                        <div>
+                                            <p className="font-bold text-white text-sm">{c.name}</p>
+                                            <p className="text-[10px] text-white/40">{c.brand}</p>
+                                        </div>
+                                    </div>
+                                    <p className="font-mono font-bold text-white">${(c.executed / 1000000).toFixed(2)}M</p>
+                                </div>
+                            ))
+                        }
+                     </div>
+                </div>
+            </div>
+      </Modal>
+
+      {/* OPERATIONAL VIEW - OPTIMIZED */}
       {viewMode === 'operational' && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in fade-in slide-in-from-right-4 duration-500 h-full">
             
-            {/* Timeline Column */}
+            {/* Timeline Column - Uses more space */}
             <div className={`md:col-span-2 ${theme.cardBg} backdrop-blur-md rounded-[24px] shadow-lg border border-white/10 p-6 flex flex-col h-[calc(100vh-200px)]`}>
                 <h2 className={`text-lg font-bold ${theme.text} mb-4 flex items-center gap-2`}><Activity size={18} className={theme.accent}/> Actividad Reciente</h2>
                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
@@ -203,49 +302,109 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Partners & Tasks */}
-            <div className="md:col-span-1 space-y-6">
-                <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-6 h-full flex flex-col`}>
-                    <h2 className={`text-lg font-bold ${theme.text} mb-4 flex items-center gap-2`}><Users size={18} className={theme.accent}/> Top Partners</h2>
-                    <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-1">
+            {/* Partners & Tasks & New Campaign - Compacted */}
+            <div className="md:col-span-2 flex flex-col gap-6 h-[calc(100vh-200px)]">
+                
+                {/* Row 1: Top Partners */}
+                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex-[2] flex flex-col overflow-hidden`}>
+                    <h2 className={`text-sm font-bold ${theme.text} mb-3 flex items-center gap-2 uppercase tracking-wider`}><Users size={16} className={theme.accent}/> Top Partners</h2>
+                    <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
                         {dashboardPartners.map(p => (
-                            <div key={p.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setSelectedPartner(p)}>
+                            <div key={p.id} className="flex items-center gap-3 p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-white/10" onClick={() => setSelectedPartner(p)}>
                                 <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center text-xs font-bold ${theme.accent}`}>{p.company.charAt(0)}</div>
-                                <div className="overflow-hidden">
-                                     <p className={`text-sm font-bold truncate ${theme.text}`}>{p.company}</p>
+                                <div className="overflow-hidden min-w-0">
+                                     <p className={`text-xs font-bold truncate ${theme.text}`}>{p.company}</p>
                                      <p className="text-[10px] text-white/40 truncate">Proveedor Clave</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
-            </div>
 
-            {/* Quick Actions Actions */}
-            <div className="md:col-span-1 flex flex-col gap-4">
-                 <div onClick={() => navigate('/campaigns', { state: { openModal: true } })} className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-6 flex items-center justify-center text-center cursor-pointer hover:bg-white/5 transition-colors group flex-1`}>
-                    <div className="flex flex-col items-center">
-                        <div className={`w-12 h-12 rounded-2xl ${theme.accentBg} flex items-center justify-center text-black mb-2 shadow-lg group-hover:scale-110 transition-transform`}><Plus size={24} strokeWidth={3}/></div>
-                        <span className="font-bold text-white">Nueva Campaña</span>
-                    </div>
-                 </div>
-                 
-                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex-[1.5] flex flex-col`}>
-                    <div className="flex items-center gap-2 mb-3 text-white/50">
-                        <Briefcase size={16}/>
-                        <span className="text-xs font-bold uppercase tracking-wider">Tareas Pendientes</span>
-                    </div>
-                    
-                    <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1">
-                        {[
-                            { id: 1, text: 'Aprobar Presupuesto Q2', done: false },
-                            { id: 2, text: 'Revisar Creativos Nike', done: false },
-                            { id: 3, text: 'Enviar Reporte Mensual', done: false },
-                        ].map(task => (
-                            <TaskItem key={task.id} task={task} theme={theme} />
-                        ))}
-                    </div>
-                 </div>
+                {/* Row 2: Tasks & Action */}
+                <div className="flex-1 grid grid-cols-2 gap-6 min-h-0">
+                     {/* Tasks List - Compact & Dynamic */}
+                     <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex flex-col overflow-hidden`}>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2 text-white/50">
+                                <Briefcase size={16}/>
+                                <span className="text-xs font-bold uppercase tracking-wider">
+                                    {taskView === 'pending' ? 'Pendientes' : 'Historial'}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setTaskView(taskView === 'pending' ? 'history' : 'pending')}
+                                    className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded text-white transition-colors"
+                                >
+                                    {taskView === 'pending' ? 'Ver Historial' : 'Ver Pendientes'}
+                                </button>
+                                {taskView === 'pending' && <span className="text-[10px] bg-[#E8A631] text-black font-bold px-1.5 py-0.5 rounded">{tasks.filter(t => !t.done).length}</span>}
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-1 overflow-y-auto custom-scrollbar flex-1">
+                             {/* Input for New Task */}
+                             {taskView === 'pending' && (
+                                <div className="mb-2 px-1">
+                                    <input 
+                                        type="text" 
+                                        placeholder="+ Nueva Tarea..." 
+                                        className="w-full bg-transparent border-b border-white/10 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-[#E8A631] pb-1"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && e.target.value.trim()) {
+                                                actions.addTask(e.target.value.trim());
+                                                e.target.value = '';
+                                            }
+                                        }}
+                                    />
+                                </div>
+                             )}
+
+                             {/* Task List */}
+                             {tasks
+                                .filter(t => taskView === 'pending' ? !t.done : t.done)
+                                .sort((a,b) => new Date(b.date) - new Date(a.date))
+                                .map(task => (
+                                    <div 
+                                        key={task.id}
+                                        className={`flex items-center gap-3 p-2 rounded-xl transition-all group ${task.done ? 'bg-white/5 opacity-50' : 'bg-white/5 hover:bg-white/10'}`}
+                                    >
+                                        <div 
+                                            onClick={() => actions.toggleTask(task.id)}
+                                            className={`w-4 h-4 rounded-full border border-white/30 flex items-center justify-center cursor-pointer transition-colors ${task.done ? theme.accentBg + ' border-transparent' : 'hover:border-white'}`}
+                                        >
+                                            {task.done && <CheckCircle size={10} className="text-black"/>}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`text-xs font-bold truncate ${task.done ? 'line-through text-white/50' : 'text-white'}`}>{task.text}</p>
+                                            {taskView === 'history' && <p className="text-[10px] text-white/30">{new Date(task.date).toLocaleDateString()}</p>}
+                                        </div>
+                                        {taskView === 'history' && (
+                                            <button onClick={() => actions.removeTask(task.id)} className="opacity-0 group-hover:opacity-100 p-1 text-white/30 hover:text-red-400">
+                                                <Trash2 size={12}/>
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                             }
+                             
+                             {tasks.filter(t => taskView === 'pending' ? !t.done : t.done).length === 0 && (
+                                 <div className="text-center py-4 text-white/20 text-xs italic">
+                                     {taskView === 'pending' ? 'Todo al día' : 'Sin historial'}
+                                 </div>
+                             )}
+                        </div>
+                     </div>
+
+                     {/* New Campaign Button - Compact */}
+                     <div onClick={() => navigate('/campaigns', { state: { openModal: true } })} className={`group relative overflow-hidden ${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/5 transition-all`}>
+                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 ${theme.accentBg} transition-opacity duration-500`}></div>
+                        <div className={`w-10 h-10 rounded-xl ${theme.accentBg} flex items-center justify-center text-black mb-2 shadow-lg group-hover:scale-110 transition-transform`}><Plus size={20} strokeWidth={3}/></div>
+                        <span className="font-bold text-white text-sm">Nueva Campaña</span>
+                        <span className="text-[10px] text-white/40 mt-1">Crear desde cero</span>
+                     </div>
+                </div>
             </div>
           </div>
       )}
