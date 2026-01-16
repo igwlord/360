@@ -1,15 +1,29 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
-import { Bell, Shield, Palette, Save, Moon, Sun, Smartphone, Mail, AlertTriangle, Monitor, CheckCircle, Clock, ChevronDown } from 'lucide-react';
+import { Bell, Shield, Palette, Save, Moon, Sun, Smartphone, Mail, AlertTriangle, Monitor, CheckCircle, Clock, ChevronDown, Upload } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useColorTheme } from '../context/ColorThemeContext';
 
 const Settings = () => {
     const { theme, setTheme, currentThemeKey } = useTheme();
-    const { actions, notificationSettings, setNotificationSettings } = useData();
+    const { actions, notificationSettings, setNotificationSettings, exportData, importData } = useData();
     const { showToast: addToast } = useToast(); // Renamed to addToast as per instruction
     const { categoryColors, updateCategoryColor, availableColors, getCategoryStyle } = useColorTheme();
+
+    // Backup Logic
+    const fileInputRef = React.useRef(null);
+    const handleRestore = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const result = importData(event.target.result);
+            addToast(result.message, result.success ? 'success' : 'error');
+        };
+        reader.readAsText(file);
+        e.target.value = null;
+    };
 
     // Notification State
     const [notifications, setNotifications] = useState({
@@ -120,26 +134,18 @@ const Settings = () => {
                         <div>
                             <h3 className={`text-sm font-bold uppercase tracking-wider ${theme.textSecondary} mb-3`}>Canales de Envío</h3>
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5">
+                                {/* Email - DISABLED */}
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5 opacity-50 cursor-not-allowed">
                                     <div className="flex items-center gap-3">
                                         <Mail size={18} className="text-blue-300" />
                                         <div>
-                                            <p className={`text-sm font-bold ${theme.text}`}>Email Diario</p>
+                                            <p className={`text-sm font-bold ${theme.text}`}>Email Diario <span className="text-[10px] bg-white/10 px-1 rounded text-white/50 ml-1">PRONTO</span></p>
                                             <p className="text-xs text-white/40">Resumen y alertas críticas</p>
                                         </div>
                                     </div>
-                                    <Toggle checked={notifications.channels.email} onChange={() => toggleChannel('email')} theme={theme} />
+                                    <Toggle checked={false} onChange={() => {}} theme={theme} />
                                 </div>
-                                {notifications.channels.email && (
-                                    <div className="ml-10 mb-2">
-                                        <input 
-                                            type="email" 
-                                            placeholder="destinatario@empresa.com"
-                                            className={`w-full ${theme.inputBg} border border-white/10 rounded-lg px-3 py-2 text-sm ${theme.text} focus:outline-none focus:border-white/30`}
-                                        />
-                                        <p className="text-[10px] text-white/30 mt-1">Se enviará un resumen diario a las 09:00 AM.</p>
-                                    </div>
-                                )}
+                                
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5">
                                     <div className="flex items-center gap-3">
                                         <Monitor size={18} className="text-green-300" />
@@ -206,36 +212,65 @@ const Settings = () => {
                     </div>
                 </section>
 
-                {/* 3. Security - REMOVED per user request */}
-
+                {/* 3. Security & Data - SIMPLIFIED */}
+                <section className={`${theme.cardBg} backdrop-blur-md p-6 rounded-2xl border border-white/5`}>
+                     <h2 className={`text-xl font-bold ${theme.text} mb-4 flex items-center gap-2`}>
+                        <Shield size={20} className={theme.accent} /> Seguridad y Datos
+                    </h2>
+                    <div className="flex items-center justify-between">
+                        <div>
+                             <p className={`text-sm font-bold ${theme.text}`}>Datos y Seguridad</p>
+                             <p className="text-xs text-white/40">Gestiona tus copias de seguridad locales.</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleRestore} 
+                                className="hidden" 
+                                accept=".json"
+                            />
+                            <button 
+                                onClick={() => fileInputRef.current.click()}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-xs font-bold ${theme.text}`}
+                            >
+                                <Upload size={14} /> Restaurar
+                            </button>
+                            <button 
+                                onClick={() => { exportData(); addToast('Backup descargado', 'success'); }}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${theme.accentBg} text-black border border-transparent shadow-lg transition-all hover:scale-105 text-xs font-bold`}
+                            >
+                                <Save size={14} /> Descargar
+                            </button>
+                        </div>
+                    </div>
+                </section>
             </div>
-
-            {/* Email Config Modal or Inline expansion could go here, but let's just make it inline above */}
-            {/* Save Button Removed - Auto-save implied (though technically local state needs effect to persist, 
-                but for UI feedback we assume "instant" or user knows. 
-                Ideally we add a useEffect to auto-save `notifications` to `setNotificationSettings` in DataContext.
-            */}
         </div>
     );
 };
 
 // Sub-components
-const Toggle = ({ checked, onChange, theme }) => (
-    <button 
-        onClick={onChange}
-        className={`w-10 h-5 rounded-full relative transition-colors ${checked ? 'bg-green-500' : 'bg-white/10'}`}
-    >
-        <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
-    </button>
-);
+function Toggle({ checked, onChange }) {
+    return (
+        <button 
+            onClick={onChange}
+            className={`w-10 h-5 rounded-full relative transition-colors ${checked ? 'bg-green-500' : 'bg-white/10'}`}
+        >
+            <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+    );
+}
 
-const ColorPicker = ({ category, label }) => {
+function ColorPicker({ category, label }) {
     const { theme } = useTheme();
     const { categoryColors, updateCategoryColor, availableColors } = useColorTheme();
     const [isOpen, setIsOpen] = useState(false);
 
     const activeColorId = categoryColors[category];
-    const currentColor = availableColors.find(c => c.id === activeColorId) || availableColors[0];
+    // Ensure availableColors is an array before finding
+    const colorsList = Array.isArray(availableColors) ? availableColors : [];
+    const currentColor = colorsList.find(c => c.id === activeColorId) || colorsList[0] || { bg: 'bg-gray-500', name: 'Default' };
 
     return (
         <div className="relative">
@@ -245,22 +280,22 @@ const ColorPicker = ({ category, label }) => {
                 className={`flex items-center justify-between p-3 rounded-xl border border-white/10 cursor-pointer ${theme.cardBg} hover:bg-white/5`}
             >
                 <div className="flex items-center gap-2">
-                    <div className={`w-4 h-4 rounded-full ${currentColor?.bg || 'bg-gray-500'}`}></div>
-                    <span className={`text-sm ${theme.text}`}>{currentColor?.name || 'Default'}</span>
+                    <div className={`w-4 h-4 rounded-full ${currentColor.bg}`}></div>
+                    <span className={`text-sm ${theme.text}`}>{currentColor.name}</span>
                 </div>
                 <ChevronDown size={14} className={theme.textSecondary} />
             </div>
 
             {isOpen && (
                 <div className="absolute top-full left-0 w-full mt-2 p-2 rounded-xl bg-[#1a1a1a] border border-white/10 shadow-2xl z-50 grid grid-cols-5 gap-2">
-                    {availableColors.map(c => (
+                    {colorsList.map(c => (
                         <button
                             key={c.id}
                             onClick={() => {
                                 updateCategoryColor(category, c.id);
                                 setIsOpen(false);
                             }}
-                            className={`w-8 h-8 rounded-full ${c.bg} border-2 ${currentColor?.id === c.id ? 'border-white' : 'border-transparent hover:border-white/50'}`}
+                            className={`w-8 h-8 rounded-full ${c.bg} border-2 ${currentColor.id === c.id ? 'border-white' : 'border-transparent hover:border-white/50'}`}
                             title={c.name}
                         />
                     ))}
@@ -268,7 +303,6 @@ const ColorPicker = ({ category, label }) => {
             )}
         </div>
     );
-};
-
+}
 
 export default Settings;
