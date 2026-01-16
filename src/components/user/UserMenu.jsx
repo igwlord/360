@@ -38,10 +38,10 @@ const UserMenu = () => {
                 className="flex items-center gap-3 pl-2 pr-4 py-1.5 rounded-full hover:bg-white/10 transition-colors border border-transparent hover:border-white/5 active:scale-95 duration-200"
             >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                    {user.username.charAt(0).toUpperCase()}
+                    {(user.email || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left hidden md:block">
-                    <p className="text-xs font-bold text-white leading-none mb-0.5">Hola, {user.username}</p>
+                    <p className="text-xs font-bold text-white leading-none mb-0.5">Hola, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario'}</p>
                     <p className="text-[10px] text-white/50 leading-none">Admin</p>
                 </div>
                 <ChevronDown size={14} className={`text-white/50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -54,7 +54,7 @@ const UserMenu = () => {
                     <div className="px-3 py-2 border-b border-white/5 mb-2">
                         <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1">Cuenta</p>
                         <div className="flex items-center gap-2 text-white">
-                             <User size={14} /> <span>{user.username}</span>
+                             <User size={14} /> <span className="text-xs truncate">{user.email}</span>
                         </div>
                     </div>
 

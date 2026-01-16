@@ -1,45 +1,62 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../supabase/client';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [hasPin, setHasPin] = useState(false);
     const [loading, setLoading] = useState(true);
+    // Initialize state directly to avoid effect update warning
+    const [hasPin, setHasPin] = useState(() => !!localStorage.getItem('security_pin'));
 
     useEffect(() => {
-        // Init check
-        const storedAuth = localStorage.getItem('auth_session');
-        const storedPin = localStorage.getItem('security_pin');
-        
-        if (storedAuth === 'active') {
-            setIsAuthenticated(true);
-        }
-        
-        if (storedPin) {
-            setHasPin(true);
-        }
-        
-        setLoading(false);
+        // 1. Check active session
+        const getSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                setUser(session.user);
+                setIsAuthenticated(true);
+            }
+            setLoading(false);
+        };
+
+        getSession();
+
+        // 2. Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user) {
+                setUser(session.user);
+                setIsAuthenticated(true);
+            } else {
+                setUser(null);
+                setIsAuthenticated(false);
+            }
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    const login = (username, password) => {
-        if (username === 'Euge' && password === '2222') {
-            localStorage.setItem('auth_session', 'active');
-            setIsAuthenticated(true);
-            return true;
-        }
-        return false;
+    const login = async (email, password) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        if (error) throw error;
+        return data;
     };
 
-    const logout = () => {
-        localStorage.removeItem('auth_session');
+    const logout = async () => {
+        await supabase.auth.signOut();
         setIsAuthenticated(false);
+        setUser(null);
     };
 
+    // PIN Logic (Kept Local for UI preference/protection of sensitive actions)
     const setSecurityPin = (pin) => {
         localStorage.setItem('security_pin', pin);
         setHasPin(true);
@@ -51,13 +68,22 @@ export const AuthProvider = ({ children }) => {
     };
 
     const resetPin = () => {
-         // In a real app, we'd require old pin first, but prompt implies a reset option
          localStorage.removeItem('security_pin');
          setHasPin(false);
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, hasPin, login, logout, setSecurityPin, verifyPin, resetPin, loading }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            isAuthenticated, 
+            loading, 
+            login, 
+            logout, 
+            hasPin, 
+            setSecurityPin, 
+            verifyPin, 
+            resetPin 
+        }}>
             {children}
         </AuthContext.Provider>
     );
