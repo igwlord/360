@@ -29,6 +29,7 @@ export const DataProvider = ({ children }) => {
               ? c.transactions 
               : [{ id: 'init', date: new Date().toISOString(), type: 'initial', amount: parseInt(typeof c.cost === 'string' ? c.cost.replace(/\D/g,'') : c.cost) || 0, note: 'Presupuesto Inicial' }]
       })));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount to fix data structure
 
   // EVENTS HYBRID SYSTEM:
@@ -43,7 +44,18 @@ export const DataProvider = ({ children }) => {
       
       // We can also map Campaigns here if we want them as "Events" globally?
       // For now, let's keep logic similar to before but consistent.
-      return [...staticEvents, ...userEvents];
+      
+      // Merge unique events by ID to prevent duplicates if user manually adds one that already exists as static
+      const allEvents = [...staticEvents, ...userEvents];
+      
+      // Deduplicate by ID if present, otherwise keep
+      const uniqueEvents = allEvents.filter((evt, index, self) => 
+          index === self.findIndex((t) => (
+             t.id ? t.id === evt.id : JSON.stringify(t) === JSON.stringify(evt)
+          ))
+      );
+
+      return uniqueEvents;
   }, [userEvents]);
   
   // Helper to add event
@@ -58,22 +70,34 @@ export const DataProvider = ({ children }) => {
 
   // Dynamic Budget Calculation
   const budget = React.useMemo(() => {
+    const parse = (val) => {
+        if (typeof val === 'number') return val;
+        // Robust cleanup: remove everything except digits, minus, and dot (if decimal)
+        // Adjust for locale: if "1.000.000", remove dots. If "1,000", remove comma?
+        // Simple heuristic: Remove non-digits. Assume integers for simplicity in this context unless strict decimal needed.
+        return parseFloat(val?.toString().replace(/[^0-9.-]+/g, '') || 0);
+    };
+
     let total = 0;
     let executed = 0;
 
     campaigns.forEach(c => {
-        // Fallback Logic: If transactions exist, use them. If not, parse 'cost' string as Initial Budget.
         const hasTransactions = c.transactions && c.transactions.length > 0;
         
         let campTotal = 0;
         let campExecuted = 0;
 
         if (hasTransactions) {
-            campTotal = c.transactions.reduce((acc, t) => (t.type === 'initial' || t.type === 'income') ? acc + Number(t.amount) : acc, 0);
-            campExecuted = c.transactions.reduce((acc, t) => t.type === 'expense' ? acc + Number(t.amount) : acc, 0);
+            // Sum 'Initial' assignments as Total Budget. Income is separate (ROI).
+            campTotal = c.transactions.reduce((acc, t) => (t.type === 'initial') ? acc + parse(t.amount) : acc, 0);
+            
+            // If no explicit initial transaction, fallback to cost field
+            if (campTotal === 0) campTotal = parse(c.cost);
+
+            campExecuted = c.transactions.reduce((acc, t) => t.type === 'expense' ? acc + parse(t.amount) : acc, 0);
         } else {
             // Fallback for legacy/broken data
-            campTotal = parseInt(typeof c.cost === 'string' ? c.cost.replace(/\D/g,'') : c.cost) || 0;
+            campTotal = parse(c.cost);
             campExecuted = (campTotal * (c.progress || 0)) / 100; // Estimate execution based on progress if no tracking
         }
         
@@ -135,6 +159,69 @@ export const DataProvider = ({ children }) => {
     })));
   };
 
+  const moveContact = (contactId, targetGroupId) => {
+    setProviderGroups(prev => {
+      let contactToMove = null;
+      // 1. Remove from source
+      const groupsWithoutContact = prev.map(g => {
+        const found = g.contacts.find(c => c.id === contactId);
+        if (found) {
+          contactToMove = found;
+          return { ...g, contacts: g.contacts.filter(c => c.id !== contactId) };
+        }
+        return g;
+      });
+
+      if (!contactToMove) return prev;
+
+      // 2. Add to target
+      return groupsWithoutContact.map(g => {
+        if (g.id === targetGroupId) {
+          return { ...g, contacts: [...g.contacts, contactToMove] };
+        }
+        return g;
+      });
+    });
+  };
+
+  const moveContacts = (contactIds, targetGroupId) => {
+    setProviderGroups(prev => {
+      const contactsToMove = [];
+      // 1. Remove from source groups
+      const cleanedGroups = prev.map(g => {
+        const found = g.contacts.filter(c => contactIds.includes(c.id));
+        contactsToMove.push(...found);
+        return { ...g, contacts: g.contacts.filter(c => !contactIds.includes(c.id)) };
+      });
+
+      // 2. Add to target group
+      return cleanedGroups.map(g => {
+        if (g.id === targetGroupId) {
+          return { ...g, contacts: [...g.contacts, ...contactsToMove] };
+        }
+        return g;
+      });
+    });
+  };
+
+  const addInteraction = (contactId, interaction) => {
+     setProviderGroups(prev => prev.map(g => ({
+         ...g,
+         contacts: g.contacts.map(c => {
+             if (c.id === contactId) {
+                 const history = c.history || [];
+                 const newInteraction = { 
+                    ...interaction, 
+                    id: `int-${Date.now()}`, 
+                    timestamp: new Date().toISOString() 
+                 };
+                 return { ...c, history: [newInteraction, ...history] };
+             }
+             return c;
+         })
+     })));
+  };
+
   const moveGroup = (direction, groupId) => {
     const index = providerGroups.findIndex(g => g.id === groupId);
     if (index === -1 || (direction === 'up' && index === 0) || (direction === 'down' && index === providerGroups.length - 1)) return;
@@ -159,6 +246,12 @@ export const DataProvider = ({ children }) => {
       const newItem = { ...item, id: `t-${Date.now()}`, price: Number(item.price) };
       setRateCardItems(prev => [...prev, newItem]);
     }
+  };
+
+  const moveRateItems = (ids, newCategory) => {
+      setRateCardItems(prev => prev.map(item => 
+          ids.includes(item.id) ? { ...item, category: newCategory } : item
+      ));
   };
 
   const deleteRateItem = (id) => {
@@ -200,7 +293,7 @@ export const DataProvider = ({ children }) => {
 
       // Update State (and LocalStorage via hooks)
       if (data.campaigns) setCampaigns(data.campaigns);
-      if (data.calendarEvents) setCalendarEvents(data.calendarEvents);
+      if (data.calendarEvents) setUserEvents(data.calendarEvents);
       if (data.providerGroups) setProviderGroups(data.providerGroups);
       if (data.rateCardItems) setRateCardItems(data.rateCardItems);
       
@@ -338,13 +431,18 @@ export const DataProvider = ({ children }) => {
         addContact,
         toggleFavoriteContact,
         deleteContact,
+        moveContact,
+        moveContacts,
+        addInteraction,
         moveGroup,
         deleteGroup,
         saveRateItem,
         deleteRateItem,
+        moveRateItems,
         // Task Actions
         addTask: (text) => setTasks([...tasks, { id: Date.now(), text, done: false, date: new Date().toISOString() }]),
         toggleTask: (id) => setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)),
+        updateTask: (id, updates) => setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t)),
         removeTask: (id) => setTasks(tasks.filter(t => t.id !== id)),
         clearCompletedTasks: () => setTasks(tasks.filter(t => !t.done)) // Or move to archive if preferred, for now simple clear
       }

@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
-import { Search, Plus, Star, Phone, Mail, Globe, Share2, Edit, Trash2, ArrowLeft, ArrowRight, User, UserPlus, Layers, Briefcase, Activity } from 'lucide-react';
+import { Search, Plus, Star, Phone, Mail, Globe, Share2, Edit, Trash2, ArrowLeft, ArrowRight, User, UserPlus, Layers, Briefcase, Activity, X, MessageSquare, Calendar, CheckSquare, AlertTriangle } from 'lucide-react';
 import Modal from '../components/common/Modal';
 import ContextMenu from '../components/common/ContextMenu';
+import GlassTable from '../components/common/GlassTable';
 
 const Directory = () => {
     const { theme } = useTheme();
@@ -15,6 +16,8 @@ const Directory = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeGroup, setActiveGroup] = useState('Todos');
     const [activeDetailTab, setActiveDetailTab] = useState('profile'); // 'profile' | 'history'
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+    
     
     // UI States
     const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -49,21 +52,17 @@ const Directory = () => {
     const [contactForm, setContactForm] = useState({ id: null, groupId: '', company: '', brand: '', name: '', role: '', email: '', phone: '', website: '', buyer: '', isFavorite: false });
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, type: null, item: null });
 
-    const [sortConfig, setSortConfig] = useState({ key: 'company', direction: 'asc' });
-    const [moveModal, setMoveModal] = useState({ isOpen: false, contact: null });
+    const [moveModal, setMoveModal] = useState({ isOpen: false, contact: null, bulk: false });
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null }); // NEW Delete Confirmation State
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [interactionForm, setInteractionForm] = useState({ type: 'call', note: '', date: new Date().toISOString().split('T')[0] });
 
     // Flatten contacts for "All" view or filter by group
     const getAllContacts = () => {
          return providerGroups.flatMap(g => g.contacts.map(c => ({...c, groupTitle: g.title, groupId: g.id})));
     };
 
-    const handleSort = (key) => {
-        let direction = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
+
 
     const getDisplayContacts = () => {
         let contacts = activeGroup === 'Todos' 
@@ -80,16 +79,12 @@ const Directory = () => {
             );
         }
 
-        // Sorting
-        return contacts.sort((a, b) => {
-            if (a[sortConfig.key] < b[sortConfig.key]) {
-                return sortConfig.direction === 'asc' ? -1 : 1;
-            }
-            if (a[sortConfig.key] > b[sortConfig.key]) {
-                return sortConfig.direction === 'asc' ? 1 : -1;
-            }
-            return 0;
-        });
+        // Favorites Filter
+        if (showFavoritesOnly) {
+            contacts = contacts.filter(c => c.isFavorite);
+        }
+
+        return contacts;
     };
 
     const contacts = getDisplayContacts();
@@ -101,13 +96,43 @@ const Directory = () => {
     };
 
     const confirmMove = (targetGroupId) => {
-        actions.moveContact(moveModal.contact.id, targetGroupId);
-        setMoveModal({ isOpen: false, contact: null });
-        // Optional: Update selected contact to reflect new group if needed
-        if (selectedContact?.id === moveModal.contact.id) {
-            const newGroupTitle = providerGroups.find(g => g.id === targetGroupId)?.title;
-            setSelectedContact({ ...selectedContact, groupId: targetGroupId, groupTitle: newGroupTitle });
+        if (moveModal.bulk) {
+            actions.moveContacts(selectedIds, targetGroupId);
+            setSelectedIds([]);
+        } else {
+            actions.moveContact(moveModal.contact.id, targetGroupId);
+            // Optional: Update selected contact to reflect new group if needed
+            if (selectedContact?.id === moveModal.contact.id) {
+                const newGroupTitle = providerGroups.find(g => g.id === targetGroupId)?.title;
+                setSelectedContact({ ...selectedContact, groupId: targetGroupId, groupTitle: newGroupTitle });
+            }
         }
+        setMoveModal({ isOpen: false, contact: null, bulk: false });
+    };
+    
+    // Delete Logic
+    const handleDeleteClick = (contact) => {
+        setDeleteModal({ isOpen: true, contact });
+        setContextMenu({ ...contextMenu, visible: false });
+    };
+
+    const confirmDelete = () => {
+        if (deleteModal.contact) {
+            actions.deleteContact(deleteModal.contact.id);
+            if (selectedContact?.id === deleteModal.contact.id) {
+                setSelectedContact(null);
+            }
+        }
+        setDeleteModal({ isOpen: false, contact: null });
+    };
+
+    const handleAddInteraction = () => {
+        if (!interactionForm.note) return;
+        actions.addInteraction(selectedContact.id, interactionForm);
+        setInteractionForm({ type: 'call', note: '', date: new Date().toISOString().split('T')[0] });
+        // Force refresh selected contact to show new history
+        const updated = providerGroups.flatMap(g=>g.contacts).find(c=>c.id === selectedContact.id);
+        if(updated) setSelectedContact(updated);
     };
 
     // Handlers
@@ -149,7 +174,8 @@ const Directory = () => {
         setActiveGroup(newGroup.id); // Switch directly to new group
     };
 
-    const toggleFavorite = (contact) => {
+    const toggleFavorite = (contact, e) => {
+        if(e) e.stopPropagation();
         actions.toggleFavoriteContact(contact.id);
         // If viewed interactively, update local state immediately for responsiveness
         if (selectedContact && selectedContact.id === contact.id) {
@@ -157,11 +183,104 @@ const Directory = () => {
         }
     };
 
+    const columns = [
+        {
+            header: (
+                <div className="flex justify-center">
+                    <input 
+                        type="checkbox" 
+                        checked={contacts.length > 0 && contacts.every(c => selectedIds.includes(c.id))}
+                        onChange={(e) => {
+                            if (e.target.checked) {
+                                // Select All Visible
+                                const allVisibleIds = contacts.map(c => c.id);
+                                setSelectedIds([...new Set([...selectedIds, ...allVisibleIds])]);
+                            } else {
+                                // Deselect All Visible
+                                const visibleIds = contacts.map(c => c.id);
+                                setSelectedIds(selectedIds.filter(id => !visibleIds.includes(id)));
+                            }
+                        }}
+                        className="w-4 h-4 rounded border-white/20 bg-white/5 cursor-pointer accent-[#E8A631]"
+                    />
+                </div>
+            ),
+            accessor: 'id',
+            width: '40px',
+            render: (row) => (
+                <div onClick={e => e.stopPropagation()} className="flex justify-center">
+                    <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(row.id)}
+                        onChange={(e) => {
+                            if (e.target.checked) setSelectedIds([...selectedIds, row.id]);
+                            else setSelectedIds(selectedIds.filter(id => id !== row.id));
+                        }}
+                        className="w-4 h-4 rounded border-white/20 bg-white/5 cursor-pointer accent-[#E8A631]"
+                    />
+                </div>
+            )
+        },
+        { 
+            header: 'Empresa', 
+            accessor: 'company', 
+            width: '140px',
+            sortable: true,
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-105 ${selectedContact?.id === row.id ? 'bg-[#E8A631] text-black shadow-lg' : 'bg-white/10 text-white/70'}`}>
+                        {row.company.substring(0,1).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                        <p className={`text-sm font-bold truncate ${selectedContact?.id === row.id ? 'text-white' : 'text-white/90'}`}>{row.company}</p>
+                    </div>
+                </div>
+            )
+        },
+        { 
+            header: 'Detalle', 
+            accessor: 'name', 
+            width: '120px',
+            sortable: true,
+            render: (row) => (
+                <div>
+                     <p className="text-xs text-white/60 truncate">{row.name}</p>
+                     <p className="text-[10px] text-white/30 truncate">{row.role || row.brand}</p>
+                </div>
+            )
+        },
+        { 
+            header: (
+                <div className="flex justify-end pr-3">
+                    <button 
+                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                        className={`transition-all hover:scale-110 ${showFavoritesOnly ? 'text-[#E8A631] scale-110' : 'text-white/40 hover:text-[#E8A631]'}`}
+                        title={showFavoritesOnly ? "Ver Todos" : "Ver Solo Favoritos"}
+                    >
+                        <Star size={16} fill={showFavoritesOnly ? "#E8A631" : "none"} />
+                    </button>
+                </div>
+            ), 
+            accessor: 'isFavorite', 
+            width: '60px',
+            render: (row) => (
+                <div className="flex justify-end pr-2">
+                     <button 
+                        onClick={(e) => toggleFavorite(row, e)}
+                        className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${row.isFavorite ? 'text-[#E8A631]' : 'text-white/20 hover:text-white/50'}`}
+                     >
+                        <Star size={16} className={row.isFavorite ? 'fill-[#E8A631]' : ''}/>
+                     </button>
+                </div>
+            )
+        }
+    ];
+
     return (
         <div className="h-full flex gap-6 relative" onClick={() => setContextMenu({ ...contextMenu, visible: false })}>
             
             {/* LEFT PANE: Navigation & List */}
-            <div className={`w-1/3 flex flex-col ${theme.cardBg} backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl transition-all duration-300`}>
+            <div className={`w-1/2 flex flex-col ${theme.cardBg} backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl transition-all duration-300`}>
                 
                 {/* Search & Header */}
                 <div className="p-5 border-b border-white/10 bg-black/10">
@@ -209,64 +328,29 @@ const Directory = () => {
                     </button>
                 </div>
 
-                {/* Contact List - Sortable Table */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-black/20 sticky top-0 z-10 backdrop-blur-sm">
-                            <tr>
-                                <th onClick={() => handleSort('company')} className="p-3 text-[10px] uppercase font-bold text-white/40 tracking-wider rounded-tl-xl hover:text-white cursor-pointer transition-colors group">
-                                    Empresa {sortConfig.key === 'company' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                                </th>
-                                <th onClick={() => handleSort('name')} className="p-3 text-[10px] uppercase font-bold text-white/40 tracking-wider hover:text-white cursor-pointer transition-colors">
-                                    Detalle {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                                </th>
-                                <th onClick={() => handleSort('isFavorite')} className="p-3 text-[10px] uppercase font-bold text-white/40 tracking-wider text-right rounded-tr-xl hover:text-white cursor-pointer transition-colors">
-                                    Estado {sortConfig.key === 'isFavorite' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                        {contacts.map((contact, idx) => (
-                            <tr 
-                                key={contact.id || idx}
-                                id={`contact-${contact.id}`}
-                                onClick={() => setSelectedContact(contact)}
-                                onContextMenu={(e) => handleContextMenu(e, 'contact', contact)}
-                                className={`group cursor-pointer transition-all hover:bg-white/5 ${selectedContact?.id === contact.id ? 'bg-white/10' : ''}`}
-                            >
-                                <td className="p-3 align-middle">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-105 ${selectedContact?.id === contact.id ? 'bg-[#E8A631] text-black shadow-lg' : 'bg-white/10 text-white/70'}`}>
-                                            {contact.company.substring(0,1).toUpperCase()}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className={`text-sm font-bold truncate max-w-[120px] ${selectedContact?.id === contact.id ? 'text-white' : 'text-white/90'}`}>{contact.company}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="p-3 align-middle">
-                                    <p className="text-xs text-white/60 truncate max-w-[100px]">{contact.name}</p>
-                                    <p className="text-[10px] text-white/30 truncate">{contact.role || contact.brand}</p>
-                                </td>
-                                <td className="p-3 align-middle text-right">
-                                    {contact.isFavorite ? (
-                                        <Star size={14} className="text-[#E8A631] fill-[#E8A631] ml-auto"/>
-                                    ) : (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-white/10 ml-auto group-hover:bg-white/30"></div>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                    
-                    {contacts.length === 0 && (
-                        <div className="text-center py-10 opacity-50">
-                            <p className="text-sm font-bold text-white">No se encontraron contactos</p>
-                            <p className="text-xs text-white/50">Intenta buscar con otro término</p>
-                        </div>
-                    )}
+                {/* Contact List via GlassTable */}
+                <div className="flex-1 overflow-hidden">
+                    <GlassTable 
+                        columns={columns}
+                        data={contacts}
+                        onRowClick={(contact) => setSelectedContact(contact)}
+                        onRowContextMenu={(e, contact) => handleContextMenu(e, 'contact', contact)}
+                    />
                 </div>
+
+                
+                {/* Bulk Actions Overlay */}
+                {selectedIds.length > 0 && (
+                    <div className="absolute bottom-6 left-6 right-6 bg-[#E8A631] text-black p-3 rounded-xl shadow-2xl flex justify-between items-center animate-in slide-in-from-bottom-2 z-20 border border-black/10">
+                        <span className="font-bold text-sm pl-2">{selectedIds.length} seleccionados</span>
+                        <div className="flex gap-2">
+                             <button onClick={() => setMoveModal({isOpen: true, contact: null, bulk: true})} className="px-3 py-1.5 bg-black/80 text-white hover:bg-black rounded-lg text-xs font-bold transition-colors flex items-center gap-2">
+                                <Layers size={14}/> Mover a...
+                             </button>
+                             <button onClick={() => setSelectedIds([])} className="p-1.5 hover:bg-black/10 rounded-lg transition-colors"><X size={16}/></button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* RIGHT PANE: Detail View */}
@@ -288,10 +372,18 @@ const Directory = () => {
                              </div>
                              
                              <button 
-                                onClick={() => toggleFavorite(selectedContact)}
+                                onClick={(e) => toggleFavorite(selectedContact, e)}
                                 className={`absolute top-0 right-0 p-3 rounded-full border border-white/10 hover:bg-white/10 transition-colors ${selectedContact.isFavorite ? 'text-[#E8A631] fill-[#E8A631]' : 'text-white/30'}`}
                              >
                                 <Star size={20} className={selectedContact.isFavorite ? 'fill-[#E8A631]' : ''}/>
+                             </button>
+                             
+                             <button 
+                                onClick={() => handleEditContact(selectedContact)}
+                                className="absolute top-0 left-0 p-3 rounded-full border border-white/10 hover:bg-white/10 transition-colors text-white/30 hover:text-white"
+                                title="Editar Contacto"
+                             >
+                                <Edit size={20} />
                              </button>
                         </div>
 
@@ -407,7 +499,7 @@ const Directory = () => {
                                          <p className="text-xs text-green-400 mt-1">Nivel: Top Tier</p>
                                      </div>
                                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                                         <p className="text-[10px] uppercase font-bold text-white/40 mb-2">Share of Wallet</p>
+                                         <p className="text-[10px] uppercase font-bold text-white/40 mb-2">Participación de Inversión</p>
                                          <div className="flex items-baseline gap-2">
                                              <span className="text-3xl font-bold text-white">24%</span>
                                              <span className="text-xs text-white/40">del presupuesto</span>
@@ -419,42 +511,72 @@ const Directory = () => {
                                 </div>
 
                                 {/* Timeline History */}
-                                <div className="bg-black/20 rounded-2xl border border-white/5 p-6">
-                                    <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2"><Layers size={14} className="text-[#E8A631]"/> Historial de Interacciones</h3>
+                                <div className="bg-black/20 rounded-2xl border border-white/5 p-6 space-y-6">
+                                    {/* New Interaction Form */}
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <h4 className="text-xs font-bold uppercase text-white/50 mb-3">Registrar Interacción</h4>
+                                        <div className="flex gap-2 mb-2">
+                                            {['call', 'email', 'meeting', 'note'].map(t => (
+                                                <button 
+                                                    key={t}
+                                                    onClick={() => setInteractionForm({...interactionForm, type: t})}
+                                                    className={`p-2 rounded-lg border flex-1 flex justify-center ${interactionForm.type === t ? 'bg-[#E8A631] text-black border-[#E8A631]' : 'bg-transparent border-white/10 text-white/40 hover:bg-white/5'}`}
+                                                    title={t}
+                                                >
+                                                    {t === 'call' && <Phone size={16}/>}
+                                                    {t === 'email' && <Mail size={16}/>}
+                                                    {t === 'meeting' && <Calendar size={16}/>}
+                                                    {t === 'note' && <MessageSquare size={16}/>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <textarea 
+                                            placeholder="Notas de la reunión o llamada..." 
+                                            value={interactionForm.note}
+                                            onChange={e => setInteractionForm({...interactionForm, note: e.target.value})}
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-[#E8A631] mb-2 resize-none h-20"
+                                        />
+                                        <div className="flex justify-between items-center">
+                                            <input 
+                                                type="date" 
+                                                value={interactionForm.date}
+                                                onChange={e => setInteractionForm({...interactionForm, date: e.target.value})}
+                                                className="bg-transparent text-xs text-white/50 focus:text-white outline-none"
+                                            />
+                                            <button onClick={handleAddInteraction} className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-colors">
+                                                Guardar
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-sm font-bold text-white flex items-center gap-2"><Layers size={14} className="text-[#E8A631]"/> Historial Cronológico</h3>
                                     
                                     <div className="space-y-6 relative before:absolute before:left-[7px] before:top-2 before:bottom-0 before:w-[1px] before:bg-white/10">
-                                        {/* Dynamic Campaigns History */}
-                                        {campaigns
-                                            .filter(c => 
-                                                // Check for provider match in 'providerId' or array 'providers'
-                                                (c.providerId === selectedContact.id) || 
-                                                (c.providers && c.providers.includes(selectedContact.id))
-                                            )
-                                            .sort((a,b) => new Date(b.startDate || b.date) - new Date(a.startDate || a.date))
-                                            .map((campaign, i) => (
-                                            <div key={campaign.id || i} className="pl-6 relative">
-                                                <div className="absolute left-0 top-1 w-3.5 h-3.5 rounded-full border-2 border-[#121212] bg-green-500"></div>
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="text-sm font-bold text-white">{campaign.name}</h4>
-                                                    <span className="text-[10px] text-white/40 font-mono">{campaign.date}</span>
+                                        {/* Merged History: Campaigns + Manual Interactions */}
+                                        {[
+                                            ...(selectedContact.history || []).map(h => ({ ...h, category: 'interaction' })),
+                                            ...campaigns.filter(c => (c.providerId === selectedContact.id) || (c.providers && c.providers.includes(selectedContact.id))).map(c => ({...c, category: 'campaign', date: c.startDate || c.date}))
+                                        ]
+                                        .sort((a,b) => new Date(b.date) - new Date(a.date))
+                                        .map((item, i) => (
+                                            <div key={i} className="pl-6 relative animate-in fade-in duration-300">
+                                                <div className={`absolute left-0 top-1 w-3.5 h-3.5 rounded-full border-2 border-[#121212] flex items-center justify-center ${item.category === 'campaign' ? 'bg-green-500' : 'bg-[#E8A631]'}`}>
+                                                    {item.type === 'call' && <Phone size={8} className="text-black"/>}
+                                                    {item.type === 'email' && <Mail size={8} className="text-black"/>}
                                                 </div>
-                                                <p className="text-xs text-white/60 leading-relaxed mb-1">
-                                                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${campaign.statusColor} text-white/90 mr-2`}>
-                                                        {campaign.status}
-                                                    </span>
-                                                    {campaign.brand}
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <h4 className="text-sm font-bold text-white">
+                                                        {item.category === 'campaign' ? item.name : (item.type === 'call' ? 'Llamada' : item.type === 'meeting' ? 'Reunión' : 'Nota')}
+                                                    </h4>
+                                                    <span className="text-[10px] text-white/40 font-mono">{item.date}</span>
+                                                </div>
+                                                <p className="text-xs text-white/60 leading-relaxed">
+                                                    {item.category === 'campaign' ? (
+                                                        <>Participación en campaña con status <span className="text-green-400">{item.status}</span></>
+                                                    ) : item.note}
                                                 </p>
-                                                {campaign.cost && <p className="text-[10px] font-mono opacity-50">Inversión: {campaign.cost}</p>}
                                             </div>
                                         ))}
-                                        
-                                        {/* Fallback if no history */}
-                                        {campaigns.filter(c => (c.providerId === selectedContact.id) || (c.providers && c.providers.includes(selectedContact.id))).length === 0 && (
-                                            <div className="pl-6 relative">
-                                                <div className="absolute left-0 top-1 w-3.5 h-3.5 rounded-full border-2 border-[#121212] bg-gray-500"></div>
-                                                <p className="text-sm text-white/50 italic">Aún no se registraron campañas con este proveedor.</p>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -541,7 +663,7 @@ const Directory = () => {
                         ] : [
                             { label: 'Editar', icon: <Edit size={14} />, action: () => handleEditContact(contextMenu.item) },
                             { label: 'Mover a...', icon: <Layers size={14} />, action: () => handleMoveClick(contextMenu.item) }, // NEW Move Action
-                            { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => actions.deleteContact(contextMenu.item.id), danger: true }
+                            { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => handleDeleteClick(contextMenu.item), danger: true } // MODIFIED to use custom hook
                         ]
                     }
                 />
@@ -560,11 +682,38 @@ const Directory = () => {
                                 disabled={moveModal.contact?.groupId === g.id}
                              >
                                  <span className="text-sm font-bold text-white">{g.title}</span>
-                                 {moveModal.contact?.groupId === g.id && <span className="text-xs text-white/30">Actual</span>}
+                                 {moveModal.contact?.groupId === g.id && !moveModal.bulk && <span className="text-xs text-white/30">Actual</span>}
                              </button>
                          ))}
                      </div>
                  </div>
+            </Modal>
+            
+            {/* Delete Confirmation Modal */}
+            <Modal isOpen={deleteModal.isOpen} onClose={() => setDeleteModal({isOpen: false, contact: null})} title="¿Eliminar Contacto?">
+                <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <AlertTriangle size={32} className="text-red-500" />
+                    </div>
+                    <div>
+                        <p className="text-white text-lg font-bold">Estas por eliminar a {deleteModal.contact?.company}</p>
+                        <p className="text-white/50 text-sm mt-1">Esta acción es irreversible y se perderá todo el historial.</p>
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                        <button 
+                            onClick={() => setDeleteModal({isOpen: false, contact: null})} 
+                            className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-bold transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            onClick={confirmDelete}
+                            className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 rounded-xl text-white font-bold transition-colors"
+                        >
+                            Eliminar Definitivamente
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

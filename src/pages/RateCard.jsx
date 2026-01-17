@@ -47,7 +47,9 @@ const RateCard = () => {
     };
 
     const handleEdit = (item) => {
-        setRateForm({ ...item });
+        // Format price for display in input (from raw number to "1.000")
+        const formattedPrice = item.price ? new Intl.NumberFormat('es-AR').format(item.price) : '';
+        setRateForm({ ...item, price: formattedPrice });
         setIsRateModalOpen(true);
     };
 
@@ -64,7 +66,9 @@ const RateCard = () => {
 
     const handleSave = () => {
         if (!rateForm.item || !rateForm.price) return;
-        actions.saveRateItem(rateForm);
+        // Clean price for storage (remove dots to save as raw number/string)
+        const cleanPrice = rateForm.price.replace(/\./g, ''); 
+        actions.saveRateItem({ ...rateForm, price: cleanPrice });
         setIsRateModalOpen(false);
     };
     
@@ -181,12 +185,23 @@ const RateCard = () => {
                  <div className="grid grid-cols-2 gap-3">
                      <div>
                         <label className={`text-xs ${theme.textSecondary} ml-1`}>Inversión ($)</label>
-                        <input type="text" value={rateForm.price} onChange={e => {
-                            // Simple formatting for this local state
-                             const val = e.target.value.replace(/\D/g, '');
-                             const formatted = val ? new Intl.NumberFormat('es-AR').format(val) : '';
-                             setRateForm({...rateForm, price: formatted});
-                        }} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} />
+                        <input 
+                            type="text" 
+                            name="price"
+                            value={rateForm.price} 
+                            placeholder="0"
+                            onChange={e => {
+                                // Live Formatting: "1.000.000" as you type
+                                const rawValue = e.target.value.replace(/\D/g, '');
+                                if (!rawValue) {
+                                    setRateForm({...rateForm, price: ''});
+                                    return;
+                                }
+                                const formatted = new Intl.NumberFormat('es-AR').format(rawValue);
+                                setRateForm({...rateForm, price: formatted});
+                            }} 
+                            className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} 
+                        />
                      </div>
                      <div>
                         <label className={`text-xs ${theme.textSecondary} ml-1`}>Notas</label>

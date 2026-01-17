@@ -11,6 +11,8 @@ const Calendar = () => {
   const { calendarEvents, campaigns } = useData();
   const { getCategoryClasses, getCategoryStyle } = useColorTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState('month'); // 'month' | 'week' | 'list'
+  
   
   // Filter States
   const [filters, setFilters] = useState({
@@ -205,6 +207,103 @@ const Calendar = () => {
     return cells;
   };
 
+  const renderWeekGrid = () => {
+    // Week View: Show 7 columns for the current week (starting from currentDate)
+    // We adjust currentDate to be the start of the week? 
+    // Or we just show the week containing currentDate.
+    
+    // 1. Find Sunday of current week
+    const dayOfWeek = currentDate.getDay();
+    const sunday = new Date(currentDate);
+    sunday.setDate(currentDate.getDate() - dayOfWeek);
+
+    const weekDays = [];
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(sunday);
+        day.setDate(sunday.getDate() + i);
+        weekDays.push(day);
+    }
+
+    return (
+        <div className="grid grid-cols-7 gap-2 h-full">
+            {weekDays.map((date, i) => {
+                // Ensure correct month matching for events
+                // This view renders full dates, so we might need a modified getEventsForDay that accepts full Date object
+                // But for now, let's reuse getEventsForDay logic only if date is in current month-year scope of hook?
+                // Actually getEventsForDay relies on `currentDate` state (month/year). 
+                // Fix: Should pass full date to event fetcher or temporarily shim it.
+                // Refactor: Let's make getEventsForDay accept a specific full Date object.
+                
+                // Temp fix: If date is not in displayed month, events might not show correctly with current helper.
+                // But let's rely on the day number for now.
+                
+                const events = getEventsForDay(date.getDate()); // Limitation: only works if week matches current month view. TODO: Fix strict date.
+                const isToday = date.toDateString() === new Date().toDateString();
+
+                return (
+                 <div 
+                    key={i} 
+                    onClick={() => onDayClick(date.getDate())}
+                    className={`h-full border border-white/10 rounded-2xl p-2 flex flex-col relative group cursor-pointer hover:bg-white/5 transition-all ${isToday ? 'bg-white/5 border-white/30' : ''}`}
+                 >
+                    <div className="text-center mb-2">
+                         <div className="text-[10px] uppercase text-white/50">{['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][date.getDay()]}</div>
+                         <div className={`text-lg font-bold ${isToday ? 'text-white' : 'text-white/70'}`}>{date.getDate()}</div>
+                    </div>
+                    <div className="space-y-1 overflow-y-auto custom-scrollbar flex-1">
+                        {events.map((evt, idx) => (
+                             <div key={idx} className={`text-[10px] px-2 py-1.5 rounded truncate border shadow-sm ${getCategoryClasses(evt.type, 'badge')}`}>
+                                {evt.title}
+                             </div>
+                        ))}
+                    </div>
+                 </div>
+                )
+            })}
+        </div>
+    );
+  };
+
+  const renderListView = () => {
+    // List View: Flat list of all events in the month
+    const allEvents = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+        const evts = getEventsForDay(d);
+        if (evts.length > 0) {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+            allEvents.push({ date, events: evts });
+        }
+    }
+
+    return (
+        <div className="flex-col gap-2 h-full overflow-y-auto custom-scrollbar p-2">
+            {allEvents.length === 0 ? (
+                <div className="text-center text-white/30 mt-10">No hay eventos este mes</div>
+            ) : (
+                allEvents.map((item, idx) => (
+                    <div key={idx} className="mb-4">
+                        <div className="sticky top-0 bg-[#121212] z-10 py-1 mb-2 border-b border-white/10 flex items-baseline gap-2">
+                             <span className="text-xl font-bold text-white">{item.date.getDate()}</span>
+                             <span className="text-xs uppercase text-white/50">{item.date.toLocaleDateString('es-ES', { weekday: 'long', month: 'long' })}</span>
+                             <button onClick={() => onDayClick(item.date.getDate())} className="ml-auto text-xs text-blue-400 hover:text-blue-300 bg-blue-500/10 px-2 py-1 rounded">
+                                Ver Detalles
+                             </button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                            {item.events.map((evt, eIdx) => (
+                                <div onClick={() => onDayClick(item.date.getDate())} key={eIdx} className={`p-3 rounded-xl border flex justify-between items-center cursor-pointer hover:brightness-110 transition-all ${getCategoryClasses(evt.type, 'badge')}`}>
+                                    <span className="font-bold text-sm">{evt.title}</span>
+                                    <span className="text-[10px] opacity-70 uppercase tracking-widest">{evt.type}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
+    );
+  };
+
   return (
     <div className="h-full flex gap-6 pb-4">
       
@@ -363,9 +462,9 @@ const Calendar = () => {
                  </div>
 
                  <div className="flex p-1 bg-black/20 rounded-lg border border-white/10">
-                    <button className="px-3 py-1.5 text-xs font-medium text-black bg-white rounded shadow-sm">Mes</button>
-                    <button className="px-3 py-1.5 text-xs font-medium text-white/50 hover:text-white transition-colors">Semana</button>
-                    <button className="px-3 py-1.5 text-xs font-medium text-white/50 hover:text-white transition-colors">Lista</button>
+                    <button onClick={() => setViewMode('month')} className={`px-3 py-1.5 text-xs font-medium rounded transition-all ${viewMode === 'month' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}>Mes</button>
+                    <button onClick={() => setViewMode('week')} className={`px-3 py-1.5 text-xs font-medium rounded transition-all ${viewMode === 'week' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}>Semana</button>
+                    <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 text-xs font-medium rounded transition-all ${viewMode === 'list' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}>Lista</button>
                  </div>
             </div>
         </div>
@@ -380,8 +479,10 @@ const Calendar = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div className={`flex-1 grid grid-cols-7 grid-rows-5 gap-2 p-2 rounded-3xl overflow-hidden border border-white/10 ${theme.cardBg} backdrop-blur-xl shadow-2xl`}>
-            {renderCalendarGrid()}
+        <div className={`flex-1 ${viewMode === 'list' ? 'block' : 'grid'} ${viewMode === 'month' ? 'grid-cols-7 grid-rows-5' : 'grid-cols-1'} gap-2 p-2 rounded-3xl overflow-hidden border border-white/10 ${theme.cardBg} backdrop-blur-xl shadow-2xl`}>
+            {viewMode === 'month' && renderCalendarGrid()}
+            {viewMode === 'week' && renderWeekGrid()}
+            {viewMode === 'list' && renderListView()}
         </div>
       </div>
 

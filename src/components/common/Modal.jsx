@@ -25,8 +25,8 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className={`relative w-full ${maxWidthClass} overflow-hidden rounded-2xl border border-white/10 shadow-2xl ${theme.cardBg} ${theme.text} animate-in zoom-in-95 duration-200 transition-all`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+      <div className={`relative w-full ${maxWidthClass} overflow-hidden rounded-2xl border border-white/10 shadow-2xl ${theme.cardBg} ${theme.text} animate-in zoom-in-95 duration-200 transition-all`} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h3 className="text-lg font-bold">{title}</h3>

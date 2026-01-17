@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import { Layout, Calendar, Users, ShoppingBag, Megaphone, Settings, Bell, Menu, FileText } from 'lucide-react';
+import { Layout, Calendar, Users, ShoppingBag, Megaphone, Settings, Bell, Menu, FileText, HelpCircle } from 'lucide-react';
 import UserMenu from '../user/UserMenu';
 import { useData } from '../../context/DataContext';
 
@@ -24,6 +24,7 @@ const NavBar = () => {
         { path: '/campaigns', label: 'Campañas', icon: Megaphone },
         { path: '/reports', label: 'Reportes', icon: FileText },
         { path: '/settings', label: 'Configuración', icon: Settings },
+        { path: '/help', label: 'Ayuda', icon: HelpCircle },
     ];
 
     return (

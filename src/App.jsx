@@ -25,6 +25,7 @@ import RateCard from './pages/RateCard';
 import Campaigns from './pages/Campaigns';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Help from './pages/Help';
 import NotificationsPage from './pages/NotificationsPage';
 
 import { ColorThemeProvider } from './context/ColorThemeContext';
@@ -47,6 +48,7 @@ const App = () => {
                   <Route path="/campaigns" element={<Campaigns />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/help" element={<Help />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

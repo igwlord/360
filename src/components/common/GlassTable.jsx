@@ -1,11 +1,52 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { ArrowUpDown } from 'lucide-react';
 
 const GlassTable = ({ columns, data, onRowClick, onRowContextMenu }) => {
     const { theme } = useTheme();
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+    const [colWidths, setColWidths] = useState({});
+
+    // Initialize widths
+    React.useEffect(() => {
+        const initialWidths = {};
+        columns.forEach(col => {
+            if (col.width) initialWidths[col.accessor] = col.width;
+        });
+        setColWidths(initialWidths);
+    }, []);
+
+    // Resize Logic
+    const handleResizeMouseDown = (e, accessor) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const headerCell = e.target.parentElement;
+        const startX = e.pageX;
+        const startWidth = headerCell.offsetWidth; // Always use current computed pixel width
+        
+        // Dynamic Min Width: Approx 10px per char + 48px fixed buffer (padding/icon)
+        const textContent = headerCell.textContent || '';
+        const minWidth = Math.max(80, (textContent.length * 10) + 48);
+
+        const handleMouseMove = (moveEvent) => {
+            const currentWidth = startWidth + (moveEvent.pageX - startX);
+            const newWidth = Math.max(minWidth, currentWidth);
+            
+            setColWidths(prev => ({
+                ...prev,
+                [accessor]: `${newWidth}px`
+            }));
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    };
 
     const handleSort = (key) => {
         let direction = 'asc';
@@ -41,20 +82,18 @@ const GlassTable = ({ columns, data, onRowClick, onRowContextMenu }) => {
                 {columns.map((col, index) => (
                     <div 
                         key={index}
-                        className={`px-4 py-3 flex items-center gap-2 cursor-pointer hover:text-white transition-colors select-none ${col.className || ''}`}
-                        style={{ width: col.width || 'auto', flex: col.width ? 'none' : 1 }}
+                        className={`px-4 py-3 flex items-center gap-2 cursor-pointer hover:text-white transition-colors select-none relative group ${col.className || ''}`}
+                        style={{ width: colWidths[col.accessor] || col.width || 'auto', flex: (colWidths[col.accessor] || col.width) ? 'none' : 1 }}
                         onClick={() => col.sortable && handleSort(col.accessor)}
                     >
                         {col.header}
-                        {col.sortable && (
-                            <div className="flex flex-col">
-                                {sortConfig.key === col.accessor ? (
-                                    sortConfig.direction === 'asc' ? <ArrowUpDown size={12} className="text-[#E8A631]" /> : <ArrowUpDown size={12} className="text-[#E8A631] rotate-180" />
-                                ) : (
-                                    <ArrowUpDown size={12} className="opacity-30" />
-                                )}
-                            </div>
-                        )}
+                        
+                        {/* Resize Handle */}
+                        <div 
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[#E8A631] z-20"
+                            onMouseDown={(e) => handleResizeMouseDown(e, col.accessor)}
+                            onClick={(e) => e.stopPropagation()} // Prevent sort trigger
+                        ></div>
                     </div>
                 ))}
             </div>
@@ -76,7 +115,7 @@ const GlassTable = ({ columns, data, onRowClick, onRowContextMenu }) => {
                                 <div 
                                     key={colIndex}
                                     className={`px-4 py-3 text-sm ${theme.text} truncate ${col.className || ''}`}
-                                    style={{ width: col.width || 'auto', flex: col.width ? 'none' : 1 }}
+                                    style={{ width: colWidths[col.accessor] || col.width || 'auto', flex: (colWidths[col.accessor] || col.width) ? 'none' : 1 }}
                                 >
                                     {col.render ? col.render(row) : row[col.accessor]}
                                 </div>

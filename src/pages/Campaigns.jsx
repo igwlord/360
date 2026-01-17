@@ -7,7 +7,7 @@ import Modal from '../components/common/Modal';
 import ContextMenu from '../components/common/ContextMenu';
 import GlassSelect from '../components/common/GlassSelect';
 
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 
 const Campaigns = () => {
@@ -15,6 +15,7 @@ const Campaigns = () => {
     const { campaigns, providerGroups, setCampaigns, formatCurrency } = useData(); 
     const { addToast } = useToast();
     const location = useLocation();
+    const navigate = useNavigate();
     
     // Local State for Kanban
     const [draggedItem, setDraggedItem] = useState(null);
@@ -24,15 +25,41 @@ const Campaigns = () => {
     const [transType, setTransType] = useState('expense'); // 'expense' | 'income'
     const [financeAmount, setFinanceAmount] = useState('');
 
+    const closeModal = () => {
+        setIsModalOpen(false);
+        // Clear navigation state to prevent reopen
+        navigate(location.pathname, { replace: true, state: {} });
+    };
+
+    // Auto-Save Effect (Only for existing campaigns)
+    React.useEffect(() => {
+        if (form.id && isModalOpen) {
+            setCampaigns(prev => prev.map(c => c.id === form.id ? form : c));
+        }
+    }, [form]);
+
     // Auto-open modal if navigated from Dashboard
     React.useEffect(() => {
-        if (location.state?.openModal) {
-            setForm({ id: null, name: '', brand: '', status: 'Planificación' });
-            setIsModalOpen(true);
-            // Clear state to prevent reopening on refresh (optional, but good practice)
-            window.history.replaceState({}, document.title);
+        const hasActionableState = location.state && (location.state.openModal || location.state.openId);
+        
+        if (hasActionableState) {
+            if (location.state.openModal) {
+                // Case A: Create New
+                setForm({ id: null, name: '', brand: '', status: 'Planificación' });
+                setIsModalOpen(true);
+            } else if (location.state.openId) {
+                // Case B: Edit Existing
+                const target = campaigns.find(c => c.id === location.state.openId);
+                if (target) {
+                    setForm({ ...target, activeTab: location.state.activeTab || 'details' });
+                    setIsModalOpen(true);
+                }
+            }
+
+            // Clear state properly to prevent loops
+            navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state]);
+    }, [location.state, campaigns]);
 
     const statuses = ['Planificación', 'En Curso', 'Pendiente', 'Finalizado'];
 
@@ -224,7 +251,7 @@ const Campaigns = () => {
             </div>
 
             {/* Edit / Create Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={form.id ? "Gestión de Campaña" : "Nueva Campaña"} size="xl">
+            <Modal isOpen={isModalOpen} onClose={closeModal} title={form.id ? "Gestión de Campaña" : "Nueva Campaña"} size="xl">
                 <div className="flex border-b border-white/10 mb-4">
                     <button onClick={() => setForm({...form, activeTab: 'details'})} className={`pb-2 px-4 text-sm font-bold border-b-2 transition-colors ${!form.activeTab || form.activeTab === 'details' ? `border-[${theme.accent}] text-white` : 'border-transparent text-white/40'}`}>Detalles</button>
                     {form.id && <button onClick={() => setForm({...form, activeTab: 'financial'})} className={`pb-2 px-4 text-sm font-bold border-b-2 transition-colors ${form.activeTab === 'financial' ? `border-[${theme.accent}] text-white` : 'border-transparent text-white/40'}`}>Finanzas</button>}
@@ -272,9 +299,19 @@ const Campaigns = () => {
                             />
                         </div>
     
-                        <button onClick={handleSave} className={`w-full ${theme.accentBg} text-black font-bold py-3 rounded-xl hover:opacity-90 mt-2`}>
-                            {form.id ? "Guardar Cambios" : "Crear Campaña"}
-                        </button>
+                        <div className="flex justify-end gap-3 mt-4 items-center">
+                            {form.id && <span className="text-xs text-green-400 font-mono flex items-center gap-1"><CheckCircle size={12}/> Auto-Guardado</span>}
+                            
+                            {form.id ? (
+                                <button onClick={closeModal} className={`py-3 px-6 rounded-xl font-bold text-sm border border-white/10 hover:bg-white/10 transition-colors`}>
+                                    Cerrar
+                                </button>
+                            ) : (
+                                <button onClick={handleSave} className={`w-full ${theme.accentBg} text-black font-bold py-3 rounded-xl hover:opacity-90`}>
+                                    Crear Campaña
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
 
