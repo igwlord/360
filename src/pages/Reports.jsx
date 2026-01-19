@@ -17,7 +17,7 @@ const Reports = () => {
         { 
             id: 'exec', 
             title: 'Reporte Ejecutivo (Gerencia)', 
-            desc: 'Resumen de alto nivel: Presupuesto vs Ejecutado, ROI estimado y Status de Campañas.',
+            desc: 'Resumen de alto nivel: Presupuesto vs Ejecutado, ROI estimado y Status de Proyectos.',
             icon: TrendingUp,
             color: 'bg-blue-500'
         },
@@ -37,8 +37,8 @@ const Reports = () => {
         },
         { 
             id: 'onepager', 
-            title: 'One-Pager (Campaña)', 
-            desc: 'Ficha técnica individual de una campaña específica: KPIs y Creativos.',
+            title: 'One-Pager (Proyecto)', 
+            desc: 'Ficha técnica individual de un proyecto específico: KPIs y Creativos.',
             icon: FileText,
             color: 'bg-orange-500'
         }
@@ -108,7 +108,7 @@ INSTRUCCIONES DE DISEÑO:
 1. Crea un dashboard moderno, oscuro (Dark Mode), usando colores premium (#E8A631 para acentos).
 2. Usa Chart.js o similar via CDN para graficar:
    - Distribución de Inversión por Marca (Pie Chart).
-   - Cronograma de campañas (Timeline/Gantt simplificado).
+   - Cronograma de proyectos (Timeline/Gantt simplificado).
    - Progreso de Status (Bar Chart).
 3. Incluye una sección de "Insights Ejecutivos" generada por ti basada en los datos (ej. detectar saturación).
 
@@ -161,7 +161,7 @@ Un único bloque de código HTML completo con estilos CSS y scripts JS integrado
         } else {
              // Fallback generic
             headers = ['KPI', 'Valor'];
-            rows = [['Campañas', data.length]];
+            rows = [['Proyectos', data.length]];
         }
 
         const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');

@@ -1,41 +1,25 @@
-
-/* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../supabase/client';
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
-
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
-    // Initialize state directly to avoid effect update warning
-    const [hasPin, setHasPin] = useState(() => !!localStorage.getItem('security_pin'));
 
     useEffect(() => {
-        // 1. Check active session
-        const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                setUser(session.user);
-                setIsAuthenticated(true);
-            }
+        // Check active session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            setUser(session?.user ?? null);
             setLoading(false);
-        };
+        });
 
-        getSession();
-
-        // 2. Listen for auth changes
+        // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user) {
-                setUser(session.user);
-                setIsAuthenticated(true);
-            } else {
-                setUser(null);
-                setIsAuthenticated(false);
-            }
+            setSession(session);
+            setUser(session?.user ?? null);
             setLoading(false);
         });
 
@@ -43,49 +27,18 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-        if (error) throw error;
-        return data;
+        return supabase.auth.signInWithPassword({ email, password });
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
-        setIsAuthenticated(false);
-        setUser(null);
-    };
-
-    // PIN Logic (Kept Local for UI preference/protection of sensitive actions)
-    const setSecurityPin = (pin) => {
-        localStorage.setItem('security_pin', pin);
-        setHasPin(true);
-    };
-
-    const verifyPin = (pin) => {
-        const stored = localStorage.getItem('security_pin');
-        return stored === pin;
-    };
-
-    const resetPin = () => {
-         localStorage.removeItem('security_pin');
-         setHasPin(false);
+        return supabase.auth.signOut();
     };
 
     return (
-        <AuthContext.Provider value={{ 
-            user, 
-            isAuthenticated, 
-            loading, 
-            login, 
-            logout, 
-            hasPin, 
-            setSecurityPin, 
-            verifyPin, 
-            resetPin 
-        }}>
-            {children}
+        <AuthContext.Provider value={{ user, session, login, logout, loading }}>
+            {!loading && children}
         </AuthContext.Provider>
     );
 };
+
+export const useAuth = () => useContext(AuthContext);

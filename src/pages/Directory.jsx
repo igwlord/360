@@ -1,21 +1,26 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Added Import
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
-import { Search, Plus, Star, Phone, Mail, Globe, Share2, Edit, Trash2, ArrowLeft, ArrowRight, User, UserPlus, Layers, Briefcase, Activity, X, MessageSquare, Calendar, CheckSquare, AlertTriangle } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { Search, Plus, Star, Phone, Mail, Globe, Share2, Edit, Trash2, ArrowLeft, ArrowRight, User, UserPlus, Layers, Briefcase, Activity, X, MessageSquare, Calendar, CheckSquare, AlertTriangle, Megaphone, FileText, MoreVertical } from 'lucide-react';
 import Modal from '../components/common/Modal';
 import ContextMenu from '../components/common/ContextMenu';
 import GlassTable from '../components/common/GlassTable';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const Directory = () => {
     const { theme } = useTheme();
+    const { addToast } = useToast();
+    const navigate = useNavigate(); // Added Hook
     const location = useLocation();
     const { providerGroups, actions, campaigns } = useData();
     const [selectedContact, setSelectedContact] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeGroup, setActiveGroup] = useState('Todos');
-    const [activeDetailTab, setActiveDetailTab] = useState('profile'); // 'profile' | 'history'
+    const [activeDetailTab, setActiveDetailTab] = useState('profile'); // 'profile' | 'history' | 'activity'
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
     
     
@@ -23,6 +28,15 @@ const Directory = () => {
     const [isContactModalOpen, setIsContactModalOpen] = useState(false);
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [newGroupTitle, setNewGroupTitle] = useState('');
+    
+    // Inline Create State
+    const [isInlineCreatingGroup, setIsInlineCreatingGroup] = useState(false);
+    const [inlineGroupTitle, setInlineGroupTitle] = useState('');
+    
+    // Project Modal State
+    const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+    const [projectForm, setProjectForm] = useState({ name: '', status: 'Planificación', type: 'Campaña', date: '', notes: '' });
+
 
     // Navigation State Handling - Auto Open & Scroll
     React.useEffect(() => {
@@ -49,11 +63,29 @@ const Directory = () => {
         }
     }, [location.state, providerGroups]);
 
-    const [contactForm, setContactForm] = useState({ id: null, groupId: '', company: '', brand: '', name: '', role: '', email: '', phone: '', website: '', buyer: '', isFavorite: false });
+    // Schema Update: Strict fields
+    const [contactForm, setContactForm] = useState({ 
+        id: null, 
+        groupId: '', 
+        proveedor: '', // Ex Company
+        marca: '', 
+        // Commercial
+        contacto_comercial_nombre: '', 
+        contacto_comercial_email: '', 
+        contacto_comercial_cel: '',
+        // Marketing
+        contacto_mkt_nombre: '', 
+        contacto_mkt_email: '', 
+        contacto_mkt_cel: '',
+        // Extras kept for UI utility but might not be in strict CSV
+        website: '', 
+        isFavorite: false 
+    });
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, type: null, item: null });
 
     const [moveModal, setMoveModal] = useState({ isOpen: false, contact: null, bulk: false });
-    const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null }); // NEW Delete Confirmation State
+    // Replaced custom deleteModal with generic confirm state for ConfirmModal
+    const [confirm, setConfirm] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
     const [selectedIds, setSelectedIds] = useState([]);
     const [interactionForm, setInteractionForm] = useState({ type: 'call', note: '', date: new Date().toISOString().split('T')[0] });
 
@@ -73,9 +105,9 @@ const Directory = () => {
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             contacts = contacts.filter(c => 
-                c.company.toLowerCase().includes(q) || 
-                c.name.toLowerCase().includes(q) ||
-                c.brand.toLowerCase().includes(q)
+                (c.proveedor || c.company || '').toLowerCase().includes(q) || 
+                (c.contacto_comercial_nombre || c.name || '').toLowerCase().includes(q) ||
+                (c.marca || c.brand || '').toLowerCase().includes(q)
             );
         }
 
@@ -112,19 +144,19 @@ const Directory = () => {
     
     // Delete Logic
     const handleDeleteClick = (contact) => {
-        setDeleteModal({ isOpen: true, contact });
+        setConfirm({
+            isOpen: true,
+            title: '¿Eliminar Contacto?',
+            message: `Vas a eliminar a ${contact.company}. Esta acción es irreversible.`,
+            onConfirm: () => {
+                actions.deleteContact(contact.id);
+                if (selectedContact?.id === contact.id) setSelectedContact(null);
+                setConfirm({ isOpen: false, title: '', message: '', onConfirm: null });
+            }
+        });
         setContextMenu({ ...contextMenu, visible: false });
     };
-
-    const confirmDelete = () => {
-        if (deleteModal.contact) {
-            actions.deleteContact(deleteModal.contact.id);
-            if (selectedContact?.id === deleteModal.contact.id) {
-                setSelectedContact(null);
-            }
-        }
-        setDeleteModal({ isOpen: false, contact: null });
-    };
+    // confirmDelete removed, logic moved to onConfirm above
 
     const handleAddInteraction = () => {
         if (!interactionForm.note) return;
@@ -153,17 +185,93 @@ const Directory = () => {
     };
 
     const openCreateModal = () => {
-        setContactForm({ id: null, groupId: providerGroups[0]?.id || '', company: '', brand: '', name: '', role: '', email: '', phone: '', website: '', buyer: '', isFavorite: false });
+        setContactForm({ 
+            id: null, 
+            groupId: providerGroups[0]?.id || '', 
+            proveedor: '', 
+            marca: '', 
+            contacto_comercial_nombre: '', 
+            contacto_comercial_email: '', 
+            contacto_comercial_cel: '',
+            contacto_mkt_nombre: '', 
+            contacto_mkt_email: '', 
+            contacto_mkt_cel: '',
+            website: '', 
+            isFavorite: false 
+        });
         setIsContactModalOpen(true);
     };
 
-    const handleSaveContact = () => {
-        if (!contactForm.company || !contactForm.name) return;
-        actions.addContact(contactForm); // Handles both Add and Update based on ID
-        if (selectedContact && selectedContact.id === contactForm.id) {
-             setSelectedContact(contactForm); // Update view if currently selected
+
+    // Navigation Handlers for Activity Tab
+    // Navigation Handlers for Activity Tab
+    const handleNewProject = () => {
+        // Open local modal instead of navigating
+        setProjectForm({ 
+            name: '', 
+            status: 'Planificación', 
+            type: 'Campaña', 
+            date: '', 
+            notes: '' 
+        });
+        setIsProjectModalOpen(true);
+    };
+
+    const handleSaveProject = async () => {
+        if (!projectForm.name) return;
+        
+        const newProject = {
+            ...projectForm,
+            // Ensure providers array has the current contact ID
+            providers: [selectedContact.id],
+            progress: 0,
+            statusColor: 'bg-gray-400'
+        };
+
+        try {
+            await actions.addProject(newProject);
+             setIsProjectModalOpen(false);
+        } catch (error) {
+            console.error("Failed to create project:", error);
+            addToast("Error al crear campaña. Verifica la base de datos.", 'error');
+        }
+    };
+
+
+    const handleOpenProject = (projectId) => {
+        navigate('/proyectos?openId=' + projectId);
+    };
+
+    const handleSaveContact = async () => {
+        try {
+        // Validation: Company name is required
+        if (!contactForm.proveedor && !contactForm.company) return; 
+        
+        // Map legacy state to new if needed
+        const payload = {
+            ...contactForm,
+            proveedor: contactForm.proveedor || contactForm.company,
+            marca: contactForm.marca || contactForm.brand
+        };
+
+        if (selectedContact && selectedContact.id === contactForm.id && selectedContact.groupId !== contactForm.groupId) {
+             // Moving Contact: Requires Delete from Old + Add to New
+             await actions.deleteContact(selectedContact.id); 
+             const newContact = await actions.addContact(payload); 
+             setSelectedContact({ ...newContact, groupTitle: providerGroups.find(g => g.id === newContact.groupId)?.title });
+        } else {
+             // Normal Add/Update
+             await actions.addContact(payload); 
+             if (selectedContact && selectedContact.id === contactForm.id) {
+                 const groupTitle = providerGroups.find(g => g.id === contactForm.groupId)?.title;
+                 setSelectedContact({ ...payload, groupTitle }); 
+             }
         }
         setIsContactModalOpen(false);
+    } catch (error) {
+        console.error("Failed to save contact:", error);
+        addToast("Error al guardar contacto. Revisa la consola.", 'error');
+    }
     };
 
     const handleAddGroup = () => {
@@ -172,6 +280,93 @@ const Directory = () => {
         setNewGroupTitle('');
         setIsGroupModalOpen(false);
         setActiveGroup(newGroup.id); // Switch directly to new group
+    };
+
+    const handleInlineCreateGroup = async () => {
+        if (!inlineGroupTitle.trim()) return;
+        const newGroup = await actions.addProviderGroup(inlineGroupTitle); // Ensure this returns the object
+        // If async, wait. If sync, it returns immediate.
+        // Assuming DataContext actions might be async or sync, safe to await if async, if sync it resolves immediately.
+        // NOTE: DataContext addProviderGroup implementation usually pushes to local state.
+        
+        // Optimistic update safety: providerGroups ref might not be updated immediately in this render cycle 
+        // if using complex state, but usually it's fast. 
+        setContactForm(prev => ({ ...prev, groupId: newGroup.id }));
+        setIsInlineCreatingGroup(false);
+        setInlineGroupTitle('');
+    };
+
+    const handleExport = () => {
+        // Headers matching spec
+        const headers = ['Grupo','Proveedor','Marca','Contacto Comercial Info','Contacto MKT Info','Email Comercial','Email MKT','Cel Comercial','Cel MKT','Website'];
+        
+        const rows = providerGroups.flatMap(g => g.contacts.map(c => [
+            g.title,
+            c.proveedor || c.company || '',
+            c.marca || c.brand || '',
+            c.contacto_comercial_nombre || c.name || '',
+            c.contacto_mkt_nombre || '',
+            c.contacto_comercial_email || c.email || '',
+            c.contacto_mkt_email || '',
+            c.contacto_comercial_cel || c.phone || '',
+            c.contacto_mkt_cel || '',
+            c.website || ''
+        ]));
+
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + headers.join(",") + "\n" 
+            + rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "directorio_proveedores_360.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const text = evt.target.result;
+            const lines = text.split('\n').filter(l => l.trim());
+            // Skip header row 0
+            
+            // Allow basic CSV parsing (NOTE: Does not handle commas inside quotes properly without library, but sufficient for simple lists)
+            for(let i=1; i<lines.length; i++) {
+                const cols = lines[i].split(',');
+                if (cols.length < 2) continue;
+                
+                // Schema: Group, Company, Brand, Comm Name, Mkt Name, Comm Email, Mkt Email, Comm Cel, Mkt Cel, Website
+                const [group, proveedor, marca, commName, mktName, commEmail, mktEmail, commCel, mktCel, web] = cols;
+                
+                // Find or Create Group
+                const targetGroup = providerGroups.find(g => g.title === group) || providerGroups[0];
+
+                const validContact = {
+                    id: null,
+                    groupId: targetGroup.id,
+                    proveedor: proveedor?.trim(),
+                    marca: marca?.trim(),
+                    contacto_comercial_nombre: commName?.trim(),
+                    contacto_comercial_email: commEmail?.trim(),
+                    contacto_comercial_cel: commCel?.trim(),
+                    contacto_mkt_nombre: mktName?.trim(),
+                    contacto_mkt_email: mktEmail?.trim(),
+                    contacto_mkt_cel: mktCel?.trim(),
+                    website: web?.trim(),
+                    isFavorite: false
+                };
+                
+                if(validContact.proveedor) actions.addContact(validContact);
+            }
+            alert('Importación completada');
+        };
+        reader.readAsText(file);
     };
 
     const toggleFavorite = (contact, e) => {
@@ -183,98 +378,72 @@ const Directory = () => {
         }
     };
 
-    const columns = [
-        {
-            header: (
-                <div className="flex justify-center">
-                    <input 
-                        type="checkbox" 
-                        checked={contacts.length > 0 && contacts.every(c => selectedIds.includes(c.id))}
-                        onChange={(e) => {
-                            if (e.target.checked) {
-                                // Select All Visible
-                                const allVisibleIds = contacts.map(c => c.id);
-                                setSelectedIds([...new Set([...selectedIds, ...allVisibleIds])]);
-                            } else {
-                                // Deselect All Visible
-                                const visibleIds = contacts.map(c => c.id);
-                                setSelectedIds(selectedIds.filter(id => !visibleIds.includes(id)));
-                            }
-                        }}
-                        className="w-4 h-4 rounded border-white/20 bg-white/5 cursor-pointer accent-[#E8A631]"
-                    />
-                </div>
-            ),
-            accessor: 'id',
-            width: '40px',
-            render: (row) => (
-                <div onClick={e => e.stopPropagation()} className="flex justify-center">
-                    <input 
-                        type="checkbox" 
-                        checked={selectedIds.includes(row.id)}
-                        onChange={(e) => {
-                            if (e.target.checked) setSelectedIds([...selectedIds, row.id]);
-                            else setSelectedIds(selectedIds.filter(id => id !== row.id));
-                        }}
-                        className="w-4 h-4 rounded border-white/20 bg-white/5 cursor-pointer accent-[#E8A631]"
-                    />
-                </div>
-            )
-        },
+    const columns = React.useMemo(() => [
         { 
-            header: 'Empresa', 
+            header: 'Empresa / Categoría', 
             accessor: 'company', 
-            width: '140px',
+            width: '240px',
             sortable: true,
             render: (row) => (
-                <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-105 ${selectedContact?.id === row.id ? 'bg-[#E8A631] text-black shadow-lg' : 'bg-white/10 text-white/70'}`}>
-                        {row.company.substring(0,1).toUpperCase()}
+                <div className="flex items-center gap-4 py-1">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg transition-transform group-hover:scale-105 border border-white/10 ${selectedContact?.id === row.id ? 'bg-[#E8A631] text-black' : 'bg-white/5 text-white/50'}`}>
+                        {row.company?.substring(0,1).toUpperCase() || '?'}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                         <p className={`text-sm font-bold truncate ${selectedContact?.id === row.id ? 'text-white' : 'text-white/90'}`}>{row.company}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-[10px] uppercase font-bold text-white/40 tracking-wider truncate max-w-[120px]">
+                                {row.groupTitle}
+                            </span>
+                            {row.isFavorite && <Star size={10} className="fill-[#E8A631] text-[#E8A631]"/>}
+                        </div>
                     </div>
                 </div>
             )
         },
         { 
-            header: 'Detalle', 
+            header: 'Contacto Principal', 
             accessor: 'name', 
-            width: '120px',
+            width: '200px',
             sortable: true,
             render: (row) => (
-                <div>
-                     <p className="text-xs text-white/60 truncate">{row.name}</p>
-                     <p className="text-[10px] text-white/30 truncate">{row.role || row.brand}</p>
+                <div className="flex justify-between items-center pr-2 group/cell">
+                    <div className="min-w-0">
+                         <p className="text-xs text-white/80 font-medium truncate">{row.name || row.contacto_comercial_nombre || 'Sin contacto'}</p>
+                         <p className="text-[10px] text-white/40 truncate">{row.email || row.contacto_comercial_email || '-'}</p>
+                    </div>
+                    {/* Inline Actions - Visible on hover or selected */}
+                    <div className={`flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${selectedContact?.id === row.id ? 'opacity-100' : ''}`}>
+                         {row.email && (
+                            <a href={`mailto:${row.email}`} onClick={e => e.stopPropagation()} className="p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors" title="Enviar Email">
+                                <Mail size={14}/>
+                            </a>
+                         )}
+                         {row.phone && (
+                            <a href={`https://wa.me/${row.phone.replace(/[^0-9]/g, '')}`} target="_blank" onClick={e => e.stopPropagation()} className="p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-green-400 transition-colors" title="WhatsApp">
+                                <Phone size={14}/>
+                            </a>
+                         )}
+                    </div>
                 </div>
             )
         },
         { 
-            header: (
-                <div className="flex justify-end pr-3">
-                    <button 
-                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                        className={`transition-all hover:scale-110 ${showFavoritesOnly ? 'text-[#E8A631] scale-110' : 'text-white/40 hover:text-[#E8A631]'}`}
-                        title={showFavoritesOnly ? "Ver Todos" : "Ver Solo Favoritos"}
-                    >
-                        <Star size={16} fill={showFavoritesOnly ? "#E8A631" : "none"} />
-                    </button>
-                </div>
-            ), 
-            accessor: 'isFavorite', 
-            width: '60px',
+            header: <div className="text-right pr-4">Estado</div>, 
+            accessor: 'status', 
+            width: '100px',
             render: (row) => (
-                <div className="flex justify-end pr-2">
+                <div className="flex justify-end pr-2 gap-2">
                      <button 
                         onClick={(e) => toggleFavorite(row, e)}
-                        className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${row.isFavorite ? 'text-[#E8A631]' : 'text-white/20 hover:text-white/50'}`}
+                        className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${row.isFavorite ? 'text-[#E8A631]' : 'text-white/10 hover:text-white/30'}`}
                      >
                         <Star size={16} className={row.isFavorite ? 'fill-[#E8A631]' : ''}/>
                      </button>
                 </div>
             )
         }
-    ];
+    ], [selectedContact, showFavoritesOnly, toggleFavorite]);
 
     return (
         <div className="h-full flex gap-6 relative" onClick={() => setContextMenu({ ...contextMenu, visible: false })}>
@@ -286,19 +455,38 @@ const Directory = () => {
                 <div className="p-5 border-b border-white/10 bg-black/10">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-white">Directorio</h2>
-                        <button onClick={openCreateModal} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors flex items-center justify-center text-white/70 hover:text-white" title="Nuevo Contacto">
-                            <UserPlus size={18} />
-                        </button>
+                        <div className="flex gap-2">
+                             {/* Import (Hidden Input + Label) */}
+                             <label className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-white/60 hover:text-white transition-colors border border-white/5 cursor-pointer flex items-center gap-2">
+                                Importar CSV
+                                <input type="file" accept=".csv" onChange={handleImport} className="hidden" />
+                             </label>
+                             <button onClick={handleExport} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-white/60 hover:text-white transition-colors border border-white/5">
+                                Exportar
+                             </button>
+                             <button onClick={openCreateModal} className="p-2 bg-[#E8A631] hover:bg-[#d69628] rounded-full transition-colors flex items-center justify-center text-black shadow-lg" title="Nuevo Contacto">
+                                <UserPlus size={18} />
+                             </button>
+                        </div>
                     </div>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-2.5 text-white/40" size={16} />
-                        <input 
-                            type="text" 
-                            placeholder="Buscar contacto..." 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-[#E8A631]"
-                        />
+                    <div className="relative flex gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-2.5 text-white/40" size={16} />
+                            <input 
+                                type="text" 
+                                placeholder="Buscar contacto..." 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-black/20 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-[#E8A631]"
+                            />
+                        </div>
+                        <button 
+                            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                            className={`p-2 rounded-xl border transition-colors ${showFavoritesOnly ? 'bg-[#E8A631]/20 border-[#E8A631] text-[#E8A631]' : 'bg-black/20 border-white/10 text-white/40 hover:text-white'}`}
+                            title="Ver Favoritos"
+                        >
+                            <Star size={20} className={showFavoritesOnly ? 'fill-[#E8A631]' : ''} />
+                        </button>
                     </div>
                 </div>
 
@@ -331,6 +519,10 @@ const Directory = () => {
                 {/* Contact List via GlassTable */}
                 <div className="flex-1 overflow-hidden">
                     <GlassTable 
+                        tableName="directory-table"
+                        enableSelection={true}
+                        selectedIds={selectedIds}
+                        onSelectionChange={setSelectedIds}
                         columns={columns}
                         data={contacts}
                         onRowClick={(contact) => setSelectedContact(contact)}
@@ -385,10 +577,32 @@ const Directory = () => {
                              >
                                 <Edit size={20} />
                              </button>
+
+                             {/* New: Create Quote & More Options */}
+                             <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 flex gap-2 relative z-10">
+                                {/* Create Quote Button */}
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Navigate to RateCard with Query Params to Open Wizard
+                                        navigate(`/rate-card?openWizard=true&clientId=${selectedContact.id}&clientName=${encodeURIComponent(selectedContact.company || selectedContact.name)}`);
+                                    }}
+                                    className="px-4 py-2 bg-[#E8A631] hover:bg-[#d69628] text-black text-xs font-bold rounded-lg flex items-center gap-2 shadow-lg hover:shadow-xl transition-all active:scale-95"
+                                >
+                                    <FileText size={14} />
+                                    Crear Cotización
+                                </button>
+                                <button 
+                                    onClick={(e) => {e.stopPropagation(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY, item: selectedContact, type: 'contact' })}}
+                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                                >
+                                    <MoreVertical size={16} />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Detail Tabs */}
-                        <div className="flex justify-center mb-6 border-b border-white/10">
+                        <div className="flex justify-center mb-6 border-b border-white/10 pt-10">
                             <button 
                                 onClick={() => setActiveDetailTab('profile')}
                                 className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeDetailTab === 'profile' ? 'border-[#E8A631] text-white' : 'border-transparent text-white/40 hover:text-white'}`}
@@ -401,9 +615,67 @@ const Directory = () => {
                             >
                                 {activeDetailTab === 'history' ? <Layers size={14} className="text-[#E8A631]"/> : <Layers size={14}/>} Historial 360
                             </button>
+                            <button 
+                                onClick={() => setActiveDetailTab('activity')}
+                                className={`px-6 py-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${activeDetailTab === 'activity' ? 'border-[#E8A631] text-white' : 'border-transparent text-white/40 hover:text-white'}`}
+                            >
+                                {activeDetailTab === 'activity' ? <Activity size={14} className="text-[#E8A631]"/> : <Activity size={14}/>} Actividad
+                            </button>
                         </div>
 
-                        {activeDetailTab === 'profile' ? (
+                        {activeDetailTab === 'activity' && (
+                            <div className="animate-in fade-in slide-in-from-right-2 duration-300 space-y-6">
+                                {/* Active Campaigns */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2"><Megaphone size={18} className="text-[#E8A631]"/> Campañas Activas</h3>
+                                        <button 
+                                        onClick={handleNewProject}
+                                        className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2"
+                                    >
+                                        <Plus size={12} /> Nueva Campaña
+                                    </button>
+                                    </div>
+                                    
+                                    {/* Mock Campaigns - Check for data or show empty state */}
+                                    {/* Using a hardcoded check for now as we don't have real backend connection for campaigns per client yet */}
+                                    {true ? ( // While no real data, show mock table OR empty state. Let's show empty state if desired or mock. User asked for tooltips if empty.
+                                     // Let's assume empty for now to show the tooltip logic requested
+                                     <div className="bg-white/5 border border-white/10 rounded-xl p-8 flex flex-col items-center text-center">
+                                         <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                                             <Megaphone size={24} className="text-white/20" />
+                                         </div>
+                                         <p className="text-white font-bold mb-1">Sin campañas activas</p>
+                                         <p className="text-xs text-white/50 max-w-[200px] mb-4">Este proveedor no está participando en ningún proyecto actual.</p>
+                                         <div className="relative group">
+                                             <span className="text-xs text-[#E8A631] underline cursor-help">¿Qué debería ver aquí?</span>
+                                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 rounded-lg bg-black/90 border border-white/20 text-[10px] text-white/80 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                 Aquí aparecerán los proyectos donde este proveedor tenga items asignados o facturas cargadas.
+                                              </div>
+                                         </div>
+                                     </div>
+                                    ) : (
+                                     <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                                        {/* Table code kept for when data exists */}
+                                     </div>
+                                    )}
+                                </div>
+
+                                {/* Budget Simulations */}
+                                <div className="space-y-4 pt-4 border-t border-white/10">
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2"><Activity size={18} className="text-blue-400"/> Presupuestos Recientes</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Empty State */}
+                                        <div className="col-span-1 md:col-span-2 bg-white/5 border border-dashed border-white/10 rounded-xl p-6 flex items-center justify-center gap-4 opacity-50 hover:opacity-100 transition-opacity">
+                                            <Activity size={20} className="text-white/40"/>
+                                            <span className="text-sm text-white/40">No hay cotizaciones recientes</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeDetailTab === 'profile' && (
                             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 {/* Quick Actions */}
                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
@@ -482,7 +754,9 @@ const Directory = () => {
                                     </div>
                                 </div>
                             </div>
-                        ) : (
+                        )}
+
+                        {activeDetailTab === 'history' && (
                             <div className="animate-in fade-in slide-in-from-right-2 duration-300 space-y-6">
                                 {/* Strategic Metrics */}
                                 <div className="grid grid-cols-2 gap-4">
@@ -572,7 +846,7 @@ const Directory = () => {
                                                 </div>
                                                 <p className="text-xs text-white/60 leading-relaxed">
                                                     {item.category === 'campaign' ? (
-                                                        <>Participación en campaña con status <span className="text-green-400">{item.status}</span></>
+                                                        <>Participación en proyecto con status <span className="text-green-400">{item.status}</span></>
                                                     ) : item.note}
                                                 </p>
                                             </div>
@@ -594,40 +868,76 @@ const Directory = () => {
                 )}
             </div>
 
-             {/* Create/Edit Contact Modal */}
-             <Modal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} title={contactForm.id ? "Editar Contacto" : "Nuevo Contacto"}>
-                 <div className="space-y-4">
-                     <select 
-                        value={contactForm.groupId} 
-                        onChange={e => setContactForm({...contactForm, groupId: e.target.value})}
-                        className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-sm text-white [&>option]:text-black focus:outline-none focus:border-[#E8A631] transition-colors`}
-                        disabled={!!contactForm.id} // Disable group move for simplicity in edit, can enable if logic handles move in DataContext
-                     >
-                        {providerGroups.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}
-                     </select>
-                     <input type="text" placeholder="Empresa / Razón Social" value={contactForm.company} onChange={e => setContactForm({...contactForm, company: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
-                     <input type="text" placeholder="Marcas" value={contactForm.brand} onChange={e => setContactForm({...contactForm, brand: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
-                     
-                     <div className="grid grid-cols-2 gap-3">
-                         <input type="text" placeholder="Nombre Contacto" value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
-                         <input type="text" placeholder="Cargo" value={contactForm.role} onChange={e => setContactForm({...contactForm, role: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
+             {/* Create/Edit Contact Modal - Strict Schema Layout */}
+             <Modal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} title={contactForm.id ? "Editar Proveedor" : "Nuevo Proveedor"}>
+                 <div className="space-y-6">
+                     <div className="bg-white/5 p-4 rounded-xl space-y-3">
+                         <h4 className="text-xs font-bold text-white/50 uppercase">Datos Generales</h4>
+                         {isInlineCreatingGroup ? (
+                             <div className="flex gap-2 animate-in fade-in slide-in-from-left-2">
+                                 <input 
+                                     type="text" 
+                                     placeholder="Nombre nueva categoría..." 
+                                     value={inlineGroupTitle} 
+                                     onChange={e => setInlineGroupTitle(e.target.value)} 
+                                     className={`flex-1 ${theme.inputBg} border border-[#E8A631] rounded-xl px-4 py-2 text-sm text-white focus:outline-none`}
+                                     autoFocus
+                                 />
+                                 <button onClick={handleInlineCreateGroup} className="p-2 bg-[#E8A631] rounded-xl text-black font-bold text-xs">Crear</button>
+                                 <button onClick={() => setIsInlineCreatingGroup(false)} className="p-2 bg-white/10 rounded-xl text-white hover:bg-white/20"><X size={14}/></button>
+                             </div>
+                         ) : (
+                             <div className="flex gap-2">
+                                <select 
+                                    value={contactForm.groupId} 
+                                    onChange={e => setContactForm({...contactForm, groupId: e.target.value})}
+                                    className={`flex-1 ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white [&>option]:text-black focus:outline-none focus:border-[#E8A631] transition-colors`}
+                                    // Disabled Removed to allow moving categories
+                                >
+                                    {providerGroups.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}
+                                </select>
+                                {!contactForm.id && (
+                                    <button 
+                                        onClick={() => setIsInlineCreatingGroup(true)}
+                                        className="px-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/30 hover:text-[#E8A631] transition-all"
+                                        title="Nueva Categoría"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                )}
+                             </div>
+                         )}
+                         <input type="text" placeholder="Proveedor / Razón Social" value={contactForm.proveedor} onChange={e => setContactForm({...contactForm, proveedor: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
+                         <input type="text" placeholder="Marca Asociada" value={contactForm.marca} onChange={e => setContactForm({...contactForm, marca: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
+                         
+                         <div className="relative">
+                            <Globe className="absolute left-3 top-2.5 text-white/30" size={14} />
+                            <input type="url" placeholder="Website (Opcional)" value={contactForm.website} onChange={e => setContactForm({...contactForm, website: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
+                         </div>
                      </div>
 
-                     <input type="email" placeholder="Email" value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
-                     
-                     <div className="grid grid-cols-2 gap-3">
-                         <input type="tel" placeholder="Teléfono" value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
-                         <input type="text" placeholder="Comprador" value={contactForm.buyer} onChange={e => setContactForm({...contactForm, buyer: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
+                     {/* Commercial Contact */}
+                     <div className="bg-blue-500/5 p-4 rounded-xl space-y-3 border border-blue-500/10">
+                         <h4 className="text-xs font-bold text-blue-400 uppercase flex items-center gap-2"><Briefcase size={12}/> Contacto Comercial</h4>
+                         <input type="text" placeholder="Nombre Completo" value={contactForm.contacto_comercial_nombre} onChange={e => setContactForm({...contactForm, contacto_comercial_nombre: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors`} />
+                         <div className="grid grid-cols-2 gap-3">
+                             <input type="email" placeholder="Email" value={contactForm.contacto_comercial_email} onChange={e => setContactForm({...contactForm, contacto_comercial_email: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors`} />
+                             <input type="tel" placeholder="Celular" value={contactForm.contacto_comercial_cel} onChange={e => setContactForm({...contactForm, contacto_comercial_cel: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors`} />
+                         </div>
                      </div>
 
-                     {/* Website Field */}
-                     <div className="relative">
-                        <Globe className="absolute left-4 top-3.5 text-white/30" size={16} />
-                        <input type="url" placeholder="https://www.ejemplo.com" value={contactForm.website} onChange={e => setContactForm({...contactForm, website: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-[#E8A631] transition-colors`} />
+                     {/* Marketing Contact */}
+                     <div className="bg-purple-500/5 p-4 rounded-xl space-y-3 border border-purple-500/10">
+                         <h4 className="text-xs font-bold text-purple-400 uppercase flex items-center gap-2"><Megaphone size={12}/> Contacto Marketing</h4>
+                         <input type="text" placeholder="Nombre Completo" value={contactForm.contacto_mkt_nombre} onChange={e => setContactForm({...contactForm, contacto_mkt_nombre: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors`} />
+                         <div className="grid grid-cols-2 gap-3">
+                             <input type="email" placeholder="Email" value={contactForm.contacto_mkt_email} onChange={e => setContactForm({...contactForm, contacto_mkt_email: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors`} />
+                             <input type="tel" placeholder="Celular" value={contactForm.contacto_mkt_cel} onChange={e => setContactForm({...contactForm, contacto_mkt_cel: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors`} />
+                         </div>
                      </div>
 
-                     <button onClick={handleSaveContact} className={`w-full ${theme.accentBg} text-black font-bold py-3 rounded-xl hover:opacity-90`}>
-                        {contactForm.id ? "Guardar Cambios" : "Guardar Contacto"}
+                     <button onClick={handleSaveContact} className={`w-full ${theme.accentBg} text-black font-bold py-3 rounded-xl hover:opacity-90 mt-2 shadow-lg`}>
+                        {contactForm.id ? "Actualizar Proveedor" : "Guardar Proveedor"}
                      </button>
                  </div>
              </Modal>
@@ -690,27 +1000,77 @@ const Directory = () => {
             </Modal>
             
             {/* Delete Confirmation Modal */}
-            <Modal isOpen={deleteModal.isOpen} onClose={() => setDeleteModal({isOpen: false, contact: null})} title="¿Eliminar Contacto?">
-                <div className="text-center space-y-4">
-                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <AlertTriangle size={32} className="text-red-500" />
-                    </div>
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal 
+                isOpen={confirm.isOpen}
+                onClose={() => setConfirm({ ...confirm, isOpen: false })}
+                onConfirm={confirm.onConfirm}
+                title={confirm.title}
+                message={confirm.message}
+            />
+            {/* PROJECT CREATION MODAL */}
+            <Modal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} title="Nueva Campaña" size="md">
+                <div className="space-y-4">
                     <div>
-                        <p className="text-white text-lg font-bold">Estas por eliminar a {deleteModal.contact?.company}</p>
-                        <p className="text-white/50 text-sm mt-1">Esta acción es irreversible y se perderá todo el historial.</p>
+                        <label className="text-xs text-white/50 block mb-1">Nombre de la Campaña</label>
+                        <input 
+                            autoFocus
+                            type="text" 
+                            placeholder="Ej. Lanzamiento Verano 2026" 
+                            value={projectForm.name} 
+                            onChange={e => setProjectForm({...projectForm, name: e.target.value})} 
+                            className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} 
+                        />
                     </div>
-                    <div className="flex gap-3 pt-2">
-                        <button 
-                            onClick={() => setDeleteModal({isOpen: false, contact: null})} 
-                            className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-bold transition-colors"
-                        >
+                
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="text-xs text-white/50 block mb-1">Estado Inicial</label>
+                            <select 
+                                value={projectForm.status} 
+                                onChange={e => setProjectForm({...projectForm, status: e.target.value})} 
+                                className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}
+                            >
+                                <option value="Planificación">Planificación</option>
+                                <option value="En Curso">En Curso</option>
+                                <option value="Pendiente">Pendiente</option>
+                            </select>
+                        </div>
+                        <div>
+                             <label className="text-xs text-white/50 block mb-1">Tipo</label>
+                             <select 
+                                value={projectForm.type} 
+                                onChange={e => setProjectForm({...projectForm, type: e.target.value})} 
+                                className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}
+                            >
+                                <option value="Campaña">Campaña</option>
+                                <option value="Ongoing">Ongoing</option>
+                                <option value="Puntual">Puntual</option>
+                                <option value="Interno">Interno</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label className="text-xs text-white/50 block mb-1">Rango de Fechas (Opcional)</label>
+                        <input 
+                            type="text" 
+                            placeholder="Ej. 10 Ene - 20 Feb" 
+                            value={projectForm.date} 
+                            onChange={e => setProjectForm({...projectForm, date: e.target.value})} 
+                            className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} 
+                        />
+                    </div>
+
+                    <div className="pt-4 flex justify-end gap-3">
+                        <button onClick={() => setIsProjectModalOpen(false)} className="px-4 py-2 rounded-xl text-sm font-bold border border-white/10 hover:bg-white/10 transition-colors text-white/60 hover:text-white">
                             Cancelar
                         </button>
                         <button 
-                            onClick={confirmDelete}
-                            className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 rounded-xl text-white font-bold transition-colors"
+                            onClick={handleSaveProject} 
+                            className={`px-6 py-2 rounded-xl text-sm font-bold text-black ${theme.accentBg} hover:opacity-90 shadow-lg`}
                         >
-                            Eliminar Definitivamente
+                            Crear Campaña
                         </button>
                     </div>
                 </div>
@@ -718,5 +1078,6 @@ const Directory = () => {
         </div>
     );
 };
+
 
 export default Directory;

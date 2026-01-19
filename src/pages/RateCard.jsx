@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
-import { Search, Plus, Trash2, Edit, Copy, MoreVertical, Layout, Mic, MapPin, ShoppingBag, Smartphone } from 'lucide-react';
+import { Search, Plus, Trash2, Edit, Copy, MoreVertical, Layout, Mic, MapPin, ShoppingBag, Smartphone, ArrowRight, X } from 'lucide-react';
 import Modal from '../components/common/Modal';
+
 import GlassTable from '../components/common/GlassTable';
 import ContextMenu from '../components/common/ContextMenu';
+import QuoteWizard from '../components/rate-card/QuoteWizard'; // New Import
 
 const RateCard = () => {
     const { theme } = useTheme();
@@ -13,20 +15,52 @@ const RateCard = () => {
     const [rateCardCategory, setRateCardCategory] = useState('Todos');
     const [rateCardSearch, setRateCardSearch] = useState('');
     const [isRateModalOpen, setIsRateModalOpen] = useState(false);
-    const [rateForm, setRateForm] = useState({ id: null, category: 'Espacios Preferenciales', item: '', specs: '', price: '', unit: '', notes: '' });
+    const [isQuoteWizardOpen, setIsQuoteWizardOpen] = useState(false); // New State
+    const [rateForm, setRateForm] = useState({ 
+        id: null, 
+        category: 'Espacios Preferenciales', 
+        subcategory: '', // New
+        item: '', 
+        specs: '', 
+        price: '', 
+        unit: '', 
+        notes: '',
+        format_size: '' // New (medida_formato)
+    });
+    const [selectedIds, setSelectedIds] = useState([]);
     
     // Context Menu State
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, item: null });
 
-    const categories = ['Todos', ...new Set(rateCardItems.map(i => i.category))];
+    const categories = ['Todos', ...new Set((rateCardItems || []).map(i => i.category))];
     
     // Filter Items
-    const filteredItems = rateCardItems.filter(item => {
+    const filteredItems = (rateCardItems || []).filter(item => {
       const matchesCategory = rateCardCategory === 'Todos' || item.category === rateCardCategory;
       const matchesSearch = item.item.toLowerCase().includes(rateCardSearch.toLowerCase()) || 
                             item.specs.toLowerCase().includes(rateCardSearch.toLowerCase());
       return matchesCategory && matchesSearch;
     });
+
+    const [initialWizardConfig, setInitialWizardConfig] = useState(null);
+
+    // Handle URL Params for connectivity (Directory -> Rate Card)
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('openWizard') === 'true') {
+            const clientName = params.get('clientName');
+            const clientId = params.get('clientId');
+            
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+            
+            setIsQuoteWizardOpen(true);
+            setInitialWizardConfig({
+                clientName: clientName || '',
+                clientId: clientId || null
+            });
+        }
+    }, [setIsQuoteWizardOpen]);
 
     const getIconForCategory = (cat) => {
       if (cat.includes('Digital')) return <Smartphone size={16} />;
@@ -47,9 +81,15 @@ const RateCard = () => {
     };
 
     const handleEdit = (item) => {
-        // Format price for display in input (from raw number to "1.000")
+        // Format price for display in input
         const formattedPrice = item.price ? new Intl.NumberFormat('es-AR').format(item.price) : '';
-        setRateForm({ ...item, price: formattedPrice });
+        setRateForm({ 
+            ...item, 
+            price: formattedPrice,
+            // Ensure new fields exist if editing old items
+            subcategory: item.subcategory || '',
+            format_size: item.format_size || '' // Map legacy if needed, or default empty
+        });
         setIsRateModalOpen(true);
     };
 
@@ -73,7 +113,17 @@ const RateCard = () => {
     };
     
     const openCreateModal = () => {
-        setRateForm({ id: null, category: 'Espacios Preferenciales', item: '', specs: '', price: '', unit: '', notes: '' });
+        setRateForm({ 
+            id: null, 
+            category: 'Punto de Venta/Off Line', // Default first option
+            subcategory: '',
+            item: '', 
+            specs: '', 
+            price: '', 
+            unit: '', 
+            notes: '',
+            format_size: ''
+        });
         setIsRateModalOpen(true);
     };
 
@@ -97,7 +147,7 @@ const RateCard = () => {
             )
         },
         { header: 'Categoría', accessor: 'category', width: '20%', className: 'hidden md:block text-white/60', sortable: true },
-        { header: 'Especificaciones', accessor: 'specs', width: '25%', className: 'text-white/60 text-xs', sortable: true },
+        { header: 'Categoría', accessor: 'category', width: '20%', className: 'hidden md:block text-white/60', sortable: true },
         { 
             header: 'Inversión', 
             accessor: 'price', 
@@ -150,6 +200,10 @@ const RateCard = () => {
         {/* Main Table View */}
         <div className="flex-1 overflow-hidden pb-6">
             <GlassTable 
+                tableName="ratecard-table"
+                enableSelection={true}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
                 columns={columns} 
                 data={filteredItems} 
                 onRowClick={(item) => handleEdit(item)} 
@@ -158,28 +212,61 @@ const RateCard = () => {
         </div>
 
         {/* Create/Edit Modal */}
-        <Modal isOpen={isRateModalOpen} onClose={() => setIsRateModalOpen(false)} title={rateForm.id ? "Editar Activación" : "Nueva Activación"}>
+        <Modal isOpen={isRateModalOpen} onClose={() => setIsRateModalOpen(false)} title={rateForm.id ? "Editar Formato" : "Nuevo Formato"}>
              <div className="space-y-4">
                  <div className="grid grid-cols-2 gap-3">
                      <div className="col-span-2">
                         <label className={`text-xs ${theme.textSecondary} ml-1`}>Nombre del Activo</label>
-                        <input type="text" value={rateForm.item} onChange={e => setRateForm({...rateForm, item: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} autoFocus />
+                        <input type="text" value={rateForm.item} onChange={e => setRateForm({...rateForm, item: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} autoFocus placeholder="Ej. Cabecera de Góndola"/>
                      </div>
-                     <div>
+                     
+                     {/* Category & Dependent Subcategory */}
+                     <div className={rateForm.category === 'Digital' ? '' : 'col-span-2'}>
                         <label className={`text-xs ${theme.textSecondary} ml-1`}>Categoría</label>
-                        <select value={rateForm.category} onChange={e => setRateForm({...rateForm, category: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text} [&>option]:text-black`}>
-                            {['Espacios Preferenciales', 'Línea de Caja', 'Señalética', 'Digital', 'Activaciones'].map(c => <option key={c} value={c}>{c}</option>)}
+                        <select 
+                            value={rateForm.category} 
+                            onChange={e => setRateForm({...rateForm, category: e.target.value, subcategory: ''})} // Reset sub on change
+                            className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text} [&>option]:text-black`}
+                        >
+                            {['Punto de Venta/Off Line', 'Digital', 'Medios', 'Producción', 'Activaciones'].map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                      </div>
-                     <div>
-                        <label className={`text-xs ${theme.textSecondary} ml-1`}>Unidad</label>
-                        <input type="text" value={rateForm.unit} onChange={e => setRateForm({...rateForm, unit: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} />
+
+                     {rateForm.category === 'Digital' && (
+                         <div>
+                            <label className={`text-xs ${theme.textSecondary} ml-1`}>Subcategoría</label>
+                            <select 
+                                value={rateForm.subcategory} 
+                                onChange={e => setRateForm({...rateForm, subcategory: e.target.value})} 
+                                className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text} [&>option]:text-black`}
+                            >
+                                <option value="" disabled>Seleccionar</option>
+                                {['Web site', 'Social media', 'Email', 'E-commerce', 'Reporting'].map(sc => <option key={sc} value={sc}>{sc}</option>)}
+                            </select>
+                         </div>
+                     )}
+
+                     <div className="col-span-2 grid grid-cols-2 gap-3">
+                        <div>
+                            <label className={`text-xs ${theme.textSecondary} ml-1`}>Medida / Formato</label>
+                            <input type="text" value={rateForm.format_size} onChange={e => setRateForm({...rateForm, format_size: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} placeholder="Ej. 1080x1080px" />
+                        </div>
+                        <div>
+                            <label className={`text-xs ${theme.textSecondary} ml-1`}>Unidad</label>
+                            <input type="text" value={rateForm.unit} onChange={e => setRateForm({...rateForm, unit: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} placeholder="Ej. Por día / Por post" />
+                        </div>
                      </div>
                  </div>
                  
-                 <div>
-                    <label className={`text-xs ${theme.textSecondary} ml-1`}>Especificaciones</label>
-                    <input type="text" value={rateForm.specs} onChange={e => setRateForm({...rateForm, specs: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} />
+                  <div>
+                    <label className={`text-xs ${theme.textSecondary} ml-1`}>Especificaciones Técnicas</label>
+                    <textarea 
+                        rows={3}
+                        value={rateForm.specs} 
+                        onChange={e => setRateForm({...rateForm, specs: e.target.value})} 
+                        className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text} resize-none`} 
+                        placeholder="Materialidad, medidas, terminación..." 
+                    />
                  </div>
 
                  <div className="grid grid-cols-2 gap-3">
@@ -192,24 +279,36 @@ const RateCard = () => {
                             placeholder="0"
                             onChange={e => {
                                 // Live Formatting: "1.000.000" as you type
-                                const rawValue = e.target.value.replace(/\D/g, '');
+                                // Fix: Handle "05" -> "5" and allow empty
+                                const rawValue = e.target.value.replace(/\D/g, ''); // Remove non-digits
                                 if (!rawValue) {
                                     setRateForm({...rateForm, price: ''});
                                     return;
                                 }
-                                const formatted = new Intl.NumberFormat('es-AR').format(rawValue);
+                                const numberValue = parseInt(rawValue, 10);
+                                const formatted = new Intl.NumberFormat('es-AR').format(numberValue);
                                 setRateForm({...rateForm, price: formatted});
                             }} 
                             className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} 
                         />
                      </div>
                      <div>
-                        <label className={`text-xs ${theme.textSecondary} ml-1`}>Notas</label>
-                        <input type="text" value={rateForm.notes} onChange={e => setRateForm({...rateForm, notes: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} />
+                         {/* Spacer or Total Calculation in future */}
                      </div>
                  </div>
+                 
+                 <div>
+                    <label className={`text-xs ${theme.textSecondary} ml-1`}>Detalle / Notas Internas</label>
+                    <textarea 
+                        rows={3}
+                        value={rateForm.notes} 
+                        onChange={e => setRateForm({...rateForm, notes: e.target.value})} 
+                        className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text} resize-none`}
+                        placeholder="Información adicional para el equipo..."
+                    />
+                 </div>
 
-                 <button onClick={handleSave} className={`w-full ${theme.accentBg} text-black font-bold py-3 height-12 rounded-xl hover:opacity-90 mt-2 shadow-lg shadow-orange-900/10`}>
+                 <button onClick={handleSave} className={`w-full ${theme.accentBg} text-black font-bold py-3 h-12 rounded-xl hover:opacity-90 mt-2 shadow-lg shadow-orange-900/10`}>
                     {rateForm.id ? "Guardar Cambios" : "Crear Activo"}
                  </button>
              </div>
@@ -227,6 +326,51 @@ const RateCard = () => {
                 ]}
             />
         )}
+
+        {/* Floating Footer for Selection */}
+        {selectedIds.length > 0 && (
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-[#0a1f16] border border-[#4ade80]/30 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 z-40 animate-in slide-in-from-bottom-4 duration-300">
+                <div className="flex items-center gap-2">
+                    <div className="bg-[#4ade80] text-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">
+                        {selectedIds.length}
+                    </div>
+                    <span className="text-white text-sm font-medium">Items seleccionados</span>
+                </div>
+                
+                <div className="h-4 w-[1px] bg-white/20"></div>
+
+                <div className="text-white text-sm">
+                    <span className="text-white/50 mr-2">Est. Total:</span>
+                    <span className="font-bold text-[#4ade80]">
+                         $ {Number(selectedIds.reduce((acc, id) => {
+                             const item = rateCardItems.find(i => i.id === id);
+                             // Clean price just in case
+                             const price = item ? (typeof item.price === 'string' ? parseFloat(item.price.replace(/\./g, '')) : item.price) : 0;
+                             return acc + (price || 0);
+                         }, 0)).toLocaleString('es-AR')}
+                    </span>
+                </div>
+
+                <button 
+                    onClick={() => setIsQuoteWizardOpen(true)}
+                    className="bg-[#4ade80] hover:bg-[#4ade80]/90 text-black px-4 py-1.5 rounded-full text-sm font-bold transition-colors flex items-center gap-2"
+                >
+                    Crear Cotización <ArrowRight size={14} />
+                </button>
+
+                <button onClick={() => setSelectedIds([])} className="text-white/40 hover:text-white transition-colors">
+                    <X size={18} />
+                </button>
+            </div>
+        )}
+
+        {/* Quote Wizard Modal */}
+        <QuoteWizard
+            isOpen={isQuoteWizardOpen}
+            onClose={() => { setIsQuoteWizardOpen(false); setInitialWizardConfig(null); }}
+            selectedItems={rateCardItems.filter(i => selectedIds.includes(i.id))}
+            initialConfig={initialWizardConfig}
+        />
 
       </div>
     );

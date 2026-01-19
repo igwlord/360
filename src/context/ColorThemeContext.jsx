@@ -23,7 +23,12 @@ const DEFAULT_CATEGORY_COLORS = {
     marketing: 'blue',
     deadline: 'red',
     meeting: 'green',
-    reminder: 'yellow'
+    reminder: 'yellow',
+    holiday: 'red',
+    // New Project Types
+    ongoing: 'teal',
+    puntual: 'orange',
+    interno: 'gray'
 };
 
 export const ColorThemeProvider = ({ children }) => {

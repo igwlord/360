@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
-import { Bell, Shield, Palette, Save, Moon, Sun, Smartphone, Mail, AlertTriangle, Monitor, CheckCircle, Clock, ChevronDown, Upload } from 'lucide-react';
+import { Bell, Shield, Palette, Save, Moon, Sun, Smartphone, Mail, AlertTriangle, Monitor, CheckCircle, Clock, ChevronDown, Upload, Calendar } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useColorTheme } from '../context/ColorThemeContext';
 
 const Settings = () => {
     const { theme, setTheme, currentThemeKey } = useTheme();
-    const { actions, notificationSettings, setNotificationSettings, exportData, importData } = useData();
+    const { notificationSettings, setNotificationSettings, exportData, importData } = useData();
     const { showToast: addToast } = useToast(); // Renamed to addToast as per instruction
-    const { categoryColors, updateCategoryColor, availableColors, getCategoryStyle } = useColorTheme();
 
     // Backup Logic
     const fileInputRef = React.useRef(null);
@@ -25,46 +24,15 @@ const Settings = () => {
         e.target.value = null;
     };
 
-    // Notification State
-    const [notifications, setNotifications] = useState({
-        channels: {
-            email: true,
-            inApp: true,
-            push: false
-        },
-        thresholds: {
-            budgetPercent: 90,
-            deadlineDays: 3,
-            startWarningHours: 24
-        },
-        types: {
-            approvals: true,
-            budget: true,
-            dates: true
-        }
-    });
-
-    const handleSave = () => {
-        // Here we would persist to backend/localStorage
-        addToast('Configuración guardada correctamente', 'success');
-    };
-
     const toggleChannel = (key) => {
-        setNotifications(prev => ({
+        setNotificationSettings(prev => ({
             ...prev,
             channels: { ...prev.channels, [key]: !prev.channels[key] }
         }));
     };
 
-    const toggleType = (key) => {
-        setNotifications(prev => ({
-            ...prev,
-            types: { ...prev.types, [key]: !prev.types[key] }
-        }));
-    };
-
     const updateThreshold = (key, value) => {
-        setNotifications(prev => ({
+         setNotificationSettings(prev => ({
             ...prev,
             thresholds: { ...prev.thresholds, [key]: Number(value) }
         }));
@@ -115,7 +83,7 @@ const Settings = () => {
                     </h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ColorPicker category="campaign" label="Campañas" />
+                        <ColorPicker category="campaign" label="Proyectos" />
                         <ColorPicker category="marketing" label="Marketing / Efemérides" />
                         <ColorPicker category="deadline" label="Deadlines (Urgente)" />
                         <ColorPicker category="meeting" label="Reuniones" />
@@ -154,7 +122,7 @@ const Settings = () => {
                                             <p className="text-xs text-white/40">Avisos emergentes en pantalla</p>
                                         </div>
                                     </div>
-                                    <Toggle checked={notifications.channels.inApp} onChange={() => toggleChannel('inApp')} theme={theme} />
+                                    <Toggle checked={notificationSettings?.channels?.inApp} onChange={() => toggleChannel('inApp')} theme={theme} />
                                 </div>
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5">
                                     <div className="flex items-center gap-3">
@@ -164,7 +132,7 @@ const Settings = () => {
                                             <p className="text-xs text-white/40">Notificaciones nativas</p>
                                         </div>
                                     </div>
-                                    <Toggle checked={notifications.channels.push} onChange={() => toggleChannel('push')} theme={theme} />
+                                    <Toggle checked={notificationSettings?.channels?.push} onChange={() => toggleChannel('push')} theme={theme} />
                                 </div>
                             </div>
                         </div>
@@ -176,11 +144,11 @@ const Settings = () => {
                                 <div>
                                     <div className="flex justify-between mb-1">
                                         <span className={`text-sm ${theme.text} flex items-center gap-2`}><AlertTriangle size={14} className="text-yellow-500"/> Alerta de Presupuesto</span>
-                                        <span className={`text-xs font-mono font-bold ${theme.accent}`}>{notifications.thresholds.budgetPercent}%</span>
+                                        <span className={`text-xs font-mono font-bold ${theme.accent}`}>{notificationSettings?.thresholds?.budgetPercent}%</span>
                                     </div>
                                     <input 
                                         type="range" min="50" max="100" step="5"
-                                        value={notifications.thresholds.budgetPercent}
+                                        value={notificationSettings?.thresholds?.budgetPercent || 90}
                                         onChange={(e) => updateThreshold('budgetPercent', e.target.value)}
                                         className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
                                     />
@@ -192,16 +160,25 @@ const Settings = () => {
                                         <label className={`text-xs ${theme.textSecondary} block mb-1 flex items-center gap-1`}><Clock size={12}/> Aviso Deadline (Días)</label>
                                         <input 
                                             type="number" min="1" max="30"
-                                            value={notifications.thresholds.deadlineDays}
-                                            onChange={(e) => updateThreshold('deadlineDays', e.target.value)}
                                             className={`w-full ${theme.inputBg} border border-white/10 rounded-lg px-2 py-1 text-sm ${theme.text} text-center`}
                                         />
                                     </div>
                                     <div className="flex-1">
+                                        <label className={`text-xs ${theme.textSecondary} block mb-1 flex items-center gap-1`}><Calendar size={12}/> Aviso Efemérides</label>
+                                        <input 
+                                            type="number" min="1" max="90"
+                                            value={notificationSettings?.thresholds?.ephemerisDays || 60}
+                                            onChange={(e) => updateThreshold('ephemerisDays', e.target.value)}
+                                            className={`w-full ${theme.inputBg} border border-white/10 rounded-lg px-2 py-1 text-sm ${theme.text} text-center`}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
                                         <label className={`text-xs ${theme.textSecondary} block mb-1 flex items-center gap-1`}><CheckCircle size={12}/> Aviso Inicio (Horas)</label>
                                         <input 
                                             type="number" min="1" max="48"
-                                            value={notifications.thresholds.startWarningHours}
+                                            value={notificationSettings?.thresholds?.startWarningHours || 24}
                                             onChange={(e) => updateThreshold('startWarningHours', e.target.value)}
                                             className={`w-full ${theme.inputBg} border border-white/10 rounded-lg px-2 py-1 text-sm ${theme.text} text-center`}
                                         />

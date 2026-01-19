@@ -114,7 +114,7 @@ export const generateAndPrintReport = (reportType, config, data) => {
                         <div class="kpi-val">$${(totalBudget/1000000).toFixed(2)}M</div>
                     </div>
                     <div class="kpi-card" style="border-color: #22c55e">
-                        <div class="kpi-label">Campañas Activas</div>
+                        <div class="kpi-label">Proyectos Activos</div>
                         <div class="kpi-val">${activeCount}</div>
                     </div>
                     <div class="kpi-card" style="border-color: #3b82f6">
@@ -122,7 +122,7 @@ export const generateAndPrintReport = (reportType, config, data) => {
                         <div class="kpi-val">${topBrands[0]?.label || '-'}</div>
                     </div>
                     <div class="kpi-card" style="border-color: #a855f7">
-                        <div class="kpi-label">Total Campañas</div>
+                        <div class="kpi-label">Total Proyectos</div>
                         <div class="kpi-val">${data.length}</div>
                     </div>
                 </div>

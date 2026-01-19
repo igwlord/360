@@ -16,7 +16,7 @@ const Help = () => {
         { id: 'intro', label: 'Introducción', icon: BookOpen },
         { id: 'dashboard', label: 'Dashboard', icon: Layout },
         { id: 'calendar', label: 'Calendario', icon: Calendar },
-        { id: 'campaigns', label: 'Campañas', icon: Megaphone },
+        { id: 'projects', label: 'Proyectos', icon: Megaphone },
         { id: 'directory', label: 'Directorio', icon: Users },
         { id: 'ratecard', label: 'Tarifario', icon: ShoppingBag },
         { id: 'reports', label: 'Reportes', icon: FileText },
@@ -150,7 +150,7 @@ const Help = () => {
                         <Section title="Todo en un solo lugar">
                             <p>El calendario fusiona tres fuentes de datos:</p>
                             <ul className="list-disc list-inside mt-2 space-y-1 text-white/70 ml-4">
-                                <li><strong>Campañas:</strong> Las fechas de inicio de tus campañas activas (Color Azul/Marca).</li>
+                                <li><strong>Proyectos:</strong> Las fechas de inicio de tus proyectos activos (Color Azul/Marca).</li>
                                 <li><strong>Eventos de Marketing:</strong> Hitos globales como "Cyber Monday" o "Navidad" (Color Naranja).</li>
                                 <li><strong>Recordatorios Personales:</strong> Notas que agregues manualmente (Color Verde/Violeta).</li>
                             </ul>
@@ -171,9 +171,9 @@ const Help = () => {
                     </ModuleGuide>
                 )}
 
-                 {/* CAMPAIGNS */}
-                 {activeSection === 'campaigns' && (
-                    <ModuleGuide title="Gestión de Campañas" icon={Megaphone}>
+                 {/* CAMPAIGNS / PROJECTS */}
+                 {activeSection === 'projects' && (
+                    <ModuleGuide title="Gestión de Proyectos" icon={Megaphone}>
                         <Section title="El Ciclo de Vida">
                             <p>Una campaña en 360° Hub no es solo un nombre en una lista. Es un contenedor vivo de tus finanzas.</p>
                             
@@ -240,7 +240,7 @@ const Help = () => {
                         <Section title="Funciones Avanzadas">
                             <ul className="list-disc list-inside mt-2 space-y-1 text-white/70 ml-4">
                                 <li><strong>Drag & Drop:</strong> (Próximamente) Mover contactos entre grupos.</li>
-                                <li><strong>Mover Contacto:</strong> Usa el menú de 3 puntos en una tarjeta > "Mover a..." para cambiarlo de categoría.</li>
+                                 <li><strong>Mover Contacto:</strong> Usa el menú de 3 puntos en una tarjeta &gt; "Mover a..." para cambiarlo de categoría.</li>
                                 <li><strong>Favoritos:</strong> Marca con la estrella ⭐ a tus proveedores top para que aparezcan primero.</li>
                             </ul>
                         </Section>
@@ -249,14 +249,38 @@ const Help = () => {
 
                 {/* RATE CARD */}
                 {activeSection === 'ratecard' && (
-                    <ModuleGuide title="Tarifario / Marketplace" icon={ShoppingBag}>
+                    <ModuleGuide title="Tarifario & Cotizador" icon={ShoppingBag}>
                         <Section title="Control de Costos">
-                            <p>Este módulo actúa como tu base de datos de precios de referencia. Es útil para negociaciones y estimaciones rápidas.</p>
+                            <p>Este módulo es tu base de datos maestra de precios. Sirve como referencia para negociaciones y como motor para el <strong>Cotizador Inteligente</strong>.</p>
                         </Section>
                         
-                        <Section title="Categorías">
-                            <p>Puedes listar servicios por categorías (ej. "Influencers", "Vía Pública", "Digital"). Al crear una campaña, podrás consultar estos valores (próxima integración) para armar presupuestos más rápido.</p>
+                        <Section title="Nuevo: Generador de Presupuestos (Cotizador)">
+                            <p>Hemos integrado una herramienta potente para crear cotizaciones formales en segundos. Ya no necesitas Excel externos.</p>
+                            
+                            <StepList steps={[
+                                { title: '1. Selección', description: 'Selecciona uno o más items de la tabla tarifaria usando las casillas a la izquierda.' },
+                                { title: '2. Wizard', description: 'Haz clic en el botón flotante "Crear Cotización" que aparece abajo.' },
+                                { title: '3. Configuración', description: 'Asocia la cotización a un Cliente y Proyecto existente (o crea uno nuevo ahí mismo).' },
+                                { title: '4. Ajuste Fino', description: 'En el paso 2, ajusta cantidades, días y aplica descuentos específicos por línea.' },
+                                { title: '5. Versiones', description: '¿El cliente quiere opciones? Crea la "Opción 1" y luego clónala para hacer una "Opción 2" más económica.' }
+                            ]} />
                         </Section>
+
+                        <Section title="Exportación PDF">
+                            <p>Al finalizar, obtendrás un PDF con diseño profesional listo para enviar. Puedes elegir imprimir una sola versión o una comparativa de todas las opciones.</p>
+                        </Section>
+
+                        <Exercise 
+                            title="Tu primera Profoma" 
+                            difficulty="Fácil"
+                            steps={[
+                                "Ve al Tarifario y selecciona 3 items al azar.",
+                                "Abre el Cotizador con el botón verde flotante.",
+                                "Asigna un cliente ficticio (ej. 'Coca Cola').",
+                                "En el paso 2, cambia la cantidad de un item a 5.",
+                                "Ve al paso 3 e imprime el PDF."
+                            ]}
+                        />
                     </ModuleGuide>
                 )}
 
@@ -271,7 +295,7 @@ const Help = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <div className="p-4 bg-white/5 rounded-lg">
                                     <h4 className="font-bold text-white mb-1">Ejecutivo (One-Pager)</h4>
-                                    <p className="text-xs text-white/60">Resumen de alto nivel. Solo KPIs macro y Top 3 campañas. Ideal para C-Level.</p>
+                                    <p className="text-xs text-white/60">Resumen de alto nivel. Solo KPIs macro y Top 3 proyectos. Ideal para C-Level.</p>
                                 </div>
                                 <div className="p-4 bg-white/5 rounded-lg">
                                     <h4 className="font-bold text-white mb-1">Detallado (Mensual/Q)</h4>
@@ -317,7 +341,7 @@ const Help = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <ShortcutKey keys={['H']} label="Ir al Home (Dashboard)" />
-                            <ShortcutKey keys={['C']} label="Ir a Campañas" />
+                            <ShortcutKey keys={['P']} label="Ir a Proyectos" />
                             <ShortcutKey keys={['A']} label="Ir al Calendario (Agenda)" />
                             <ShortcutKey keys={['D']} label="Ir al Directorio" />
                             <ShortcutKey keys={['R']} label="Ir a Reportes" />

@@ -6,6 +6,7 @@ import { useRoiCalculator } from '../hooks/useRoiCalculator';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { DollarSign, TrendingUp, Users, Settings, Star, Plus, Sliders, Filter, Eye, Briefcase, Activity, ArrowDownRight, ArrowUpRight, Mail, Phone, Trash2, Printer, X, ChevronDown, ChevronUp, PieChart, FileText, Circle, Clock } from 'lucide-react';
 import { DonutChart, FilterPill, VisibilityToggle } from '../components/dashboard/Widgets';
+import ObjectivesWidget from '../components/dashboard/ObjectivesWidget';
 import Modal from '../components/common/Modal';
 import Tooltip from '../components/common/Tooltip';
 import { useNavigate } from 'react-router-dom';
@@ -37,16 +38,23 @@ const Dashboard = () => {
 
   // Local State for Dashboard UI
   // Local State
+  // Dashboard Local State
   const [viewMode, setViewMode] = useState('strategic');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [campaignFilter, setCampaignFilter] = useState('Todos'); 
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [selectedPartner, setSelectedPartner] = useState(null);
-  // const [taskView, setTaskView] = useState('pending'); // Removed unused stateategy & Reports Logic
+  
+  // Adaptive Panel State
+  const [detailTab, setDetailTab] = useState('suppliers'); // 'suppliers' | 'tasks' | 'alerts'
 
-  // NEW: Strategy & Reports Logic
+  // NEW: Date Filter State
+  const [dateFilter, setDateFilter] = useState({ year: 2026, month: 'All' });
+  const months = ['All', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+  // Strategy & Reports Logic
   const [isRoiExpanded, setIsRoiExpanded] = useState(false);
-  const metrics = useRoiCalculator();
+  const metrics = useRoiCalculator(); // NOW USES REAL DATA from DataContext
   const [favoriteReportIds, setFavoriteReportIds] = useLocalStorage('fav-reports', ['exec']);
   const [isFavReportsModalOpen, setIsFavReportsModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -59,7 +67,24 @@ const Dashboard = () => {
   ];
 
   // Computed Data
-  const filteredCampaigns = campaignFilter === 'Todos' ? campaigns : campaigns.filter(c => c.status === campaignFilter);
+  const filteredCampaigns = campaigns.filter(c => {
+      // 1. Status Filter
+      if (campaignFilter !== 'Todos' && c.status !== campaignFilter) return false;
+      
+      // 2. Date Filter (Simple string check as dates are "10 Ene - 20 Feb")
+      // If "All", pass. If specific month, check if string includes it. 
+      // NOTE: Real implementation would parse dates properly.
+      if (dateFilter.month !== 'All') {
+          // Normalize: "Ene" matches "Ene" in string
+          if (!c.date?.toLowerCase().includes(dateFilter.month.toLowerCase())) return false;
+      }
+      
+      // Year check - weak check on string if it contains 2026 etc if present? 
+      // Assuming current data implies current year unless specified.
+      // For now, let's assume all data is current FY.
+      
+      return true;
+  });
   
   // Dashboard Partners (Top 5 Favorites)
   const dashboardPartners = providerGroups
@@ -72,7 +97,7 @@ const Dashboard = () => {
       {/* Header */}
       <header className="mb-6 flex flex-col md:flex-row justify-between items-end gap-4 relative z-30">
         <div>
-          <h1 className={`text-3xl font-bold ${theme.text} drop-shadow-sm tracking-tight`}>Dashboard 2026</h1>
+          <h1 className={`text-2xl md:text-3xl font-bold ${theme.text} drop-shadow-sm tracking-tight`}>Dashboard 2026</h1>
           <p className={`${theme.textSecondary} text-sm mt-1`}>Centro de Comando • {viewMode === 'strategic' ? 'Vista Estratégica' : 'Vista Operativa'}</p>
         </div>
         
@@ -99,9 +124,8 @@ const Dashboard = () => {
                 </button>
                 {isFilterMenuOpen && (
                     <div className={`absolute right-0 top-full mt-2 w-64 ${theme.cardBg} backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 animate-in fade-in slide-in-from-top-2 z-50`}>
-                        {viewMode === 'strategic' && (
                             <div className="mb-4 text-left">
-                                <h4 className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} mb-2 font-bold flex items-center gap-1`}><Filter size={10}/> Estado Campañas (KPIs)</h4>
+                                <h4 className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} mb-2 font-bold flex items-center gap-1`}><Filter size={10}/> Estado Proyectos (KPIs)</h4>
                                 <div className="space-y-1">
                                     <FilterPill label="Todas" active={campaignFilter === 'Todos'} onClick={() => setCampaignFilter('Todos')} />
                                     <FilterPill label="En Curso" active={campaignFilter === 'En Curso'} onClick={() => setCampaignFilter('En Curso')} />
@@ -109,6 +133,28 @@ const Dashboard = () => {
                                 </div>
                             </div>
                         )}
+                        
+                        {/* NEW: Date Filters */}
+                        <div className="mb-4 text-left border-t border-white/10 pt-4">
+                             <h4 className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} mb-2 font-bold flex items-center gap-1`}><Clock size={10}/> Periodo (Año/Mes)</h4>
+                             <div className="grid grid-cols-2 gap-2 mb-2">
+                                <select 
+                                    value={dateFilter.year}
+                                    onChange={(e) => setDateFilter({...dateFilter, year: Number(e.target.value)})}
+                                    className="bg-white/5 border border-white/10 rounded-lg text-xs text-white p-1 focus:outline-none focus:border-[#E8A631]"
+                                >
+                                    <option value={2026}>2026</option>
+                                    <option value={2025}>2025</option>
+                                </select>
+                                <select 
+                                    value={dateFilter.month}
+                                    onChange={(e) => setDateFilter({...dateFilter, month: e.target.value})}
+                                    className="bg-white/5 border border-white/10 rounded-lg text-xs text-white p-1 focus:outline-none focus:border-[#E8A631] [&>option]:text-black"
+                                >
+                                    {months.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                             </div>
+                        </div>
                         <div className="text-left">
                             <h4 className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} mb-2 font-bold flex items-center gap-1`}><Eye size={10}/> Visualización</h4>
                             <div className="space-y-2">
@@ -143,7 +189,7 @@ const Dashboard = () => {
                             {isRoiExpanded ? <ChevronUp size={20} className="text-white/50" /> : <ChevronDown size={20} className="text-white/50" />}
                         </div>
                         <p className={`text-sm ${theme.textSecondary}`}>
-                            {isRoiExpanded ? 'Análisis detallado de rentabilidad por campaña' : 'Vista general de ejecución y presupuesto'}
+                            {isRoiExpanded ? 'Análisis detallado de rentabilidad por proyecto' : 'Vista general de ejecución y presupuesto'}
                         </p>
                     </div>
                     <div className={`p-3 rounded-2xl bg-white/10 ${theme.accent}`}><DollarSign size={24}/></div>
@@ -158,7 +204,7 @@ const Dashboard = () => {
                         <div className="flex justify-between items-end border-b border-white/10 pb-4">
                             <div>
                                 <p className={`text-xs ${theme.textSecondary} uppercase tracking-wider font-bold mb-1`}>Ejecutado Global</p>
-                                <p className={`text-4xl font-bold ${theme.text} tracking-tighter`}>
+                                <p className={`text-2xl md:text-4xl font-bold ${theme.text} tracking-tighter`}>
                                     ${(metrics.global.budgetExecuted / 1000000).toFixed(2)}M
                                 </p>
                             </div>
@@ -202,12 +248,12 @@ const Dashboard = () => {
                         </div>
 
                         {/* Profitability Table */}
-                        <h4 className="text-xs font-bold uppercase text-white/40 mb-3 flex items-center gap-2"><TrendingUp size={12}/> Rentabilidad por Campaña</h4>
+                        <h4 className="text-xs font-bold uppercase text-white/40 mb-3 flex items-center gap-2"><TrendingUp size={12}/> Rentabilidad por Proyecto</h4>
                         <div className="overflow-hidden rounded-xl border border-white/10">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-white/5 text-white/40 uppercase text-[10px]">
                                     <tr>
-                                        <th className="p-3">Campaña</th>
+                                        <th className="p-3">Proyecto</th>
                                         <th className="p-3 text-right">Inversión</th>
                                         <th className="p-3 text-right">Retorno (Est.)</th>
                                         <th className="p-3 text-right">ROI</th>
@@ -252,11 +298,11 @@ const Dashboard = () => {
                 {/* Campaigns Quick Stat */}
                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-6 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer group`} onClick={() => navigate('/campaigns')}>
                      <div className="flex justify-between items-start mb-2">
-                         <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider cursor-help`}>Campañas Activas</h3>
+                         <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider cursor-help`}>Proyectos Activos</h3>
                          <div className="p-2 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors"><Briefcase size={16} className="text-white"/></div>
                      </div>
                     <div className="flex items-end justify-between">
-                        <span className={`text-4xl font-bold ${theme.text}`}>{filteredCampaigns.filter(c => c.status === 'En Curso').length}</span>
+                        <span className={`text-3xl md:text-4xl font-bold ${theme.text}`}>{filteredCampaigns.filter(c => c.status === 'En Curso').length}</span>
                         <div className="text-right">
                            <span className="text-xs text-green-400 font-bold block mb-1">En curso</span>
                            <div className="flex gap-1">
@@ -266,13 +312,16 @@ const Dashboard = () => {
                     </div>
                 </div>
 
+                {/* Objectives Widget - NEW */}
+                <ObjectivesWidget />
+
                 {/* Proveedores Quick Stat */}
                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-6 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer group`} onClick={() => navigate('/directory')}>
                    <div className="flex justify-between items-start mb-2">
                        <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider`}>Proveedores</h3>
                        <div className="p-2 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors"><Users size={16} className="text-white"/></div>
                    </div>
-                   <span className={`text-4xl font-bold ${theme.text}`}>{dashboardPartners.length}</span>
+                   <span className={`text-3xl md:text-4xl font-bold ${theme.text}`}>{dashboardPartners.length}</span>
                 </div>
                 
                  {/* DYNAMIC REPORTS WIDGET - NEW */}
@@ -348,65 +397,97 @@ const Dashboard = () => {
             {/* Partners & Tasks & New Campaign - Compacted */}
             <div className="md:col-span-2 flex flex-col gap-6 h-[calc(100vh-200px)]">
                 
-                {/* Row 1: Top Proveedores */}
-                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex-[2] flex flex-col overflow-hidden`}>
-                    <h2 className={`text-sm font-bold ${theme.text} mb-3 flex items-center gap-2 uppercase tracking-wider`}><Users size={16} className={theme.accent}/> Top Proveedores</h2>
-                    <div className="grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
-                        {dashboardPartners.map(p => (
-                            <div key={p.id} className="flex items-center gap-3 p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-white/10" onClick={() => setSelectedPartner(p)}>
-                                <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center text-xs font-bold ${theme.accent}`}>{p.company.charAt(0)}</div>
-                                <div className="overflow-hidden min-w-0">
-                                     <p className={`text-xs font-bold truncate ${theme.text}`}>{p.company}</p>
-                                     <p className="text-[10px] text-white/40 truncate">Proveedor Clave</p>
-                                </div>
+                {/* ADAPTIVE DETAIL PANEL */}
+                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex-[2] flex flex-col overflow-hidden relative`}>
+                    
+                    {/* Tabs Header */}
+                    <div className="flex items-center gap-4 mb-4 border-b border-white/10 pb-2">
+                        <button 
+                            onClick={() => setDetailTab('suppliers')}
+                            className={`text-xs font-bold uppercase tracking-wider pb-1 transition-colors ${detailTab === 'suppliers' ? `text-white border-b-2 border-[${theme.accent}]` : 'text-white/40 hover:text-white'}`}
+                        >
+                            <span className="flex items-center gap-2"><Users size={14}/> Proveedores</span>
+                        </button>
+                        <button 
+                            onClick={() => setDetailTab('tasks')}
+                            className={`text-xs font-bold uppercase tracking-wider pb-1 transition-colors ${detailTab === 'tasks' ? `text-white border-b-2 border-[${theme.accent}]` : 'text-white/40 hover:text-white'}`}
+                        >
+                            <span className="flex items-center gap-2"><Briefcase size={14}/> Mis Tareas</span>
+                        </button>
+                         {/* Future tabs can go here */}
+                    </div>
+
+                    {/* Content Area */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                        
+                        {/* 1. Suppliers Tab */}
+                        {detailTab === 'suppliers' && (
+                            <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
+                                {dashboardPartners.length > 0 ? dashboardPartners.map(p => (
+                                    <div key={p.id} className="flex items-center gap-3 p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-white/10 group" onClick={() => setSelectedPartner(p)}>
+                                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center text-xs font-bold ${theme.accent} group-hover:scale-110 transition-transform`}>{p.company.charAt(0)}</div>
+                                        <div className="overflow-hidden min-w-0">
+                                             <p className={`text-xs font-bold truncate ${theme.text}`}>{p.company}</p>
+                                             {/* Dynamic Pill based on status/favorite */}
+                                             <p className="text-[10px] text-white/40 truncate flex items-center gap-1">
+                                                 {p.isFavorite && <Star size={8} className="text-yellow-400 fill-yellow-400"/>} Socio Clave
+                                             </p>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="col-span-2 text-center text-white/30 text-xs py-10">No hay proveedores marcados como favoritos.</div>
+                                )}
                             </div>
-                        ))}
+                        )}
+
+                        {/* 2. Tasks Tab */}
+                        {detailTab === 'tasks' && (
+                            <div className="space-y-2 animate-in fade-in duration-300">
+                                {tasks.filter(t => !t.done).length > 0 ? tasks.filter(t => !t.done).slice(0, 8).map(t => (
+                                    <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
+                                         <div 
+                                            onClick={() => actions.toggleTask(t.id)}
+                                            className="w-5 h-5 rounded-full border border-white/30 flex items-center justify-center cursor-pointer hover:border-green-400 transition-colors group-hover:bg-green-500/10"
+                                         >
+                                            <div className="w-2.5 h-2.5 rounded-full bg-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                         </div>
+                                         <div className="flex-1">
+                                             <p className="text-sm font-medium text-white">{t.text}</p>
+                                             {t.status === 'in_progress' && <span className="text-[10px] bg-[#E8A631]/10 text-[#E8A631] px-1.5 rounded uppercase font-bold">En Curso</span>}
+                                         </div>
+                                    </div>
+                                )) : (
+                                    <div className="text-center text-white/30 text-xs py-10">¡Todo al día! No tienes tareas pendientes.</div>
+                                )}
+                                <button onClick={() => setIsTaskModalOpen(true)} className="w-full py-2 text-xs font-bold text-white/40 hover:text-white border border-dashed border-white/10 rounded-xl hover:bg-white/5 transition-colors mt-2">
+                                    + Ver Todas / Agregar
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Row 2: Tasks & Action */}
-                <div className="flex-1 grid grid-cols-2 gap-6 min-h-0">
-                     {/* Task Command Center Widget */}
+                {/* Row 2: Action Buttons */}
+                <div className="flex-none grid grid-cols-2 gap-4 h-32">
+                     {/* Quick Task Add */}
                      <div 
-                        onClick={() => setIsTaskModalOpen(true)}
-                        className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-6 flex flex-col justify-between overflow-hidden relative group cursor-pointer hover:border-white/20 transition-all`}
+                        onClick={() => {
+                            const text = prompt("Nueva Tarea Rápida:"); // Keeping prompt for quick input or replace with modal logic
+                            if(text) actions.addTask(text);
+                        }}
+                        className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex flex-col justify-center items-center cursor-pointer hover:bg-white/5 group transition-all`}
                      >
-                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Briefcase size={80} />
+                        <div className="p-3 bg-white/5 rounded-full group-hover:bg-white/10 mb-2 transition-colors">
+                            <Plus size={20} className="text-white"/>
                         </div>
-                        
-                        <div>
-                            <h2 className={`text-sm font-bold ${theme.text} mb-1 flex items-center gap-2 uppercase tracking-wider`}>
-                                <Briefcase size={16} className={theme.accent}/> Mis Tareas
-                            </h2>
-                            <p className="text-[10px] text-white/40">Prioridades & Roadmap</p>
-                        </div>
-
-                        <div className="mt-4">
-                            <p className="text-4xl font-bold text-white tracking-tighter">
-                                {tasks.filter(t => !t.done).length}
-                            </p>
-                            <div className="flex gap-2 mt-2">
-                                <span className="text-xs bg-white/10 px-2 py-0.5 rounded text-white/50">
-                                    {tasks.filter(t => t.status === 'in_progress').length} En Curso
-                                </span>
-                                <span className="text-xs bg-red-500/10 text-red-400 px-2 py-0.5 rounded border border-red-500/20">
-                                    Top Priority
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#E8A631] group-hover:underline">
-                            <span>Abrir Command Center</span> <ArrowUpRight size={12}/>
-                        </div>
+                        <span className="font-bold text-white text-xs uppercase tracking-wider">Tarea Rápida</span>
                      </div>
 
-                     {/* New Campaign Button - Compact */}
+                     {/* New Project */}
                      <div onClick={() => navigate('/campaigns', { state: { openModal: true } })} className={`group relative overflow-hidden ${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/5 transition-all`}>
                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 ${theme.accentBg} transition-opacity duration-500`}></div>
-                        <div className={`w-10 h-10 rounded-xl ${theme.accentBg} flex items-center justify-center text-black mb-2 shadow-lg group-hover:scale-110 transition-transform`}><Plus size={20} strokeWidth={3}/></div>
-                        <span className="font-bold text-white text-sm">Nueva Campaña</span>
-                        <span className="text-[10px] text-white/40 mt-1">Crear desde cero</span>
+                        <div className={`w-10 h-10 rounded-xl ${theme.accentBg} flex items-center justify-center text-black mb-2 shadow-lg group-hover:scale-110 transition-transform`}><Briefcase size={20} strokeWidth={3}/></div>
+                        <span className="font-bold text-white text-sm">Nuevo Proyecto</span>
                      </div>
                 </div>
             </div>
@@ -414,7 +495,7 @@ const Dashboard = () => {
       )}
 
       {/* Campaign Details Modal (Shared) */}
-      <Modal isOpen={!!selectedCampaign} onClose={() => setSelectedCampaign(null)} title="Detalle de Campaña" size="lg">
+      <Modal isOpen={!!selectedCampaign} onClose={() => setSelectedCampaign(null)} title="Detalle de Proyecto" size="lg">
         {selectedCampaign && (
             <div className="space-y-4">
                 <div className="flex items-center gap-3 mb-4">
@@ -605,7 +686,7 @@ const Dashboard = () => {
                           
                           {/* Simulated Active Campaigns */}
                           <div className="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
-                              <div className="px-4 py-2 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/50 uppercase">Campañas Activas (2)</div>
+                              <div className="px-4 py-2 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/50 uppercase">Proyectos Activos (2)</div>
                               <div className="p-2 space-y-1">
                                   {[1,2].map(i => (
                                       <div key={i} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">

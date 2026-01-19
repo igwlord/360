@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useData } from '../context/DataContext';
 
 export const useRoiCalculator = () => {
-    const { campaigns, budget } = useData();
+    const { campaigns, budget, transactions } = useData();
 
     // Helper to parse currency strings "$ 1.000" -> 1000
     const parseAmount = (val) => {
@@ -14,15 +14,23 @@ export const useRoiCalculator = () => {
     const metrics = useMemo(() => {
         // 1. Calculate Per-Campaign Metrics
         const campaignPerformance = campaigns.map(c => {
-            const expenses = c.transactions?.filter(t => t.type === 'expense')
-                .reduce((acc, t) => acc + parseAmount(t.amount), 0) || 0;
+            // Filter transactions for this campaign
+            // Match by ID (Best) or Name (Legacy Fallback)
+            const relatedTransactions = transactions?.filter(t => 
+                (t.project_id && String(t.project_id) === String(c.id)) || 
+                (t.concept && t.concept.includes(c.name))
+            ) || [];
+
+            const expenses = relatedTransactions.filter(t => t.type === 'expense')
+                .reduce((acc, t) => acc + parseAmount(t.amount), 0);
             
             const plannedCost = parseAmount(c.cost);
+            // Actual Cost is sum of expenses, or fallback to manual 'cost' field if no expenses tracked yet
             const actualCost = expenses > 0 ? expenses : (plannedCost * (c.progress || 0) / 100);
 
-            // STRICT MODE: Revenue comes ONLY from Income transactions.
-            const revenue = c.transactions?.filter(t => t.type === 'income')
-                .reduce((acc, t) => acc + parseAmount(t.amount), 0) || 0;
+            // Revenue comes ONLY from Income transactions.
+            const revenue = relatedTransactions.filter(t => t.type === 'income')
+                .reduce((acc, t) => acc + parseAmount(t.amount), 0);
             
             const estimatedValue = revenue;
             const roi = actualCost > 0 ? ((estimatedValue - actualCost) / actualCost) * 100 : 0;
@@ -54,7 +62,7 @@ export const useRoiCalculator = () => {
             }
         };
 
-    }, [campaigns, budget]);
+    }, [campaigns, budget, transactions]);
 
     return metrics;
 };
