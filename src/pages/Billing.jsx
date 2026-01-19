@@ -52,8 +52,10 @@ const Billing = () => {
             return;
         }
 
+        // Sanitize Payload: Remove 'category' as it doesn't exist in DB
+        const { category, ...cleanForm } = form;
         const payload = {
-            ...form,
+            ...cleanForm,
             amount: parseFloat(form.amount)
         };
 

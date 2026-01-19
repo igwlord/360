@@ -5,6 +5,7 @@ import { X, Plus, Clock, Tag, Trash2, Calendar as CalIcon } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useColorTheme } from '../../context/ColorThemeContext';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import ProjectFormModal from '../projects/ProjectFormModal';
 
 const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
     const { theme } = useTheme();
@@ -15,6 +16,7 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
     const [newEventTag, setNewEventTag] = useState('meeting');
 
     const [isChillModalOpen, setIsChillModalOpen] = useState(false);
+    const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [suppressChillAlert, setSuppressChillAlert] = useLocalStorage('chill-alert-suppressed', false);
     const [dontShowChecked, setDontShowChecked] = useState(false);
     
@@ -184,7 +186,7 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
                                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E8A631] [&>option]:text-black"
                             >
                                 <option value="meeting">Reunión</option>
-                                <option value="campaign">Campaña</option>
+                                <option value="campaign">Hito de Campaña</option>
                                 <option value="deadline">Deadline</option>
                                 <option value="reminder">Recordatorio</option>
                             </select>
@@ -200,7 +202,24 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
                     </form>
                 </div>
 
+                {/* Integration with Real Projects */}
+                <div className="p-4 bg-white/5 border-t border-white/5 flex flex-col gap-2">
+                     <p className="text-[10px] text-white/40 text-center">¿Quieres iniciar una Campaña completa?</p>
+                     <button 
+                        onClick={() => setIsProjectModalOpen(true)}
+                        className="w-full py-2 rounded-xl border border-dashed border-white/20 text-white/60 text-xs hover:border-[#E8A631] hover:text-[#E8A631] transition-all flex items-center justify-center gap-2"
+                     >
+                         <Tag size={12} /> Crear Proyecto Nuevo
+                     </button>
+                </div>
             </div>
+
+            {/* Project Modal */}
+            <ProjectFormModal 
+                isOpen={isProjectModalOpen} 
+                onClose={() => setIsProjectModalOpen(false)} 
+                initialData={{ date: date ? `${date.getDate()} ${date.toLocaleDateString('es-ES', { month: 'short' })}` : '' }}
+            />
 
             {/* CHILL MODAL */}
             {isChillModalOpen && (

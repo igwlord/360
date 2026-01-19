@@ -8,6 +8,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import ContextMenu from '../components/common/ContextMenu';
 import GlassSelect from '../components/common/GlassSelect';
 import GlassTable from '../components/common/GlassTable';
+import ProjectFormModal from '../components/projects/ProjectFormModal';
 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
@@ -110,18 +111,6 @@ const Projects = () => {
         setDraggedItem(null);
     };
 
-    const handleSave = async () => {
-        if (form.id) {
-            await updateProject(form);
-            addToast('Proyecto actualizado correctamente', 'success');
-        } else {
-            const newProject = { ...form, progress: 0, statusColor: 'bg-gray-400' };
-            await addProject(newProject);
-            addToast('Proyecto creado exitosamente', 'success');
-        }
-        setIsModalOpen(false);
-    };
-
     const handleDelete = (id) => {
         setConfirm({
             isOpen: true,
@@ -137,39 +126,6 @@ const Projects = () => {
     const openEdit = (item, tab = 'details') => {
         setForm({ ...item, activeTab: tab });
         setIsModalOpen(true);
-        setFinanceAmount(''); // Reset finance input when opening
-    };
-
-    const handleAddTransaction = () => {
-        const conceptEl = document.getElementById('quickConcept');
-        if (!conceptEl) return;
-        
-        // Parse the formatted string (remove dots)
-        const amount = financeAmount ? parseFloat(financeAmount.replace(/\./g, '')) : 0;
-        const note = conceptEl.value;
-        
-        if (!amount || isNaN(amount) || amount <= 0 || !note.trim()) {
-            addToast('Completa los campos correctamente', 'error');
-            return;
-        }
-
-        const newTransactions = [
-            ...(form.transactions || []),
-            { id: Date.now(), date: new Date().toISOString(), type: transType, amount, note }
-        ];
-
-        setForm(prev => ({
-            ...prev,
-            transactions: newTransactions
-        }));
-
-        // Note: We don't save to DB immediately here, user must click Guardar. 
-        // Or if we want immediate save for transactions:
-        // if(form.id) updateProject({ ...form, transactions: newTransactions });
-
-        setFinanceAmount('');
-        conceptEl.value = '';
-        conceptEl.focus();
         addToast('Movimiento Agregado', 'success');
     };
 
@@ -381,246 +337,12 @@ const Projects = () => {
             )}
 
             {/* Edit / Create Modal */}
-            <Modal isOpen={isModalOpen} onClose={closeModal} title={form.id ? "Gestión de Proyecto" : "Nuevo Proyecto"} size="xl">
-                <div className="flex border-b border-white/10 mb-4">
-                    <button onClick={() => setForm({...form, activeTab: 'details'})} className={`pb-2 px-4 text-sm font-bold border-b-2 transition-colors ${!form.activeTab || form.activeTab === 'details' ? `border-[${theme.accent}] text-white` : 'border-transparent text-white/40'}`}>Detalles</button>
-                    {form.id && <button onClick={() => setForm({...form, activeTab: 'financial'})} className={`pb-2 px-4 text-sm font-bold border-b-2 transition-colors ${form.activeTab === 'financial' ? `border-[${theme.accent}] text-white` : 'border-transparent text-white/40'}`}>Finanzas</button>}
-                </div>
-
-                {(!form.activeTab || form.activeTab === 'details') && (
-                    <div className="space-y-4">
-                        <input type="text" placeholder="Nombre del Proyecto" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} />
-                        <div className="grid grid-cols-2 gap-3">
-                             <input type="text" placeholder="Marca (Brand)" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} />
-                             <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}>
-                                 {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                             </select>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 gap-3">
-                             <label className="text-xs text-white/50 block">Tipo de Proyecto</label>
-                             <select value={form.type || 'Campaña'} onChange={e => setForm({...form, type: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}>
-                                 <option value="Campaña">Campaña</option>
-                                 <option value="Ongoing">Ongoing</option>
-                                 <option value="Puntual">Puntual</option>
-                                 <option value="Interno">Interno</option>
-                             </select>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 gap-3">
-                             <input type="text" placeholder="Fechas (ej. 10 Ene - 15 Feb)" value={form.date || ''} onChange={e => setForm({...form, date: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} />
-                        </div>
-    
-                        <textarea placeholder="Notas, objetivos, detalles..." value={form.notes || ''} onChange={e => setForm({...form, notes: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none h-24 resize-none`} />
-    
-                        {/* Multi-Provider Selection */}
-                        <div className="pt-2 border-t border-white/10">
-                            <label className="text-xs text-white/50 mb-2 block">Vincular Proveedores</label>
-                            
-                            {/* Selected Providers Chips */}
-                            <div className="flex flex-wrap gap-2 mb-2">
-                                {form.providers && form.providers.map(pId => {
-                                    const provider = providerGroups.flatMap(g => g.contacts).find(c => c.id === pId);
-                                    return provider ? (
-                                        <div key={pId} className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-lg text-xs text-white">
-                                            <span>{provider.company}</span>
-                                            <button onClick={() => setForm(prev => ({...prev, providers: prev.providers.filter(pid => pid !== pId)}))} className="hover:text-red-400"><Trash2 size={12}/></button>
-                                        </div>
-                                    ) : null;
-                                })}
-                            </div>
-
-                            <GlassSelect 
-                                options={providerGroups.flatMap(g => g.contacts).filter(c => !form.providers?.includes(c.id)).map(c => ({ value: c.id, label: `${c.company} (${c.brand})` }))}
-                                value="" 
-                                onChange={(val) => setForm(prev => ({...prev, providers: [...(prev.providers || []), val] }))}
-                                placeholder="Buscar proveedor..."
-                                icon={<Link size={14}/>}
-                            />
-                        </div>
-    
-                        <div className="flex justify-end gap-3 mt-4 items-center">
-                            {form.id && <span className="text-xs text-green-400 font-mono flex items-center gap-1"><CheckCircle size={12}/> Auto-Guardado</span>}
-                            
-                            {form.id ? (
-                                <button onClick={closeModal} className={`py-3 px-6 rounded-xl font-bold text-sm border border-white/10 hover:bg-white/10 transition-colors`}>
-                                    Cerrar
-                                </button>
-                            ) : (
-                                <button onClick={handleSave} className={`w-full ${theme.accentBg} text-black font-bold py-3 rounded-xl hover:opacity-90`}>
-                                    Crear Proyecto
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Ledger / Finance Tab - Simplified & Practical */}
-                {form.activeTab === 'financial' && (
-                    <div className="flex flex-col h-[500px] animate-in fade-in slide-in-from-right-4">
-                         
-                         {/* 1. Compact Summary Bar */}
-                         {(() => {
-                            const totalBudget = form.transactions?.reduce((acc, t) => t.type === 'initial' || t.type === 'income' ? acc + t.amount : acc, 0) || 0;
-                            const executed = form.transactions?.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0) || 0;
-                            const available = totalBudget - executed;
-
-                            return (
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 flex justify-between items-center">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-300"><DollarSign size={20} /></div>
-                                        <div>
-                                            <p className="text-[10px] text-white/50 uppercase font-bold">Presupuesto</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">${formatCurrency(totalBudget)}</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="h-8 w-[1px] bg-white/10"></div>
-
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-2 bg-red-500/20 rounded-lg text-red-300"><TrendingDown size={20} /></div>
-                                        <div>
-                                            <p className="text-[10px] text-white/50 uppercase font-bold">Gastado</p>
-                                            <p className="text-xl font-bold text-white tracking-tight">${formatCurrency(executed)}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="h-8 w-[1px] bg-white/10"></div>
-
-                                    <div className="flex items-center gap-4">
-                                        <div className={`p-2 rounded-lg ${available >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}><Wallet size={20} /></div>
-                                        <div>
-                                            <p className="text-[10px] text-white/50 uppercase font-bold">Disponible</p>
-                                            <p className={`text-xl font-bold tracking-tight ${available >= 0 ? 'text-green-400' : 'text-red-400'}`}>${formatCurrency(available)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                         })()}
-
-                         {/* 2. Unified Ledger Area */}
-                         <div className="flex-1 bg-black/20 border border-white/10 rounded-xl overflow-hidden flex flex-col">
-                             
-                             {/* Input Bar (Highlight) */}
-                             <div className="p-3 bg-white/5 border-b border-white/10">
-                                 <div className="flex gap-2 items-center">
-                                      {/* Type Toggle */}
-                                      <div className="flex bg-black/40 rounded-lg p-1 border border-white/10 shrink-0">
-                                         <button 
-                                             onClick={() => setTransType('expense')}
-                                             className={`px-3 py-1.5 text-xs font-bold rounded-md flex items-center gap-1 transition-all ${transType === 'expense' ? 'bg-red-500 text-black shadow-lg shadow-red-500/20' : 'text-white/40 hover:text-white'}`}
-                                             title="Registrar Gasto"
-                                         ><ArrowDownRight size={12}/> Gasto</button>
-                                         <button 
-                                             onClick={() => setTransType('income')}
-                                             className={`px-3 py-1.5 text-xs font-bold rounded-md flex items-center gap-1 transition-all ${transType === 'income' ? 'bg-green-500 text-black shadow-lg shadow-green-500/20' : 'text-white/40 hover:text-white'}`}
-                                             title="Registrar Ingreso"
-                                         ><ArrowUpRight size={12}/> Ingreso</button>
-                                      </div>
-
-                                      {/* Concept Input */}
-                                      <input 
-                                         id="quickConcept"
-                                         placeholder="Concepto (ej. Producción)" 
-                                         className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 placeholder:text-white/20 transition-colors"
-                                         autoComplete="off"
-                                         onKeyDown={(e) => {
-                                             if(e.key === 'Enter') document.getElementById('quickAmount').focus();
-                                         }}
-                                      />
-
-                                      {/* Amount Input */}
-                                      <div className="relative w-32 shrink-0">
-                                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs">$</span>
-                                          <input 
-                                             id="quickAmount"
-                                             type="text" 
-                                             inputMode="numeric"
-                                             placeholder="0" 
-                                             value={financeAmount}
-                                             onChange={(e) => {
-                                                 // Remove existing dots and non-digits
-                                                 const raw = e.target.value.replace(/\D/g, '');
-                                                 // Format with dots
-                                                 const formatted = raw ? parseInt(raw).toLocaleString('es-AR') : '';
-                                                 setFinanceAmount(formatted);
-                                             }}
-                                             className="w-full bg-black/20 border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 placeholder:text-white/20 transition-colors text-right"
-                                             onKeyDown={(e) => {
-                                                if (e.key === 'Enter') handleAddTransaction();
-                                             }}
-                                          />
-                                      </div>
-                                      
-                                      {/* Add Button */}
-                                      <button 
-                                        onClick={handleAddTransaction}
-                                        className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                                      >
-                                         <Plus size={18} />
-                                      </button>
-                                 </div>
-                             </div>
-
-                             {/* Headers */}
-                             <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-white/5 border-b border-white/5 text-[10px] uppercase font-bold text-white/40 tracking-wider">
-                                 <div className="col-span-2">Fecha</div>
-                                 <div className="col-span-6">Detalle</div>
-                                 <div className="col-span-3 text-right">Monto</div>
-                                 <div className="col-span-1"></div>
-                             </div>
-
-                             {/* List */}
-                             <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-                                 {form.transactions?.length > 0 ? (
-                                     [...form.transactions].sort((a,b) => new Date(b.date) - new Date(a.date)).map((t) => (
-                                         <div key={t.id} className="grid grid-cols-12 gap-4 px-2 py-2.5 rounded-lg hover:bg-white/5 transition-colors items-center group border border-transparent hover:border-white/5">
-                                             <div className="col-span-2 text-xs text-white/50">{new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
-                                             
-                                             <div className="col-span-6 flex items-center gap-2">
-                                                  <div className={`w-1.5 h-1.5 rounded-full ${t.type === 'expense' ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                                                  <span className="text-sm text-white font-medium truncate">{t.note}</span>
-                                             </div>
-                                             
-                                             <div className="col-span-3 text-right">
-                                                  <span className={`text-sm font-mono font-bold ${t.type === 'expense' ? 'text-red-300' : 'text-green-300'}`}>
-                                                     {t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)}
-                                                 </span>
-                                             </div>
-
-                                             <div className="col-span-1 flex justify-end">
-                                                 <button 
-                                                    onClick={() => setForm(prev => ({...prev, transactions: prev.transactions.filter(tr => tr.id !== t.id)}))} 
-                                                    className="opacity-0 group-hover:opacity-100 p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
-                                                 >
-                                                     <Trash2 size={14} />
-                                                 </button>
-                                             </div>
-                                         </div>
-                                     ))
-                                 ) : (
-                                     <div className="h-full flex flex-col items-center justify-center text-white/20">
-                                         <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
-                                             <Wallet size={20} className="opacity-50"/>
-                                         </div>
-                                         <p className="text-xs">Sin movimientos</p>
-                                     </div>
-                                 )}
-                             </div>
-                         </div>
-                         
-                         <div className="flex justify-between items-center mt-4">
-                            <p className="text-xs text-white/30">💡 Tip: Usa <kbd className="font-mono bg-white/10 px-1 rounded text-white/50">Enter</kbd> para saltar entre campos y guardar.</p>
-                            <button onClick={handleSave} className={`${theme.accentBg} text-black font-bold py-2 px-6 rounded-lg text-sm hover:opacity-90 shadow-lg`}>
-                                Guardar
-                            </button>
-                         </div>
-                    </div>
-                )}
-                
-                {/* Spacer to prevent dropdown clipping */}
-                <div className="h-32"></div>
-            </Modal>
+            <ProjectFormModal 
+                isOpen={isModalOpen} 
+                onClose={closeModal} 
+                initialData={form.id ? form : null}
+                openTab={form.activeTab || 'details'}
+            />
 
             {/* Context Menu */}
             {contextMenu.visible && (

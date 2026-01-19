@@ -26,23 +26,7 @@ const Calendar = () => {
   // Selected Date for Modal
   const [selectedDay, setSelectedDay] = useState(null);
 
-  // FIX: Sync Modal Data with Global State (Fixes "Refresh required" bug)
-  React.useEffect(() => {
-      // Use functional update to access 'prev' (current selectedDay) without adding it to dependencies
-      setSelectedDay(prev => {
-          if (!prev) return null; // If modal closed, do nothing
-          
-          // Re-fetch events for the currently selected date
-          // 'getEventsForDay' is now stable via useCallback or simply accessible in closure 
-          // (but we added it to deps implicitly if we use it here... 
-          // wait, getEventsForDay changes often. 
-          // We only want to update if EVENTS changed really.
-          // But getEventsForDay encapsulates that logic.)
-          
-          const updatedEvents = getEventsForDay(prev.date);
-          return { ...prev, events: updatedEvents };
-      });
-  }, [getEventsForDay]); // Only run when getEventsForDay changes (which depends on calendarEvents/filters)
+
 
   // Calendar Logic
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
@@ -115,6 +99,16 @@ const Calendar = () => {
 
       return uniqueEvents;
   }, [calendarEvents, currentDate, filters]);
+
+  // FIX: Sync Modal Data with Global State (Fixes "Refresh required" bug)
+  // Moved here to avoid ReferenceError (TDZ)
+  React.useEffect(() => {
+      setSelectedDay(prev => {
+          if (!prev) return null;
+          const updatedEvents = getEventsForDay(prev.date);
+          return { ...prev, events: updatedEvents };
+      });
+  }, [getEventsForDay]);
 
   const onDayClick = (day) => {
       // If we pass a number (month view), we construct date. If date (week view), use as is.

@@ -7,8 +7,9 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { Search, Plus, Star, Phone, Mail, Globe, Share2, Edit, Trash2, ArrowLeft, ArrowRight, User, UserPlus, Layers, Briefcase, Activity, X, MessageSquare, Calendar, CheckSquare, AlertTriangle, Megaphone, FileText, MoreVertical } from 'lucide-react';
 import Modal from '../components/common/Modal';
+import GlassSelect from '../components/common/GlassSelect';
 import ContextMenu from '../components/common/ContextMenu';
-import GlassTable from '../components/common/GlassTable';
+import ProjectFormModal from '../components/projects/ProjectFormModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 
 const Directory = () => {
@@ -35,7 +36,6 @@ const Directory = () => {
     
     // Project Modal State
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-    const [projectForm, setProjectForm] = useState({ name: '', status: 'Planificación', type: 'Campaña', date: '', notes: '' });
 
 
     // Navigation State Handling - Auto Open & Scroll
@@ -203,44 +203,7 @@ const Directory = () => {
     };
 
 
-    // Navigation Handlers for Activity Tab
-    // Navigation Handlers for Activity Tab
-    const handleNewProject = () => {
-        // Open local modal instead of navigating
-        setProjectForm({ 
-            name: '', 
-            status: 'Planificación', 
-            type: 'Campaña', 
-            date: '', 
-            notes: '' 
-        });
-        setIsProjectModalOpen(true);
-    };
 
-    const handleSaveProject = async () => {
-        if (!projectForm.name) return;
-        
-        const newProject = {
-            ...projectForm,
-            // Ensure providers array has the current contact ID
-            providers: [selectedContact.id],
-            progress: 0,
-            statusColor: 'bg-gray-400'
-        };
-
-        try {
-            await actions.addProject(newProject);
-             setIsProjectModalOpen(false);
-        } catch (error) {
-            console.error("Failed to create project:", error);
-            addToast("Error al crear campaña. Verifica la base de datos.", 'error');
-        }
-    };
-
-
-    const handleOpenProject = (projectId) => {
-        navigate('/proyectos?openId=' + projectId);
-    };
 
     const handleSaveContact = async () => {
         try {
@@ -630,35 +593,82 @@ const Directory = () => {
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-lg font-bold text-white flex items-center gap-2"><Megaphone size={18} className="text-[#E8A631]"/> Campañas Activas</h3>
                                         <button 
-                                        onClick={handleNewProject}
+                                        onClick={() => setIsProjectModalOpen(true)}
                                         className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2"
                                     >
                                         <Plus size={12} /> Nueva Campaña
                                     </button>
                                     </div>
                                     
-                                    {/* Mock Campaigns - Check for data or show empty state */}
-                                    {/* Using a hardcoded check for now as we don't have real backend connection for campaigns per client yet */}
-                                    {true ? ( // While no real data, show mock table OR empty state. Let's show empty state if desired or mock. User asked for tooltips if empty.
-                                     // Let's assume empty for now to show the tooltip logic requested
-                                     <div className="bg-white/5 border border-white/10 rounded-xl p-8 flex flex-col items-center text-center">
-                                         <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
-                                             <Megaphone size={24} className="text-white/20" />
-                                         </div>
-                                         <p className="text-white font-bold mb-1">Sin campañas activas</p>
-                                         <p className="text-xs text-white/50 max-w-[200px] mb-4">Este proveedor no está participando en ningún proyecto actual.</p>
-                                         <div className="relative group">
-                                             <span className="text-xs text-[#E8A631] underline cursor-help">¿Qué debería ver aquí?</span>
-                                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 rounded-lg bg-black/90 border border-white/20 text-[10px] text-white/80 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                 Aquí aparecerán los proyectos donde este proveedor tenga items asignados o facturas cargadas.
-                                              </div>
-                                         </div>
-                                     </div>
-                                    ) : (
-                                     <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-                                        {/* Table code kept for when data exists */}
-                                     </div>
-                                    )}
+                                    {/* Real Campaign Filtering */}
+                                    {(() => {
+                                        const contactCampaigns = campaigns.filter(c => 
+                                            c.providers?.includes(selectedContact.id) || 
+                                            c.providerId === selectedContact.id
+                                        );
+
+                                        if (contactCampaigns.length === 0) {
+                                            return (
+                                                <div className="bg-white/5 border border-white/10 rounded-xl p-8 flex flex-col items-center text-center">
+                                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                                                        <Megaphone size={24} className="text-white/20" />
+                                                    </div>
+                                                    <p className="text-white font-bold mb-1">Sin campañas activas</p>
+                                                    <p className="text-xs text-white/50 max-w-[200px] mb-4">Este proveedor no está participando en ningún proyecto actual.</p>
+                                                    <div className="relative group">
+                                                        <span className="text-xs text-[#E8A631] underline cursor-help">¿Qué debería ver aquí?</span>
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 rounded-lg bg-black/90 border border-white/20 text-[10px] text-white/80 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                            Aquí aparecerán los proyectos donde este proveedor tenga items asignados o facturas cargadas.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                                                <table className="w-full text-left border-collapse">
+                                                    <thead>
+                                                        <tr className="border-b border-white/10 text-xs text-white/40 uppercase tracking-wider">
+                                                            <th className="p-4 font-medium">Estado</th>
+                                                            <th className="p-4 font-medium">Campaña</th>
+                                                            <th className="p-4 font-medium">Fecha</th>
+                                                            <th className="p-4 font-medium"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {contactCampaigns.map(project => (
+                                                            <tr key={project.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                                                <td className="p-4">
+                                                                    <div className={`w-2 h-2 rounded-full ${
+                                                                        project.status === 'En Curso' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' :
+                                                                        project.status === 'Planificación' ? 'bg-yellow-500' :
+                                                                        project.status === 'Finalizado' ? 'bg-blue-500' : 'bg-white/20'
+                                                                    }`}></div>
+                                                                </td>
+                                                                <td className="p-4">
+                                                                    <p className="text-sm font-bold text-white max-w-[200px] truncate">{project.name}</p>
+                                                                    <p className="text-[10px] text-white/40">{project.brand}</p>
+                                                                </td>
+                                                                <td className="p-4 text-xs text-white/60">
+                                                                    {project.date || 'Sin fecha'}
+                                                                </td>
+                                                                <td className="p-4 text-right">
+                                                                    <button 
+                                                                        onClick={() => navigate('/proyectos?openId=' + project.id)}
+                                                                        className="p-2 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                                                                        title="Ver Proyecto"
+                                                                    >
+                                                                        <ArrowRight size={16} />
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Budget Simulations */}
@@ -1009,72 +1019,11 @@ const Directory = () => {
                 message={confirm.message}
             />
             {/* PROJECT CREATION MODAL */}
-            <Modal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} title="Nueva Campaña" size="md">
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-xs text-white/50 block mb-1">Nombre de la Campaña</label>
-                        <input 
-                            autoFocus
-                            type="text" 
-                            placeholder="Ej. Lanzamiento Verano 2026" 
-                            value={projectForm.name} 
-                            onChange={e => setProjectForm({...projectForm, name: e.target.value})} 
-                            className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} 
-                        />
-                    </div>
-                
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="text-xs text-white/50 block mb-1">Estado Inicial</label>
-                            <select 
-                                value={projectForm.status} 
-                                onChange={e => setProjectForm({...projectForm, status: e.target.value})} 
-                                className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}
-                            >
-                                <option value="Planificación">Planificación</option>
-                                <option value="En Curso">En Curso</option>
-                                <option value="Pendiente">Pendiente</option>
-                            </select>
-                        </div>
-                        <div>
-                             <label className="text-xs text-white/50 block mb-1">Tipo</label>
-                             <select 
-                                value={projectForm.type} 
-                                onChange={e => setProjectForm({...projectForm, type: e.target.value})} 
-                                className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}
-                            >
-                                <option value="Campaña">Campaña</option>
-                                <option value="Ongoing">Ongoing</option>
-                                <option value="Puntual">Puntual</option>
-                                <option value="Interno">Interno</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label className="text-xs text-white/50 block mb-1">Rango de Fechas (Opcional)</label>
-                        <input 
-                            type="text" 
-                            placeholder="Ej. 10 Ene - 20 Feb" 
-                            value={projectForm.date} 
-                            onChange={e => setProjectForm({...projectForm, date: e.target.value})} 
-                            className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} 
-                        />
-                    </div>
-
-                    <div className="pt-4 flex justify-end gap-3">
-                        <button onClick={() => setIsProjectModalOpen(false)} className="px-4 py-2 rounded-xl text-sm font-bold border border-white/10 hover:bg-white/10 transition-colors text-white/60 hover:text-white">
-                            Cancelar
-                        </button>
-                        <button 
-                            onClick={handleSaveProject} 
-                            className={`px-6 py-2 rounded-xl text-sm font-bold text-black ${theme.accentBg} hover:opacity-90 shadow-lg`}
-                        >
-                            Crear Campaña
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+            <ProjectFormModal 
+                isOpen={isProjectModalOpen} 
+                onClose={() => setIsProjectModalOpen(false)} 
+                preselectedProviderId={selectedContact?.id}
+            />
         </div>
     );
 };
