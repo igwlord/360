@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useData } from '../context/DataContext';
+// import { useData } from '../context/DataContext'; REMOVED
+import { useNotifications } from '../hooks/useNotifications';
 import { Bell, Filter, CheckCircle, Clock, AlertTriangle, Trash2 } from 'lucide-react';
 
 const NotificationsPage = () => {
     const { theme } = useTheme();
-    const { notifications, markAsRead, clearAllNotifications } = useData();
+    const { notifications, markAsRead, clearAllNotifications } = useNotifications();
     const [filter, setFilter] = useState('all'); // 'all', 'unread', 'history'
 
     // Derived state

@@ -1,14 +1,18 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useData } from '../context/DataContext';
-import { ChevronLeft, ChevronRight, Calculator, Calendar as CalIcon, Plus, Megaphone, ShoppingBag, CalendarCheck, Users, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calculator, Calendar as CalIcon, Plus, Megaphone, ShoppingBag, CalendarCheck, Users, Clock, Star } from 'lucide-react';
 import DayDetailModal from '../components/calendar/DayDetailModal';
 import { useColorTheme } from '../context/ColorThemeContext';
 
+import { useCalendarEvents } from '../hooks/useCalendarEvents';
+import { useCampaigns } from '../hooks/useCampaigns';
+
 const Calendar = () => {
   const { theme } = useTheme();
-  const { calendarEvents } = useData();
+  const { data: calendarEvents = [] } = useCalendarEvents();
+  const { data: projects = [] } = useCampaigns();
+  
   const { getCategoryClasses, getCategoryStyle } = useColorTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('month'); // 'month' | 'week' | 'list'
@@ -17,6 +21,7 @@ const Calendar = () => {
   // Filter States
   const [filters, setFilters] = useState({
       campaigns: true,
+      specials: true, // NEW
       marketing: true,
       deadlines: true,
       meetings: true,
@@ -53,12 +58,34 @@ const Calendar = () => {
       const dayStr = String(targetDate.getDate()).padStart(2, '0');
       const targetDateStr = `${year}-${month}-${dayStr}`;
 
+      // 0. Merge Projects into Calendar Stream
+      const projectEvents = projects.map(p => {
+           let pDate = p.date;
+           // Map different date fields
+           if (p.type === 'Eventos' && p.start_date) pDate = p.start_date.split('T')[0];
+           if (!pDate) return null; // Skip if no date
+
+           return {
+               id: p.id,
+               title: p.name,
+               type: p.type, // 'Campaña', 'Eventos', 'Exhibiciones', 'Especiales'
+               date: pDate,
+               color: 'blue' // Default, overriden by theme
+           };
+      }).filter(Boolean);
+
+      const allSourceEvents = [...calendarEvents, ...projectEvents];
+
       // 1. Static Events
-      const staticMatches = calendarEvents.filter(e => {
+      const staticMatches = allSourceEvents.filter(e => {
           if (!e.type) return false; // Safety check
           
           const typeMap = {
               'campaign': 'campaigns',
+              'Campaña': 'campaigns',
+              'Especiales': 'specials', 
+              'Eventos': 'marketing', // Map to Marketing for now? Or loose?
+              'Exhibiciones': 'campaigns', // Map to Campaigns filter
               'marketing': 'marketing',
               'holiday': 'marketing',
               'deadline': 'deadlines',
@@ -68,6 +95,12 @@ const Calendar = () => {
           
           const filterKey = typeMap[e.type];
           if (filterKey && !filters[filterKey]) return false;
+          
+          // Allow Eventos/Exhibiciones if their mapped filter is on
+          if (e.type === 'Eventos' && !filters.marketing) return false; // Eventos -> Marketing category logic?
+          if (e.type === 'Exhibiciones' && !filters.campaigns) return false;
+          // Fallback if not mapped but valid? Assume visible or hide? currently hides if not in map
+          if (!filterKey && e.type !== 'Especiales') return true; // Show others by default? No, logic above implies strict mapping.
 
           // Date Check - Robust Comparison
           if (e.date && typeof e.date === 'string') {
@@ -96,9 +129,8 @@ const Calendar = () => {
               uniqueEvents.push(e);
           }
       });
-
       return uniqueEvents;
-  }, [calendarEvents, currentDate, filters]);
+  }, [calendarEvents, projects, currentDate, filters]);
 
   // FIX: Sync Modal Data with Global State (Fixes "Refresh required" bug)
   // Moved here to avoid ReferenceError (TDZ)
@@ -138,6 +170,10 @@ const Calendar = () => {
     for (let day = 1; day <= daysInMonth; day++) {
         const isToday = day === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
         const events = getEventsForDay(day);
+        
+        // Separate Specials from regular events (Visual Layering)
+        const specialEvents = events.filter(e => e.type === 'Especiales');
+        const regularEvents = events.filter(e => e.type !== 'Especiales');
 
         cells.push(
             <div 
@@ -145,14 +181,30 @@ const Calendar = () => {
                 onClick={() => onDayClick(day)}
                 className={`h-full min-h-[100px] border border-white/10 rounded-2xl flex flex-col p-2 relative group transition-all hover:scale-[1.02] hover:bg-white/5 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl ${isToday ? 'bg-white/5 border-white/30' : ''}`}
             >
-                {/* Number */}
-                <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-1 transition-colors ${isToday ? `${theme.accentBg} text-black shadow-lg shadow-orange-500/50` : 'text-white/70 group-hover:text-white group-hover:bg-white/10'}`}>
-                    {day}
-                </span>
+                {/* Background Layer for Specials */}
+                {specialEvents.length > 0 && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent pointer-events-none" />
+                )}
 
-                {/* Events Preview */}
+                {/* Header Row: Number + Special Badge */}
+                <div className="flex justify-between items-start mb-1 relative z-10">
+                    <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full transition-colors ${isToday ? `${theme.accentBg} text-black shadow-lg shadow-orange-500/50` : 'text-white/70 group-hover:text-white group-hover:bg-white/10'}`}>
+                        {day}
+                    </span>
+                    
+                    {/* Specials rendered as High-Level Badges */}
+                    <div className="flex flex-col gap-1 items-end max-w-[70%]">
+                        {specialEvents.map((sp, idx) => (
+                            <span key={`sp-${idx}`} className="px-1.5 py-0.5 rounded-md bg-yellow-500/20 text-yellow-200 text-[8px] font-bold uppercase tracking-wider border border-yellow-500/20 truncate max-w-full shadow-sm">
+                                {sp.title}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Regular Events Preview */}
                 <div className="space-y-1 overflow-y-auto custom-scrollbar flex-1 relative z-10 hidden md:block">
-                    {events.map((evt, idx) => {
+                    {regularEvents.map((evt, idx) => {
                         // Dynamic Color Coding from Context
                         const styleClass = getCategoryClasses(evt.type, 'badge') || 'bg-white/10 text-white/50 border-white/10';
                         
@@ -165,13 +217,13 @@ const Calendar = () => {
                 </div>
                 {/* Mobile Dot Indicators */}
                 <div className="md:hidden flex gap-1 justify-center mt-1">
-                     {events.map((evt, idx) => (
+                     {regularEvents.map((evt, idx) => (
                         <div key={idx} className={`w-1.5 h-1.5 rounded-full ${getCategoryStyle(evt.type).bg}`}></div>
                      ))}
                 </div>
                 
                 {/* Hover Effect: Add Button hint */}
-                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                     <div className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white"><Plus size={14}/></div>
                 </div>
             </div>
@@ -198,6 +250,8 @@ const Calendar = () => {
             {weekDays.map((date, i) => {
                 const events = getEventsForDay(date); // Now passing full Date object
                 const isToday = date.toDateString() === new Date().toDateString();
+                const specialEvents = events.filter(e => e.type === 'Especiales');
+                const regularEvents = events.filter(e => e.type !== 'Especiales');
 
                 return (
                  <div 
@@ -205,12 +259,23 @@ const Calendar = () => {
                     onClick={() => onDayClick(date)}
                     className={`h-full border border-white/10 rounded-2xl p-2 flex flex-col relative group cursor-pointer hover:bg-white/5 transition-all ${isToday ? 'bg-white/5 border-white/30' : ''}`}
                  >
-                    <div className="text-center mb-2">
+                    {specialEvents.length > 0 && (
+                        <div className="absolute inset-0 bg-yellow-500/5 pointer-events-none rounded-2xl" />
+                    )}
+
+                    <div className="text-center mb-2 relative z-10">
                          <div className="text-[10px] uppercase text-white/50">{['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][date.getDay()]}</div>
                          <div className={`text-lg font-bold ${isToday ? 'text-white' : 'text-white/70'}`}>{date.getDate()}</div>
+                         {specialEvents.map((sp, idx) => (
+                            <div key={idx} className="mt-1 flex justify-center">
+                                <span className="px-1.5 py-0.5 rounded text-[8px] bg-yellow-500/20 text-yellow-200 uppercase font-bold truncate max-w-full">
+                                    {sp.title}
+                                </span>
+                            </div>
+                         ))}
                     </div>
-                    <div className="space-y-1 overflow-y-auto custom-scrollbar flex-1">
-                        {events.map((evt, idx) => (
+                    <div className="space-y-1 overflow-y-auto custom-scrollbar flex-1 relative z-10">
+                        {regularEvents.map((evt, idx) => (
                              <div key={idx} className={`text-[10px] px-2 py-1.5 rounded truncate ${getCategoryClasses(evt.type, 'badge')}`}>
                                 {evt.title}
                              </div>
@@ -239,9 +304,11 @@ const Calendar = () => {
             {allEvents.length === 0 ? (
                 <div className="text-center text-white/30 mt-10">No hay eventos este mes</div>
             ) : (
-                allEvents.map((item, idx) => (
-                    <div key={idx} className="mb-4">
-                        <div className="sticky top-0 bg-[#121212] z-10 py-1 mb-2 border-b border-white/10 flex items-baseline gap-2">
+                allEvents.map((item, idx) => {
+                    const hasSpecial = item.events.some(e => e.type === 'Especiales');
+                    return (
+                    <div key={idx} className={`mb-4 rounded-xl p-2 ${hasSpecial ? 'bg-yellow-500/5 border border-yellow-500/10' : ''}`}>
+                        <div className="sticky top-0 z-10 py-1 mb-2 border-b border-white/10 flex items-baseline gap-2">
                              <span className="text-xl font-bold text-white">{item.date.getDate()}</span>
                              <span className="text-xs uppercase text-white/50">{item.date.toLocaleDateString('es-ES', { weekday: 'long', month: 'long' })}</span>
                              <button onClick={() => onDayClick(item.date)} className="ml-auto text-xs text-blue-400 hover:text-blue-300 bg-blue-500/10 px-2 py-1 rounded">
@@ -257,7 +324,7 @@ const Calendar = () => {
                             ))}
                         </div>
                     </div>
-                ))
+                )})
             )}
         </div>
     );
@@ -287,6 +354,20 @@ const Calendar = () => {
                   </div>
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${filters.campaigns ? 'bg-purple-500 border-purple-500' : 'border-white/20'}`}>
                       {filters.campaigns && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                  </div>
+              </button>
+
+              {/* Specials/Hitos Filter (New) */}
+              <button 
+                onClick={() => setFilters({...filters, specials: !filters.specials})}
+                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${filters.specials ? 'bg-yellow-500/20 border-yellow-500/50 text-white' : 'bg-transparent border-white/10 text-white/50'}`}
+              >
+                  <div className="flex items-center gap-3">
+                      <Star size={16} className={filters.specials ? 'text-yellow-400' : 'text-current'} />
+                      <span className="text-sm font-medium">Hitos & Especiales</span>
+                  </div>
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${filters.specials ? 'bg-yellow-500 border-yellow-500' : 'border-white/20'}`}>
+                      {filters.specials && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                   </div>
               </button>
 

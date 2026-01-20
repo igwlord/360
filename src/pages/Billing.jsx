@@ -1,18 +1,36 @@
 import React, { useState, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useData } from '../context/DataContext';
+// import { useData } from '../context/DataContext'; REMOVED
 import { useToast } from '../context/ToastContext';
 import { 
     DollarSign, TrendingUp, TrendingDown, Plus, Filter, 
     Search, Calendar, FileText, ArrowUpRight, ArrowDownRight, 
-    MoreVertical, Trash2, Edit2, X
+    MoreVertical, Trash2, Edit2, X, Users, Share2
 } from 'lucide-react';
+import GlassTable from '../components/common/GlassTable';
+import ContextMenu from '../components/common/ContextMenu';
 import Modal from '../components/common/Modal';
+
+import { useTransactions, useCreateTransaction, useUpdateTransaction, useDeleteTransaction } from '../hooks/useTransactions';
+import { useCampaigns } from '../hooks/useCampaigns';
+import { useSuppliers } from '../hooks/useSuppliers';
+import { formatCurrency } from '../utils/dataUtils';
 
 const Billing = () => {
     const { theme } = useTheme();
-    const { transactions = [], addTransaction, updateTransaction, deleteTransaction, projects, providerGroups, formatCurrency } = useData();
+    // Removed useData destructuring
+    // const { formatCurrency } = useData(); // Keeping formatCurrency for now (or move to utils later)
     const { addToast } = useToast();
+
+    // Hooks
+    const { data: transactions = [] } = useTransactions();
+    const { data: projects = [] } = useCampaigns();
+    const { data: providerGroups = [] } = useSuppliers();
+    
+    // Mutations
+    const { mutateAsync: addTransaction } = useCreateTransaction();
+    const { mutateAsync: updateTransaction } = useUpdateTransaction();
+    const { mutateAsync: deleteTransaction } = useDeleteTransaction();
 
     // Local State
     const [isAppModalOpen, setIsAppModalOpen] = useState(false);
@@ -24,7 +42,7 @@ const Billing = () => {
         amount: '',
         date: new Date().toISOString().split('T')[0],
         description: '',
-        category: '',
+        // category: '', // Removed
         project_id: '',
         provider_id: '',
         status: 'pending' // pending, paid
@@ -38,11 +56,18 @@ const Billing = () => {
             amount: '',
             date: new Date().toISOString().split('T')[0],
             description: '',
-            category: '',
+            // category: '',
             project_id: '',
             provider_id: '',
             status: 'pending'
         });
+    };
+
+    // Format helper
+    const handleAmountChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '');
+        const formatted = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        setForm({ ...form, amount: formatted });
     };
 
     // Helper: Handle Save
@@ -52,11 +77,11 @@ const Billing = () => {
             return;
         }
 
-        // Sanitize Payload: Remove 'category' as it doesn't exist in DB
-        const { category, ...cleanForm } = form;
+        // Sanitize Payload
+        // Sanitize Payload
         const payload = {
-            ...cleanForm,
-            amount: parseFloat(form.amount)
+            ...form,
+            amount: parseFloat(form.amount.replace(/\./g, '')) // Parse formatted amount
         };
 
         if (form.id) {
@@ -98,6 +123,13 @@ const Billing = () => {
             balance: income - expense
         };
     }, [transactions]);
+
+    // Computed: Projected Costs (From Rate Cards/Projects)
+    const projectedCosts = useMemo(() => {
+        return projects.reduce((acc, p) => acc + (p.cost || 0), 0);
+    }, [projects]);
+    
+    // Gap Analysis - (Inline usage below)
 
     return (
         <div className="p-6 md:p-10 space-y-8 pb-24">
@@ -141,6 +173,43 @@ const Billing = () => {
                         {formatCurrency(kpis.balance)}
                      </p>
                 </div>
+            </div>
+
+            {/* NEW: Projection Analysis Bar */}
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl border border-white/5 bg-white/5`}>
+                 <div>
+                    <h3 className="text-sm font-bold text-white uppercase mb-4 flex items-center gap-2">
+                        <FileText size={16} className="text-purple-400"/>
+                        Proyección vs Ejecución
+                    </h3>
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-white/60">Costo Proyectado (Tarifario)</span>
+                            <span className="text-white font-mono">{formatCurrency(projectedCosts)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-white/60">Gasto Real (Facturado)</span>
+                            <span className={`font-mono font-bold ${kpis.expense > projectedCosts ? 'text-red-400' : 'text-green-400'}`}>{formatCurrency(kpis.expense)}</span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                             <div 
+                                className={`h-full transition-all ${kpis.expense > projectedCosts ? 'bg-red-500' : 'bg-green-500'}`} 
+                                style={{ width: `${Math.min((kpis.expense / (projectedCosts || 1)) * 100, 100)}%` }}
+                             ></div>
+                        </div>
+                    </div>
+                 </div>
+                 
+                 <div className="border-l border-white/10 pl-6 flex flex-col justify-center">
+                    <p className="text-xs text-white/50 mb-2">Estado Financiero Global</p>
+                    <p className="text-lg text-white font-light">
+                        El flujo de caja actual es <span className="font-bold">{kpis.balance >= 0 ? 'Positivo' : 'Negativo'}</span>. 
+                        {kpis.expense > projectedCosts 
+                            ? " Alerta: Los gastos reales han superado las estimaciones iniciales."
+                            : " Gestión Eficiente: Los gastos se mantienen bajo control."
+                        }
+                    </p>
+                 </div>
             </div>
 
             {/* Filters & Table */}
@@ -256,7 +325,7 @@ const Billing = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                              <label className="text-xs font-bold text-white/40 uppercase">Monto ($)</label>
-                             <input type="number" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none font-mono`} placeholder="0.00" autoFocus />
+                             <input type="text" value={form.amount} onChange={handleAmountChange} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none font-mono`} placeholder="0.00" autoFocus />
                         </div>
                         <div className="space-y-1">
                              <label className="text-xs font-bold text-white/40 uppercase">Fecha</label>

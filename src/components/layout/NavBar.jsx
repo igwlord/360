@@ -4,12 +4,15 @@ import { NavLink } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { Layout, Calendar, Users, ShoppingBag, Megaphone, Settings, Bell, Menu, X, FileText, HelpCircle, DollarSign } from 'lucide-react';
 import UserMenu from '../user/UserMenu';
-import { useData } from '../../context/DataContext';
+
+
+// import { useData } from '../../context/DataContext'; // Removed
+import { useNotifications } from '../../hooks/useNotifications';
 import InstallPrompt from '../common/InstallPrompt';
 
 const NavBar = () => {
     const { theme } = useTheme();
-    const { notifications } = useData(); // Destructure setNotifications
+    const { notifications } = useNotifications(); // Use Hook
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 

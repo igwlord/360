@@ -1,23 +1,34 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Added Import
-import { useLocation } from 'react-router-dom';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { Search, Plus, Star, Phone, Mail, Globe, Share2, Edit, Trash2, ArrowLeft, ArrowRight, User, UserPlus, Layers, Briefcase, Activity, X, MessageSquare, Calendar, CheckSquare, AlertTriangle, Megaphone, FileText, MoreVertical } from 'lucide-react';
 import Modal from '../components/common/Modal';
+import GlassTable from '../components/common/GlassTable';
 import GlassSelect from '../components/common/GlassSelect';
 import ContextMenu from '../components/common/ContextMenu';
-import ProjectFormModal from '../components/projects/ProjectFormModal';
+import CreateCampaignModal from '../components/projects/CreateCampaignModal';
 import ConfirmModal from '../components/common/ConfirmModal';
+
+import { useCampaigns } from '../hooks/useCampaigns';
+
+import { useSuppliers, useCreateContact, useUpdateContact, useDeleteContact } from '../hooks/useSuppliers';
 
 const Directory = () => {
     const { theme } = useTheme();
     const { addToast } = useToast();
-    const navigate = useNavigate(); // Added Hook
+    const navigate = useNavigate(); 
     const location = useLocation();
-    const { providerGroups, actions, campaigns } = useData();
+    
+    // Query Hooks
+    const { data: providerGroups = [] } = useSuppliers();
+    const { mutateAsync: createContact } = useCreateContact();
+    const { mutateAsync: updateContact } = useUpdateContact();
+    const { mutateAsync: deleteContact } = useDeleteContact();
+
+    const { data: campaigns = [] } = useCampaigns();
+    
     const [selectedContact, setSelectedContact] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeGroup, setActiveGroup] = useState('Todos');
@@ -38,30 +49,58 @@ const Directory = () => {
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
 
-    // Navigation State Handling - Auto Open & Scroll
+    // Navigation State Handling - Auto Open & Scroll (URL Params & State)
     React.useEffect(() => {
-        if (location.state?.targetId) {
-            const contactId = location.state.targetId;
-            const contact = providerGroups.flatMap(g => g.contacts).find(c => c.id === contactId);
+        const queryParams = new URLSearchParams(location.search);
+        const categoryParam = queryParams.get('category');
+        const highlightParam = queryParams.get('highlight');
+        const stateTargetId = location.state?.targetId;
+
+        // Priority: URL Param > State
+        const targetId = highlightParam || stateTargetId;
+
+        // 1. Set Active Group from Category Param
+        if (categoryParam) {
+            const group = providerGroups.find(g => g.title === categoryParam);
+            if (group) {
+                setActiveGroup(group.id);
+            }
+        }
+
+        // 2. Highlight Contact
+        if (targetId) {
+            const contact = providerGroups.flatMap(g => g.contacts).find(c => c.id === targetId);
             
             if (contact) {
-                // 1. Open Modal
+                // Determine group if not set by category
+                if (!categoryParam) {
+                    // Try to switch to the contact's group if we are in 'Todos' or different
+                    const contactGroup = providerGroups.find(g => g.contacts.some(c => c.id === contact.id));
+                    if (contactGroup) setActiveGroup(contactGroup.id);
+                }
+
                 setSelectedContact(contact);
                 
-                // 2. Scroll and Flash
+                // Scroll and Flash
                 setTimeout(() => {
-                    const el = document.getElementById(`contact-${contactId}`);
+                    const el = document.getElementById(`contact-${targetId}`);
                     if (el) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         el.classList.add('ring-2', 'ring-[#E8A631]', 'bg-white/20');
                         setTimeout(() => el.classList.remove('ring-2', 'ring-[#E8A631]', 'bg-white/20'), 2000);
                     }
-                }, 100);
+                }, 300); // Increased delay slightly to ensure list matches
             }
-            // Clear state
-            window.history.replaceState({}, document.title);
+            
+            // Clean URL and State
+            // window.history.replaceState({}, document.title, location.pathname); // Optional: Clean URL? Maybe keep for refreshing?
+            // If we clean URL immediately, refresh won't persist filter. Let's keep URL.
+            // But we should clean State to avoid re-triggering on internal nav
+            if(stateTargetId) {
+                 window.history.replaceState({}, document.title);
+            }
         }
-    }, [location.state, providerGroups]);
+    }, [location.search, location.state, providerGroups]);
 
     // Schema Update: Strict fields
     const [contactForm, setContactForm] = useState({ 
@@ -90,21 +129,21 @@ const Directory = () => {
     const [interactionForm, setInteractionForm] = useState({ type: 'call', note: '', date: new Date().toISOString().split('T')[0] });
 
     // Flatten contacts for "All" view or filter by group
-    const getAllContacts = () => {
+    const getAllContacts = useCallback(() => {
          return providerGroups.flatMap(g => g.contacts.map(c => ({...c, groupTitle: g.title, groupId: g.id})));
-    };
+    }, [providerGroups]);
 
 
 
-    const getDisplayContacts = () => {
-        let contacts = activeGroup === 'Todos' 
+    const contacts = useMemo(() => {
+        let result = activeGroup === 'Todos' 
             ? getAllContacts()
             : providerGroups.find(g => g.id === activeGroup)?.contacts.map(c => ({...c, groupTitle: providerGroups.find(g => g.id === activeGroup).title, groupId: activeGroup})) || [];
         
         // Search
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
-            contacts = contacts.filter(c => 
+            result = result.filter(c => 
                 (c.proveedor || c.company || '').toLowerCase().includes(q) || 
                 (c.contacto_comercial_nombre || c.name || '').toLowerCase().includes(q) ||
                 (c.marca || c.brand || '').toLowerCase().includes(q)
@@ -113,13 +152,11 @@ const Directory = () => {
 
         // Favorites Filter
         if (showFavoritesOnly) {
-            contacts = contacts.filter(c => c.isFavorite);
+            result = result.filter(c => c.isFavorite);
         }
 
-        return contacts;
-    };
-
-    const contacts = getDisplayContacts();
+        return result;
+    }, [activeGroup, providerGroups, searchQuery, showFavoritesOnly, getAllContacts]);
 
     // Move Logic
     const handleMoveClick = (contact) => {
@@ -127,16 +164,29 @@ const Directory = () => {
         setContextMenu({ ...contextMenu, visible: false });
     };
 
-    const confirmMove = (targetGroupId) => {
+    const confirmMove = async (targetGroupId) => {
+        const targetGroup = providerGroups.find(g => g.id === targetGroupId);
+        const targetCategory = targetGroup ? targetGroup.title : "General";
+
         if (moveModal.bulk) {
-            actions.moveContacts(selectedIds, targetGroupId);
+            // Bulk Move
+            const promises = selectedIds.map(id => {
+                 // Find contact in current data
+                 const contact = providerGroups.flatMap(g => g.contacts).find(c => c.id === id);
+                 if (contact) return updateContact({ ...contact, category: targetCategory });
+                 return Promise.resolve();
+            });
+            await Promise.all(promises);
             setSelectedIds([]);
         } else {
-            actions.moveContact(moveModal.contact.id, targetGroupId);
-            // Optional: Update selected contact to reflect new group if needed
-            if (selectedContact?.id === moveModal.contact.id) {
-                const newGroupTitle = providerGroups.find(g => g.id === targetGroupId)?.title;
-                setSelectedContact({ ...selectedContact, groupId: targetGroupId, groupTitle: newGroupTitle });
+            // Single Move
+            if (moveModal.contact) {
+                await updateContact({ ...moveModal.contact, category: targetCategory });
+                
+                // Optional: Update selected contact to reflect new group if needed
+                if (selectedContact?.id === moveModal.contact.id) {
+                    setSelectedContact({ ...selectedContact, groupId: targetGroupId, groupTitle: targetCategory });
+                }
             }
         }
         setMoveModal({ isOpen: false, contact: null, bulk: false });
@@ -148,8 +198,8 @@ const Directory = () => {
             isOpen: true,
             title: '¿Eliminar Contacto?',
             message: `Vas a eliminar a ${contact.company}. Esta acción es irreversible.`,
-            onConfirm: () => {
-                actions.deleteContact(contact.id);
+            onConfirm: async () => {
+                await deleteContact(contact.id);
                 if (selectedContact?.id === contact.id) setSelectedContact(null);
                 setConfirm({ isOpen: false, title: '', message: '', onConfirm: null });
             }
@@ -158,13 +208,24 @@ const Directory = () => {
     };
     // confirmDelete removed, logic moved to onConfirm above
 
-    const handleAddInteraction = () => {
+    const handleAddInteraction = async () => {
         if (!interactionForm.note) return;
-        actions.addInteraction(selectedContact.id, interactionForm);
+        
+        const newInteraction = {
+            id: `int-${Date.now()}`,
+            type: interactionForm.type,
+            note: interactionForm.note,
+            date: interactionForm.date || new Date().toISOString().split('T')[0],
+            timestamp: new Date().toISOString()
+        };
+        
+        const updatedHistory = [...(selectedContact.history || []), newInteraction];
+        const updatedContact = { ...selectedContact, history: updatedHistory };
+        
+        await updateContact(updatedContact);
+        
         setInteractionForm({ type: 'call', note: '', date: new Date().toISOString().split('T')[0] });
-        // Force refresh selected contact to show new history
-        const updated = providerGroups.flatMap(g=>g.contacts).find(c=>c.id === selectedContact.id);
-        if(updated) setSelectedContact(updated);
+        setSelectedContact(updatedContact);
     };
 
     // Handlers
@@ -207,54 +268,68 @@ const Directory = () => {
 
     const handleSaveContact = async () => {
         try {
-        // Validation: Company name is required
-        if (!contactForm.proveedor && !contactForm.company) return; 
-        
-        // Map legacy state to new if needed
-        const payload = {
-            ...contactForm,
-            proveedor: contactForm.proveedor || contactForm.company,
-            marca: contactForm.marca || contactForm.brand
-        };
+            // Validation: Company name is required
+            if (!contactForm.proveedor && !contactForm.company) return; 
+            
+            // Map legacy state to new if needed
+            const payload = {
+                ...contactForm,
+                proveedor: contactForm.proveedor || contactForm.company,
+                marca: contactForm.marca || contactForm.brand
+            };
 
-        if (selectedContact && selectedContact.id === contactForm.id && selectedContact.groupId !== contactForm.groupId) {
-             // Moving Contact: Requires Delete from Old + Add to New
-             await actions.deleteContact(selectedContact.id); 
-             const newContact = await actions.addContact(payload); 
-             setSelectedContact({ ...newContact, groupTitle: providerGroups.find(g => g.id === newContact.groupId)?.title });
-        } else {
-             // Normal Add/Update
-             await actions.addContact(payload); 
-             if (selectedContact && selectedContact.id === contactForm.id) {
-                 const groupTitle = providerGroups.find(g => g.id === contactForm.groupId)?.title;
-                 setSelectedContact({ ...payload, groupTitle }); 
-             }
+            if (contactForm.id) {
+                 // Update
+                 // Check if group changed (category)
+                 // If groupId is passed, we might need to find the title. 
+                 // But typically form binds to category name or ID? 
+                 // Form seems to bind 'groupId'. 
+                 const group = providerGroups.find(g => g.id === contactForm.groupId);
+                 const category = group ? group.title : (contactForm.category || "General");
+                 
+                 await updateContact({ ...payload, category });
+                 addToast("Contacto actualizado", 'success');
+                 
+                 // Update selected logic
+                 if (selectedContact && selectedContact.id === contactForm.id) {
+                     setSelectedContact({ ...payload, category, groupTitle: category });
+                 }
+            } else {
+                 // Create
+                 const group = providerGroups.find(g => g.id === contactForm.groupId);
+                 const category = group ? group.title : "General";
+                 
+                 await createContact({ ...payload, category });
+                 addToast("Contacto creado", 'success');
+            }
+            setIsContactModalOpen(false);
+        } catch (error) {
+            console.error("Failed to save contact:", error);
+            addToast("Error al guardar contacto.", 'error');
         }
-        setIsContactModalOpen(false);
-    } catch (error) {
-        console.error("Failed to save contact:", error);
-        addToast("Error al guardar contacto. Revisa la consola.", 'error');
-    }
     };
 
     const handleAddGroup = () => {
         if (!newGroupTitle.trim()) return;
-        const newGroup = actions.addProviderGroup(newGroupTitle);
-        setNewGroupTitle('');
+        // Group creation is implicit by category.
+        // We just switch view to it, assuming the user will add a contact there.
+        // Or we could trigger a "New Contact" modal with this group pre-filled.
+        setActiveGroup(newGroupTitle); // Logic might need adjustment if activeGroup expects ID
+        // Actually activeGroup expects ID (g-Category). 
+        // But if it doesn't exist, we can't select it.
+        // BetterUX: Open Create Contact Modal with this category pre-filled.
+        
+        setContactForm(prev => ({ ...prev, groupId: 'new', category: newGroupTitle }));
         setIsGroupModalOpen(false);
-        setActiveGroup(newGroup.id); // Switch directly to new group
+        setNewGroupTitle('');
+        // setIsContactModalOpen(true); REMOVED: User requested not to force this flow.
+        addToast(`Categoría "${newGroupTitle}" activa`, 'success');
     };
 
-    const handleInlineCreateGroup = async () => {
+    const handleInlineCreateGroup = () => {
         if (!inlineGroupTitle.trim()) return;
-        const newGroup = await actions.addProviderGroup(inlineGroupTitle); // Ensure this returns the object
-        // If async, wait. If sync, it returns immediate.
-        // Assuming DataContext actions might be async or sync, safe to await if async, if sync it resolves immediately.
-        // NOTE: DataContext addProviderGroup implementation usually pushes to local state.
-        
-        // Optimistic update safety: providerGroups ref might not be updated immediately in this render cycle 
-        // if using complex state, but usually it's fast. 
-        setContactForm(prev => ({ ...prev, groupId: newGroup.id }));
+        // Just set the category on the form
+        setContactForm(prev => ({ ...prev, groupId: 'new', category: inlineGroupTitle }));
         setIsInlineCreatingGroup(false);
         setInlineGroupTitle('');
     };
@@ -294,7 +369,7 @@ const Directory = () => {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
             const text = evt.target.result;
             const lines = text.split('\n').filter(l => l.trim());
             // Skip header row 0
@@ -325,16 +400,20 @@ const Directory = () => {
                     isFavorite: false
                 };
                 
-                if(validContact.proveedor) actions.addContact(validContact);
+                if(validContact.proveedor) {
+                    // Create sequentially or parallel? Parallel is faster but risky for race conditions. Sequentially for safety here.
+                    await createContact(validContact);
+                }
             }
-            alert('Importación completada');
+            addToast('Importación completada', 'success');
         };
         reader.readAsText(file);
     };
 
-    const toggleFavorite = (contact, e) => {
+    const toggleFavorite = async (contact, e) => {
         if(e) e.stopPropagation();
-        actions.toggleFavoriteContact(contact.id);
+        await updateContact({ ...contact, isFavorite: !contact.isFavorite });
+        
         // If viewed interactively, update local state immediately for responsiveness
         if (selectedContact && selectedContact.id === contact.id) {
             setSelectedContact({ ...selectedContact, isFavorite: !selectedContact.isFavorite });
@@ -977,13 +1056,12 @@ const Directory = () => {
                     onClose={() => setContextMenu({ ...contextMenu, visible: false })}
                     options={
                         contextMenu.type === 'group' ? [
-                            { label: 'Anterior', icon: <ArrowLeft size={14} />, action: () => actions.moveGroup('up', contextMenu.item.id) },
-                            { label: 'Siguiente', icon: <ArrowRight size={14} />, action: () => actions.moveGroup('down', contextMenu.item.id) },
-                            { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => actions.deleteGroup(contextMenu.item.id), danger: true }
+                            // Groups are derived, cannot move/delete cleanly yet
+                             { label: 'Opciones de Grupo no disponibles', icon: <Trash2 size={14} />, action: () => {}, disabled: true }
                         ] : [
                             { label: 'Editar', icon: <Edit size={14} />, action: () => handleEditContact(contextMenu.item) },
-                            { label: 'Mover a...', icon: <Layers size={14} />, action: () => handleMoveClick(contextMenu.item) }, // NEW Move Action
-                            { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => handleDeleteClick(contextMenu.item), danger: true } // MODIFIED to use custom hook
+                            { label: 'Mover a...', icon: <Layers size={14} />, action: () => handleMoveClick(contextMenu.item) }, 
+                            { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => handleDeleteClick(contextMenu.item), danger: true }
                         ]
                     }
                 />
@@ -1019,10 +1097,11 @@ const Directory = () => {
                 message={confirm.message}
             />
             {/* PROJECT CREATION MODAL */}
-            <ProjectFormModal 
+            {/* PROJECT CREATION MODAL */}
+            <CreateCampaignModal 
                 isOpen={isProjectModalOpen} 
                 onClose={() => setIsProjectModalOpen(false)} 
-                preselectedProviderId={selectedContact?.id}
+                initialData={{ providers: selectedContact ? [selectedContact.id] : [] }}
             />
         </div>
     );

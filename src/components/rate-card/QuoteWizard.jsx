@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { useData } from '../../context/DataContext';
+import { useCampaigns } from '../../hooks/useCampaigns';
+import { useSuppliers } from '../../hooks/useSuppliers';
+import { useRateCard } from '../../hooks/useRateCard';
+import { useCreateCampaign } from '../../hooks/useMutateCampaigns'; // For optimistic project creation
 import { X, Calendar, User, Briefcase, Printer, Download, ArrowRight, Trash2, ArrowLeft, Percent, Clock, Hash, Plus, Copy, Monitor, Layers } from 'lucide-react';
 
 const QuoteWizard = ({ isOpen, onClose, selectedItems = [], initialConfig = null }) => {
     const { theme } = useTheme();
-    const { campaigns, providerGroups, actions, rateCardItems } = useData(); 
+    
+    // Hooks Replacement
+    const { data: campaigns = [] } = useCampaigns();
+    const { providerGroups = [] } = useSuppliers();
+    const { data: rateCardItems = [] } = useRateCard();
+    const { mutate: addCampaign } = useCreateCampaign();
+    // actions.addCampaign removed, use mutate directly 
 
 
     const [step, setStep] = useState(1);
@@ -239,7 +248,7 @@ const QuoteWizard = ({ isOpen, onClose, selectedItems = [], initialConfig = null
          // In a real app we might pop a mini modal or just auto-create on Save.
          // Current requirement: "permite crear un nuevo proyecto dsde desde ahi"
          if (config.projectName && !config.projectId) {
-             actions.addCampaign({ name: config.projectName }); // Optimistic creation
+             addCampaign({ name: config.projectName }); // Optimistic creation
              // We'd ideally wait for ID but for UI feedback:
              // setConfig... projectId: 'temp...' 
          }

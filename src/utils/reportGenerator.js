@@ -162,30 +162,50 @@ export const generateAndPrintReport = (reportType, config, data) => {
                     <table>
                         <thead>
                             <tr>
-                                <th>Campaña</th>
+                                <th>Tipo</th>
+                                <th>Proyecto / Sede</th>
                                 <th>Marca</th>
-                                <th>Inicio</th>
+                                <th>Fecha</th>
                                 <th>Estado</th>
                                 <th style="text-align: right">Inversión</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.slice(0, 20).map(c => `
+                            ${data.slice(0, 50).map(c => {
+                                // Smart Details Logic
+                                let details = c.name;
+                                if (c.type === 'Exhibiciones') details += ` <br><span style="color:#666; font-size:9px">📍 ${c.venue || 'Sede N/A'} • ${c.stand_type || 'Stand'}</span>`;
+                                else if (c.type === 'Eventos') details += ` <br><span style="color:#666; font-size:9px">👥 ${c.capacity || 'Pax N/A'} • 🕒 ${c.time || 'All Day'}</span>`;
+                                
+                                return `
                                 <tr>
-                                    <td style="font-weight: 600">${c.name}</td>
+                                    <td>
+                                        <span class="badge w-20 text-center inline-block ${
+                                            c.type === 'Exhibiciones' ? 'bg-purple-100 text-purple-800' : 
+                                            c.type === 'Eventos' ? 'bg-blue-100 text-blue-800' : 'bg-gray'
+                                        }" style="border:none; font-size: 8px;">
+                                            ${c.type || 'Campaña'}
+                                        </span>
+                                    </td>
+                                    <td style="font-weight: 600; line-height: 1.2;">${details}</td>
                                     <td>${c.brand}</td>
                                     <td>${c.startDate || c.date}</td>
                                     <td>
-                                        <span class="badge ${c.status === 'En Curso' ? 'bg-green' : c.status === 'Pendiente' ? 'bg-yellow' : 'bg-gray'}">
+                                        <span class="badge ${
+                                            c.status === 'En Curso' ? 'bg-green' : 
+                                            c.status === 'Planificación' ? 'bg-yellow' : 
+                                            c.status === 'Finalizado' ? 'bg-gray' : 'bg-gray'
+                                        }">
                                             ${c.status}
                                         </span>
                                     </td>
-                                    <td style="text-align: right; font-family: monospace">${c.cost}</td>
+                                    <td style="text-align: right; font-family: monospace">${c.cost ? (typeof c.cost === 'string' && c.cost.includes('$') ? c.cost : '$' + parseFloat(c.cost || 0).toLocaleString()) : '$0'}</td>
                                 </tr>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
-                    ${data.length > 20 ? `<p style="text-align: center; color: #999; font-size: 10px; margin-top: 15px;">...mostrando 20 de ${data.length} campañas.</p>` : ''}
+                    ${data.length > 50 ? `<p style="text-align: center; color: #999; font-size: 10px; margin-top: 15px;">...mostrando 50 de ${data.length} registros.</p>` : ''}
                 </div>
 
                 <div class="footer">

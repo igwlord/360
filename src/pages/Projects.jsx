@@ -1,33 +1,52 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useData } from '../context/DataContext';
-import { Plus, Calendar, DollarSign, Clock, MoreHorizontal, Edit, Trash2, Link, CheckCircle, Circle, AlertCircle, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, LayoutList, KanbanSquare } from 'lucide-react';
+// import { useData } from '../context/DataContext'; REMOVED
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { Plus, Search, Filter, Calendar, BarChart2, MoreVertical, Edit, Trash2, CheckCircle, Circle, AlertCircle, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, LayoutList, KanbanSquare, DollarSign, MapPin, Users } from 'lucide-react';
 import Modal from '../components/common/Modal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ContextMenu from '../components/common/ContextMenu';
 import GlassSelect from '../components/common/GlassSelect';
 import GlassTable from '../components/common/GlassTable';
-import ProjectFormModal from '../components/projects/ProjectFormModal';
+import CreateCampaignModal from '../components/projects/CreateCampaignModal';
+import CreateEventModal from '../components/projects/CreateEventModal';
+import CreateExhibitionModal from '../components/projects/CreateExhibitionModal';
+import CreateSpecialModal from '../components/projects/CreateSpecialModal';
 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 
+import { useSuppliers } from '../hooks/useSuppliers';
+import { useCampaigns } from '../hooks/useCampaigns';
+import { useCalendarEvents } from '../hooks/useCalendarEvents'; // NEW
+import { useUpdateCampaign, useDeleteCampaign } from '../hooks/useMutateCampaigns';
+import { formatCurrency } from '../utils/dataUtils';
+import { calculateFinancials } from '../utils/financials';
+
 const Projects = () => {
     const { theme } = useTheme();
-    const { campaigns: projects, providerGroups, addProject, updateProject, deleteProject, formatCurrency } = useData(); 
+    // Removed campaigns, addProject, updateProject, deleteProject from useData
+    // const { formatCurrency } = useData(); REMOVED 
+    
+    // Query Hooks
+    const { data: projects = [] } = useCampaigns();
+    const { data: calendarEvents = [] } = useCalendarEvents(); // NEW
+    const { data: providerGroups = [] } = useSuppliers();
+    const { mutateAsync: updateProject } = useUpdateCampaign();
+    const { mutateAsync: deleteProject } = useDeleteCampaign();
+
     const { addToast } = useToast();
     const location = useLocation();
     const navigate = useNavigate();
     
     // Local State for Kanban
     const [viewMode, setViewMode] = useState('board'); // 'board' | 'list'
+    const [activeTab, setActiveTab] = useLocalStorage('projects_active_tab', 'Campaña'); // 'Campaña', 'Eventos', 'Exhibiciones', 'Especiales'
     const [draggedItem, setDraggedItem] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form, setForm] = useState({ id: null, name: '', brand: '', status: 'Planificación', type: 'Campaña', dept: '', cost: '', date: '', notes: '' });
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, item: null });
-    const [transType, setTransType] = useState('expense'); // 'expense' | 'income'
-    const [financeAmount, setFinanceAmount] = useState('');
     
     // Confirm Modal State
     const [confirm, setConfirm] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
@@ -81,17 +100,44 @@ const Projects = () => {
 
     const statuses = ['Planificación', 'En Curso', 'Pendiente', 'Finalizado'];
 
+    // Merge Projects + Calendar Campaigns
+    const allItems = [
+        ...projects.map(p => ({ ...p, _source: 'campaign' })),
+        ...calendarEvents.filter(e => e.type === 'campaign' || e.type === 'marketing').map(e => ({
+            id: `evt-${e.id}`,
+            name: e.title,
+            brand: e.type === 'campaign' ? (e.extendedProps?.brand || 'Campaña') : 'Evento',
+            status: 'Planificación', 
+            type: e.type === 'campaign' ? 'Campaña' : 'Eventos', // Respect source type
+            date: e.date,
+            transactions: [],
+            budget: 0,
+            _source: 'calendar'
+        }))
+    ];
+
+    // Filter Items by Active Tab
+    const filteredItems = allItems.filter(item => {
+        if (activeTab === 'Campaña') return item.type === 'Campaña' && item.type !== 'Especial'; // Strict Check
+        if (activeTab === 'Eventos') return item.type === 'Eventos' || item.type === 'Evento'; 
+        return item.type === activeTab; // Exhibiciones, Especiales
+    });
+
     // Group Projects by Status (Normalized)
     const projectsByStatus = statuses.reduce((acc, status) => {
-        acc[status] = projects.filter(c => {
-             // Exact match
+        acc[status] = filteredItems.filter(c => { 
              if (c.status === status) return true;
-             // If status is empty/unknown and we are in Planificación, include it?
-             if (status === 'Planificación' && !statuses.includes(c.status)) return true; // Catch-all for unknown statuses
+             if (status === 'Planificación' && !statuses.includes(c.status)) return true; 
              return false;
         }) || [];
         return acc;
     }, {});
+
+    // Filter duplicates (if an event implies a campaign that already exists)
+    // Simple dedupe by name for now if needed, but IDs should differ.
+    // For now we just show ALL.
+
+
 
     const handleDragStart = (e, item) => {
         setDraggedItem(item);
@@ -111,14 +157,18 @@ const Projects = () => {
         setDraggedItem(null);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = (project) => {
+        const typeLabel = project.type === 'Campaña' ? 'la Campaña' : 
+                          project.type === 'Eventos' ? 'el Evento' : 
+                          project.type === 'Exhibiciones' ? 'la Exhibición' : 'el Proyecto';
+
         setConfirm({
             isOpen: true,
-            title: '¿Eliminar Proyecto?',
-            message: 'Esta acción no se puede deshacer. Se perderán todos los datos vinculados.',
+            title: `¿Eliminar ${project.name}?`,
+            message: `Está a punto de eliminar ${typeLabel}. Esta acción es irreversible y podría afectar los presupuestos globales.`,
             onConfirm: async () => {
-                await deleteProject(id);
-                addToast('Proyecto eliminado', 'error');
+                await deleteProject(project.id);
+                addToast(`${typeLabel} eliminado correctamente`, 'success'); 
             }
         });
     };
@@ -126,64 +176,178 @@ const Projects = () => {
     const openEdit = (item, tab = 'details') => {
         setForm({ ...item, activeTab: tab });
         setIsModalOpen(true);
-        addToast('Movimiento Agregado', 'success');
+    };
+
+    const renderKanbanCardContent = (project, financials) => {
+        switch (project.type) {
+            case 'Eventos':
+                return (
+                    <div className="pl-2 space-y-2">
+                        <div className="flex items-center gap-2 text-xs text-white/60">
+                            <Calendar size={12} className="text-[#E8A631]"/> 
+                            <span>{project.date ? new Date(project.date).toLocaleDateString() : 'Sin fecha'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-white/60">
+                            <MapPin size={12} className="text-blue-400"/> 
+                            <span className="truncate">{project.venue || 'Sede sin definir'}</span>
+                        </div>
+                         <div className="flex items-center gap-2 text-xs text-white/50">
+                            <Users size={12}/> 
+                            <span>Aforo: {project.capacity || '--'}</span>
+                        </div>
+                    </div>
+                );
+            case 'Exhibiciones':
+                return (
+                    <div className="pl-2 space-y-2">
+                         <div className="flex items-center gap-2 text-xs text-white/60">
+                            <MapPin size={12} className="text-purple-400"/> 
+                            <span>{project.venue || 'Retailer sin definir'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-white/60">
+                             <LayoutList size={12} />
+                             <span>{project.booth_type || 'Stand Estándar'}</span>
+                        </div>
+                         {project.dimensions && (
+                            <div className="text-[10px] text-white/40 pl-5">
+                                {project.dimensions}
+                            </div>
+                         )}
+                    </div>
+                );
+            case 'Especiales':
+                return (
+                    <div className="pl-2 space-y-2">
+                        <div className="flex items-center gap-2 text-xs text-white/60">
+                            <Calendar size={12} className="text-pink-400"/> 
+                            <span>{project.date || 'Sin fecha clave'}</span>
+                        </div>
+                    </div>
+                );
+            case 'Campaña':
+            default:
+                // Default Campaign View (Financial Focus)
+                return (
+                    <div className="pl-2 space-y-2">
+                        {project.date && (
+                             <div className="flex items-center gap-2 text-xs text-white/50">
+                                <Calendar size={12} /> <span>{project.date}</span>
+                            </div>
+                        )}
+                        {/* Provider Pills */}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                                {project.providers?.map(pId => {
+                                    const group = providerGroups.find(g => g.contacts.some(c => c.id === pId));
+                                    const provider = group?.contacts.find(c => c.id === pId);
+                                    
+                                    return provider ? (
+                                        <div 
+                                            key={pId} 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const category = group?.title || 'Todos';
+                                                navigate(`/directory?category=${encodeURIComponent(category)}&highlight=${pId}`);
+                                            }}
+                                            className="text-[9px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded border border-white/5 truncate max-w-[80px] cursor-pointer hover:bg-white/20 hover:text-white transition-colors" 
+                                            title={`${provider.company} (${group?.title})`}
+                                        >
+                                            {provider.brand || provider.company}
+                                        </div>
+                                    ) : null;
+                                })}
+                            </div>
+                        
+                        {/* Financial Summary Pill */}
+                        <div onClick={(e) => { e.stopPropagation(); openEdit(project, 'financial'); }} className="flex items-center justify-between bg-black/20 rounded-lg p-2 text-xs cursor-pointer hover:bg-black/30 transition-colors border border-white/5 mt-2">
+                            <div className="flex items-center gap-2 text-white/70">
+                                <DollarSign size={12} className={theme.accent}/>
+                                <span>Disp: <span className={`font-bold ${financials.available < 0 ? 'text-red-500' : 'text-white'}`}>{formatCurrency(financials.available)}</span></span>
+                            </div>
+                            <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+                                <div className={`h-full ${financials.available < 0 ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${financials.progress}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                );
+        }
     };
 
     return (
         <div className="h-full flex flex-col" onClick={() => setContextMenu({ ...contextMenu, visible: false })}>
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                     <h1 className={`text-3xl font-bold ${theme.text}`}>Proyectos</h1>
-                     <p className={`${theme.textSecondary} text-sm mt-1`}>Tablero de Gestión de Proyectos</p>
+            {/* ... lines 182-230 unchanged ... */}
+             <div className="flex flex-col gap-6 mb-6">
+                <div className="flex justify-between items-center">
+                    <div>
+                         <h1 className={`text-3xl font-bold ${theme.text}`}>Proyectos</h1>
+                         <p className={`${theme.textSecondary} text-sm mt-1`}>Tablero de Gestión</p>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <div className="bg-black/20 p-1 rounded-xl flex border border-white/5">
-                        <button 
-                            onClick={() => setViewMode('board')} 
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'board' ? 'bg-white/10 text-white shadow' : 'text-white/40 hover:text-white'}`}
-                            title="Vista Tablero"
-                        >
-                            <KanbanSquare size={18} />
-                        </button>
-                        <button 
-                            onClick={() => setViewMode('list')} 
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow' : 'text-white/40 hover:text-white'}`}
-                            title="Vista Lista"
-                        >
-                            <LayoutList size={18} />
-                        </button>
+
+                {/* Tabs & Actions Bar */}
+                <div className="flex flex-wrap gap-4 items-center justify-between">
+                    {/* Category Tabs */}
+                    <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 overflow-x-auto custom-scrollbar">
+                        {['Campaña', 'Eventos', 'Exhibiciones', 'Especiales'].map(tab => (
+                            <button 
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white/10 text-white shadow' : 'text-white/40 hover:text-white'}`}
+                            >
+                                {tab}
+                            </button>
+                        ))}
                     </div>
 
-                    <button onClick={() => { setForm({ id: null, name: '', brand: '', status: 'Planificación' }); setIsModalOpen(true); }} className={`${theme.accentBg} text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 shadow-lg`}>
-                        <Plus size={18} /> <span className="hidden md:inline">Nuevo Proyecto</span>
-                    </button>
+                    <div className="flex gap-4 items-center ml-auto">
+                        {/* View Switcher */}
+                        <div className="bg-black/20 p-1 rounded-xl flex border border-white/5">
+                            <button 
+                                onClick={() => setViewMode('board')} 
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'board' ? 'bg-white/10 text-white shadow' : 'text-white/40 hover:text-white'}`}
+                                title="Vista Tablero"
+                            >
+                                <KanbanSquare size={18} />
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('list')} 
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow' : 'text-white/40 hover:text-white'}`}
+                                title="Vista Lista"
+                            >
+                                <LayoutList size={18} />
+                            </button>
+                        </div>
+
+                        <button onClick={() => { setForm({ id: null, name: '', brand: '', status: 'Planificación', type: activeTab }); setIsModalOpen(true); }} className={`${theme.accentBg} text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 shadow-lg`}>
+                            <Plus size={18} /> <span className="hidden md:inline">Nuevo {activeTab === 'Eventos' ? 'Evento' : activeTab === 'Exhibiciones' ? 'Exhibición' : activeTab === 'Especiales' ? 'Proyecto Especial' : 'Campaña'}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Content Switcher */}
+
             {viewMode === 'list' ? (
                  <GlassTable 
-                    data={projects}
+                    data={filteredItems}
+                    onRowClick={(row) => openEdit(row)} // Enable Clickable Rows
                     columns={[
                         { 
                             header: 'Proyecto', 
                             accessor: 'name',
                             render: (row) => (
                                 <div>
-                                    <div className="font-bold text-white">{row.name}</div>
-                                    <div className="text-xs text-white/40">{row.type}</div>
+                                    <div className="font-bold text-white">{row.name.replace(/\s*\(.*?\)\s*/g, '')}</div>
                                 </div>
                             )
                         },
                         { 
                             header: 'Marca', 
                             accessor: 'brand', 
-                            render: (row) => (
+                            render: (row) => row.brand ? (
                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/10 ${theme.textSecondary}`}>
                                     {row.brand}
                                 </span>
-                            )
+                            ) : <span className="text-white/20 text-[10px] italic">Sin Marca</span>
                         },
                         { 
                             header: 'Estado', 
@@ -200,20 +364,18 @@ const Projects = () => {
                         },
                         { header: 'Fechas', accessor: 'date', className: 'text-white/60' },
                         { 
-                            header: 'Presupuesto', 
+                            header: 'Disponible', 
                             accessor: 'budget', // virtual
                             render: (row) => {
-                                const totalBudget = row.transactions?.reduce((acc, t) => t.type === 'initial' || t.type === 'income' ? acc + t.amount : acc, 0) || 0;
-                                return <span className="font-mono text-white/80">${formatCurrency(totalBudget)}</span>;
+                                const financials = calculateFinancials(row, projects);
+                                return <span className={`font-mono font-bold ${financials.available < 0 ? 'text-red-400' : 'text-white/80'}`}>{formatCurrency(financials.available)}</span>;
                             }
                         },
                         { 
                             header: 'Avance', 
                             accessor: 'progress', // virtual
                             render: (row) => {
-                                const totalBudget = row.transactions?.reduce((acc, t) => t.type === 'initial' || t.type === 'income' ? acc + t.amount : acc, 0) || 0;
-                                const executed = row.transactions?.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0) || 0;
-                                const progress = totalBudget > 0 ? Math.min((executed / totalBudget) * 100, 100) : 0;
+                                const { progress } = calculateFinancials(row, projects);
                                 return (
                                     <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
                                         <div className="h-full bg-green-500" style={{ width: `${progress}%` }}></div>
@@ -228,7 +390,7 @@ const Projects = () => {
                                 <div className="flex gap-2">
                                     <button onClick={(e) => { e.stopPropagation(); openEdit(row, 'details'); }} className="p-1.5 hover:bg-white/10 rounded text-blue-300" title="Editar"><Edit size={14}/></button>
                                     <button onClick={(e) => { e.stopPropagation(); openEdit(row, 'financial'); }} className="p-1.5 hover:bg-white/10 rounded text-green-300" title="Finanzas"><DollarSign size={14}/></button>
-                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }} className="p-1.5 hover:bg-white/10 rounded text-red-400" title="Eliminar"><Trash2 size={14}/></button>
+                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(row); }} className="p-1.5 hover:bg-white/10 rounded text-red-400" title="Eliminar"><Trash2 size={14}/></button>
                                 </div>
                             )
                         }
@@ -260,16 +422,15 @@ const Projects = () => {
                         {/* Cards */}
                         <div className="p-3 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
                             {projectsByStatus[status].map(project => {
-                                // Calculate Financials on the fly for card view
-                                const totalBudget = project.transactions?.reduce((acc, t) => t.type === 'initial' || t.type === 'adjustment' ? acc + t.amount : acc, 0) || 0;
-                                const executed = project.transactions?.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0) || 0;
-                                const available = totalBudget - executed;
-
+                                // Calculate Financials with Standardized Utility (includes Child Aggregation + ROAS)
+                                const financials = calculateFinancials(project, projects);
+                                
                                 return (
                                 <div 
                                     key={project.id}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, project)}
+                                    onClick={() => openEdit(project)}
                                     onContextMenu={(e) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY, item: project }); }}
                                     className={`p-4 rounded-2xl border border-white/5 ${theme.cardBg} hover:bg-white/10 transition-all cursor-grab active:cursor-grabbing hover:translate-y-[-2px] hover:shadow-xl group relative overflow-hidden`}
                                 >
@@ -277,57 +438,40 @@ const Projects = () => {
                                     <div className={`absolute top-0 left-0 w-1 h-full ${status === 'En Curso' ? 'bg-green-500' : 'bg-white/20'}`}></div>
 
                                     <div className="flex justify-between items-start mb-2 pl-2">
-                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/10 ${theme.textSecondary}`}>{project.brand}</span>
+                                        <div className="flex gap-2">
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/10 ${theme.textSecondary}`}>{project.brand}</span>
+                                            {/* ROAS Badge (Only for Campaigns with Revenue) */}
+                                            {project.type === 'Campaña' && Number(financials.roas) > 0 && (
+                                                <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/20 flex items-center gap-1">
+                                                    <TrendingDown size={10} className="rotate-180"/> ROAS {financials.roas}x
+                                                </span>
+                                            )}
+                                        </div>
                                         <button onClick={(e) => { e.stopPropagation(); openEdit(project); }} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/20 rounded text-white/60 hover:text-white transition-opacity">
                                             <Edit size={12} />
                                         </button>
                                     </div>
                                     
-                                    <h4 className="font-bold text-white text-lg pl-2 leading-tight mb-3">{project.name}</h4>
+                                    <h4 className="font-bold text-white text-lg pl-2 leading-tight mb-3">{project.name.replace(/\s*\(.*?\)\s*/g, '')}</h4>
                                     
-                                    <div className="pl-2 space-y-2">
-                                        {project.date && (
-                                            <div className="flex items-center gap-2 text-xs text-white/50">
-                                                <Calendar size={12} /> <span>{project.date}</span>
+                                    {/* DYNAMIC CARD CONTENT BASED ON TYPE */}
+                                    {renderKanbanCardContent(project, financials)}
+                                    
+                                    {/* Progress (Only Show for Campaigns or if budget > 0) */}
+                                    {project.type === 'Campaña' && (
+                                        <div className="mt-4 pl-2">
+                                            <div className="flex justify-between text-[10px] text-white/40 mb-1">
+                                                <span>Progreso Presupuesto</span>
+                                                <span>{Math.round(financials.progress)}%</span>
                                             </div>
-                                        )}
-                                        
-                                        {/* Financial Summary Pill */}
-                                        <div onClick={(e) => { e.stopPropagation(); openEdit(project, 'financial'); }} className="flex items-center justify-between bg-black/20 rounded-lg p-2 text-xs cursor-pointer hover:bg-black/30 transition-colors border border-white/5 mt-2">
-                                            <div className="flex items-center gap-2 text-white/70">
-                                                <DollarSign size={12} className={theme.accent}/>
-                                                <span>Disp: <span className="text-white font-bold">${formatCurrency(available)}</span></span>
-                                            </div>
-                                            <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
-                                                <div className={`h-full ${available < 0 ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${totalBudget > 0 ? (executed / totalBudget) * 100 : 0}%` }}></div>
+                                            <div className="h-1 bg-black/40 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full rounded-full ${status === 'En Curso' ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-white/30'}`} 
+                                                    style={{ width: `${financials.progress}%` }}
+                                                ></div>
                                             </div>
                                         </div>
-
-                                        {project.notes && (
-                                            <div className="mt-2 text-xs text-white/40 italic line-clamp-2 border-t border-white/5 pt-2">
-                                                "{project.notes}"
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Progress - Now based on Budget Execution */}
-                                    {(() => {
-                                        const progress = totalBudget > 0 ? Math.min(Math.round((executed / totalBudget) * 100), 100) : 0;
-                                        return (
-                                            <div className="mt-4 pl-2">
-                                                <div className="flex justify-between text-[10px] text-white/40 mb-1">
-                                                    <span>Progreso (Presupuesto)</span>
-                                                    <span>{progress}%</span>
-                                                </div>
-                                                <div className="h-1 bg-black/40 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className={`h-full rounded-full ${status === 'En Curso' ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-white/30'}`} 
-                                                        style={{ width: `${progress}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
+                                    )}
                                 </div>
                             )})}
                         </div>
@@ -336,13 +480,37 @@ const Projects = () => {
             </div>
             )}
 
-            {/* Edit / Create Modal */}
-            <ProjectFormModal 
-                isOpen={isModalOpen} 
-                onClose={closeModal} 
-                initialData={form.id ? form : null}
-                openTab={form.activeTab || 'details'}
-            />
+            {/* Modal Router */}
+            {isModalOpen && (
+                <>
+                    {/* Render specific modal based on Type or Active Tab */}
+                    {(form.type === 'Eventos' || (activeTab === 'Eventos' && !form.id)) ? (
+                        <CreateEventModal 
+                            isOpen={isModalOpen} 
+                            onClose={closeModal} 
+                            initialData={form.id ? form : null}
+                        />
+                    ) : (form.type === 'Exhibiciones' || (activeTab === 'Exhibiciones' && !form.id)) ? (
+                        <CreateExhibitionModal 
+                            isOpen={isModalOpen} 
+                            onClose={closeModal} 
+                            initialData={form.id ? form : null}
+                        />
+                    ) : (form.type === 'Especiales' || (activeTab === 'Especiales' && !form.id)) ? (
+                        <CreateSpecialModal 
+                            isOpen={isModalOpen} 
+                            onClose={closeModal} 
+                            initialData={form.id ? form : null}
+                        />
+                    ) : (
+                        <CreateCampaignModal 
+                            isOpen={isModalOpen} 
+                            onClose={closeModal} 
+                            initialData={form.id ? form : null}
+                        />
+                    )}
+                </>
+            )}
 
             {/* Context Menu */}
             {contextMenu.visible && (
@@ -351,7 +519,7 @@ const Projects = () => {
                     onClose={() => setContextMenu({ ...contextMenu, visible: false })}
                     options={[
                         { label: 'Editar', icon: <Edit size={14} />, action: () => openEdit(contextMenu.item) },
-                        { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => handleDelete(contextMenu.item.id), danger: true }
+                        { label: 'Eliminar', icon: <Trash2 size={14} />, action: () => handleDelete(contextMenu.item), danger: true }
                     ]}
                 />
             )}

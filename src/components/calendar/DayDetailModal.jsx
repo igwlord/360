@@ -2,15 +2,23 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { X, Plus, Clock, Tag, Trash2, Calendar as CalIcon } from 'lucide-react';
-import { useData } from '../../context/DataContext';
 import { useColorTheme } from '../../context/ColorThemeContext';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
-import ProjectFormModal from '../projects/ProjectFormModal';
+import CreateCampaignModal from '../projects/CreateCampaignModal';
+import { useToast } from '../../context/ToastContext';
+
+import { useCreateEvent, useUpdateEvent, useDeleteEvent } from '../../hooks/useMutateCalendarEvents';
 
 const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
     const { theme } = useTheme();
-    const { addEvent, updateEvent, deleteEvent, setCalendarEvents } = useData(); // setCalendarEvents maps to setUserEvents
-    const { getCategoryClasses } = useColorTheme();
+    const { getCategoryClasses } = useColorTheme(); // Keep this
+    const { addToast } = useToast();
+    
+    // Mutations
+    const { mutateAsync: addEvent } = useCreateEvent();
+    const { mutateAsync: updateEvent } = useUpdateEvent();
+    const { mutateAsync: deleteEvent } = useDeleteEvent();
+
     const [newEventTitle, setNewEventTitle] = useState('');
     const [newEventTime, setNewEventTime] = useState('09:00');
     const [newEventTag, setNewEventTag] = useState('meeting');
@@ -25,7 +33,7 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
 
     if (!isOpen || !date) return null;
 
-    const handleAddEvent = (e) => {
+    const handleAddEvent = async (e) => {
         e.preventDefault();
         if (!newEventTitle.trim()) return;
 
@@ -50,32 +58,22 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
 
         if (editingEventId) {
             // UPDATE
-            if (updateEvent) {
-                updateEvent(eventPayload);
-            } else {
-                 // Fallback
-                 setCalendarEvents(prev => prev.map(e => e.id === editingEventId ? eventPayload : e));
-            }
+            await updateEvent(eventPayload);
             setEditingEventId(null);
+            addToast('Evento actualizado', 'success');
         } else {
             // CREATE
-            if (addEvent) {
-                addEvent(eventPayload);
-            } else {
-                setCalendarEvents(prev => [...prev, eventPayload]);
-            }
+            await addEvent(eventPayload);
+            addToast('Evento creado', 'success');
         }
         
         setNewEventTitle('');
         setNewEventTime('09:00'); // Reset time too
     };
 
-    const handleDeleteEvent = (id) => {
-        if (deleteEvent) {
-            deleteEvent(id);
-        } else {
-             setCalendarEvents(prevUserEvents => prevUserEvents.filter(e => e.id !== id));
-        }
+    const handleDeleteEvent = async (id) => {
+        await deleteEvent(id);
+        addToast('Evento eliminado', 'info');
         if (editingEventId === id) {
             cancelEdit();
         }
@@ -215,10 +213,10 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
             </div>
 
             {/* Project Modal */}
-            <ProjectFormModal 
+            <CreateCampaignModal 
                 isOpen={isProjectModalOpen} 
                 onClose={() => setIsProjectModalOpen(false)} 
-                initialData={{ date: date ? `${date.getDate()} ${date.toLocaleDateString('es-ES', { month: 'short' })}` : '' }}
+                initialData={{ date: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '' }} 
             />
 
             {/* CHILL MODAL */}

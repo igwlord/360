@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { useData } from '../../context/DataContext';
+import { useCampaigns } from '../../hooks/useCampaigns';
+import { useTransactions } from '../../hooks/useTransactions';
 import { Target, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { formatCurrency } from '../../utils/dataUtils';
 
 const ObjectivesWidget = () => {
     const { theme } = useTheme();
-    const { projects } = useData();
+    const { data: transactions = [] } = useTransactions();
 
     // Configuration (Could be moved to Settings later)
     const TARGET_MONTHLY_REVENUE = 100000; // $100k Target
@@ -18,15 +20,14 @@ const ObjectivesWidget = () => {
         let totalIncome = 0;
         let totalExpense = 0;
 
-        projects.forEach(p => {
-            if (!p.transactions) return;
-            p.transactions.forEach(t => {
-                const tDate = new Date(t.date);
-                if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-                    if (t.type === 'income') totalIncome += t.amount;
-                    if (t.type === 'expense') totalExpense += t.amount;
-                }
-            });
+        // Iterate independent transactions stream
+        transactions.forEach(t => {
+             const tDate = new Date(t.date);
+             if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+                 const amount = parseFloat(t.amount) || 0;
+                 if (t.type === 'income') totalIncome += amount;
+                 if (t.type === 'expense') totalExpense += amount;
+             }
         });
 
         const netRevenue = totalIncome - totalExpense;
@@ -38,11 +39,7 @@ const ObjectivesWidget = () => {
             totalIncome,
             totalExpense
         };
-    }, [projects]);
-
-    const formatCurrency = (val) => {
-        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
-    };
+    }, [transactions]); // Campaigns not strictly needed for revenue if derived from transactions
 
     return (
         <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-6 border border-white/10 relative overflow-hidden group`}>

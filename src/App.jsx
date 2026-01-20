@@ -2,7 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
-import { DataProvider } from './context/DataContext';
+// import { DataProvider } from './context/DataContext'; REMOVED
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import MainLayout from './layout/MainLayout';
@@ -47,7 +47,6 @@ const App = () => {
         <ToastProvider>
           <Router>
             <AuthProvider>
-              <DataProvider>
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/*" element={
@@ -71,7 +70,6 @@ const App = () => {
                         </ProtectedRoute>
                     } />
                 </Routes>
-              </DataProvider>
             </AuthProvider>
           </Router>
         </ToastProvider>

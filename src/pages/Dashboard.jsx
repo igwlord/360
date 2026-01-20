@@ -1,39 +1,51 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useData } from '../context/DataContext';
+// import { useData } from '../context/DataContext'; // REMOVED
+import { useCampaigns } from '../hooks/useCampaigns';
+import { useSuppliers } from '../hooks/useSuppliers';
+import { useTasks } from '../hooks/useTasks';
 import { useRoiCalculator } from '../hooks/useRoiCalculator';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { DollarSign, TrendingUp, Users, Settings, Star, Plus, Sliders, Filter, Eye, Briefcase, Activity, ArrowDownRight, ArrowUpRight, Mail, Phone, Trash2, Printer, X, ChevronDown, ChevronUp, PieChart, FileText, Circle, Clock } from 'lucide-react';
 import { DonutChart, FilterPill, VisibilityToggle } from '../components/dashboard/Widgets';
 import ObjectivesWidget from '../components/dashboard/ObjectivesWidget';
+import RetailerShareWidget from '../components/dashboard/RetailerShareWidget';
+import UpcomingDeadlinesWidget from '../components/dashboard/UpcomingDeadlinesWidget';
+import { useCalendarEvents } from '../hooks/useCalendarEvents';
 import Modal from '../components/common/Modal';
 import Tooltip from '../components/common/Tooltip';
 import { useNavigate } from 'react-router-dom';
-import { generateAndPrintReport } from '../utils/reportGenerator'; // Need this for direct printing
+import { generateAndPrintReport } from '../utils/reportGenerator'; 
+import { isCampaignInPeriod, formatCurrency } from '../utils/dataUtils';
 
 import { CheckCircle } from 'lucide-react';
 
-const TaskItem = ({ task, theme }) => {
-    const [completed, setCompleted] = React.useState(task.done);
+const TaskItem = ({ task, theme, onToggle }) => { // Added onToggle prop
     return (
         <div 
-            onClick={() => setCompleted(!completed)}
-            className={`flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${completed ? 'bg-white/5 opacity-50' : 'bg-white/10 hover:bg-white/15'}`}
+            onClick={() => onToggle(task.id)}
+            className={`flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${task.done ? 'bg-white/5 opacity-50' : 'bg-white/10 hover:bg-white/15'}`}
         >
-            <div className={`w-5 h-5 rounded-full border border-white/30 flex items-center justify-center transition-colors ${completed ? theme.accentBg + ' border-transparent' : ''}`}>
-                {completed && <CheckCircle size={12} className="text-black"/>}
+            <div className={`w-5 h-5 rounded-full border border-white/30 flex items-center justify-center transition-colors ${task.done ? theme.accentBg + ' border-transparent' : ''}`}>
+                {task.done && <CheckCircle size={12} className="text-black"/>}
             </div>
-            <span className={`text-xs font-bold ${completed ? 'line-through text-white/50' : 'text-white'}`}>{task.text}</span>
+            <span className={`text-xs font-bold ${task.done ? 'line-through text-white/50' : 'text-white'}`}>{task.text}</span>
         </div>
     );
 };
 
 const Dashboard = () => {
-    // ... rest of the component
+  // ... rest of the component
 
   const { theme } = useTheme();
-  const { campaigns, providerGroups, tasks, actions } = useData();
+  
+  // New Hooks
+  const { data: campaigns = [] } = useCampaigns();
+  const { providerGroups = [] } = useSuppliers();
+  const { data: calendarEvents = [] } = useCalendarEvents();
+  const { tasks, addTask, updateTask, removeTask, toggleTask } = useTasks();
+  
   const navigate = useNavigate();
 
   // Local State for Dashboard UI
@@ -49,8 +61,15 @@ const Dashboard = () => {
   const [detailTab, setDetailTab] = useState('suppliers'); // 'suppliers' | 'tasks' | 'alerts'
 
   // NEW: Date Filter State
-  const [dateFilter, setDateFilter] = useState({ year: 2026, month: 'All' });
+  const [dateFilter, setDateFilter] = useState({ year: 'All', month: 'All' });
   const months = ['All', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+  // NEW: Persistent Dashboard Config (Phase 2)
+  const [dashboardConfig, setDashboardConfig] = useLocalStorage('dashboard-config-v1', {
+      showPartners: true,
+      showRecentActivity: true, 
+      showObjectives: true
+  });
 
   // Strategy & Reports Logic
   const [isRoiExpanded, setIsRoiExpanded] = useState(false);
@@ -67,23 +86,13 @@ const Dashboard = () => {
   ];
 
   // Computed Data
+  // Computed Data
   const filteredCampaigns = campaigns.filter(c => {
       // 1. Status Filter
       if (campaignFilter !== 'Todos' && c.status !== campaignFilter) return false;
       
-      // 2. Date Filter (Simple string check as dates are "10 Ene - 20 Feb")
-      // If "All", pass. If specific month, check if string includes it. 
-      // NOTE: Real implementation would parse dates properly.
-      if (dateFilter.month !== 'All') {
-          // Normalize: "Ene" matches "Ene" in string
-          if (!c.date?.toLowerCase().includes(dateFilter.month.toLowerCase())) return false;
-      }
-      
-      // Year check - weak check on string if it contains 2026 etc if present? 
-      // Assuming current data implies current year unless specified.
-      // For now, let's assume all data is current FY.
-      
-      return true;
+      // 2. Date Filter (Using robust Utils)
+      return isCampaignInPeriod(c.date, dateFilter.year, dateFilter.month);
   });
   
   // Dashboard Partners (Top 5 Favorites)
@@ -132,7 +141,7 @@ const Dashboard = () => {
                                     <FilterPill label="Planificación" active={campaignFilter === 'Planificación'} onClick={() => setCampaignFilter('Planificación')} />
                                 </div>
                             </div>
-                        )}
+                        
                         
                         {/* NEW: Date Filters */}
                         <div className="mb-4 text-left border-t border-white/10 pt-4">
@@ -140,9 +149,10 @@ const Dashboard = () => {
                              <div className="grid grid-cols-2 gap-2 mb-2">
                                 <select 
                                     value={dateFilter.year}
-                                    onChange={(e) => setDateFilter({...dateFilter, year: Number(e.target.value)})}
+                                    onChange={(e) => setDateFilter({...dateFilter, year: e.target.value === 'All' ? 'All' : Number(e.target.value)})}
                                     className="bg-white/5 border border-white/10 rounded-lg text-xs text-white p-1 focus:outline-none focus:border-[#E8A631]"
                                 >
+                                    <option value="All">Todos</option>
                                     <option value={2026}>2026</option>
                                     <option value={2025}>2025</option>
                                 </select>
@@ -158,8 +168,21 @@ const Dashboard = () => {
                         <div className="text-left">
                             <h4 className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} mb-2 font-bold flex items-center gap-1`}><Eye size={10}/> Visualización</h4>
                             <div className="space-y-2">
-                                <VisibilityToggle label="Top Partners" checked={true} onChange={() => {}} disabled={true} />
-                                <VisibilityToggle label="Actividad Reciente" checked={true} onChange={() => {}} disabled={true} />
+                                <VisibilityToggle 
+                                    label="Top Partners" 
+                                    checked={dashboardConfig.showPartners} 
+                                    onChange={() => setDashboardConfig({...dashboardConfig, showPartners: !dashboardConfig.showPartners})} 
+                                />
+                                <VisibilityToggle 
+                                    label="Actividad Reciente" 
+                                    checked={dashboardConfig.showRecentActivity} 
+                                    onChange={() => setDashboardConfig({...dashboardConfig, showRecentActivity: !dashboardConfig.showRecentActivity})} 
+                                />
+                                <VisibilityToggle 
+                                    label="Objetivos" 
+                                    checked={dashboardConfig.showObjectives} 
+                                    onChange={() => setDashboardConfig({...dashboardConfig, showObjectives: !dashboardConfig.showObjectives})} 
+                                />
                             </div>
                         </div>
                     </div>
@@ -209,9 +232,9 @@ const Dashboard = () => {
                                 </p>
                             </div>
                             <div className="text-right">
-                                <p className={`text-xs ${theme.textSecondary} uppercase tracking-wider font-bold mb-1`}>ROI Estimado</p>
-                                <p className={`text-3xl font-bold ${metrics.global.roi >= 0 ? 'text-green-400' : 'text-red-400'} tracking-tighter flex items-center justify-end gap-1`}>
-                                    {metrics.global.roi > 0 ? '+' : ''}{metrics.global.roi.toFixed(1)}% <Activity size={18}/>
+                                <p className={`text-xs ${theme.textSecondary} uppercase tracking-wider font-bold mb-1`}>ROAS Global</p>
+                                <p className={`text-3xl font-bold ${metrics.global.roas >= 1 ? 'text-green-400' : 'text-yellow-400'} tracking-tighter flex items-center justify-end gap-1`}>
+                                    {metrics.global.roas.toFixed(2)}x <Activity size={18}/>
                                 </p>
                             </div>
                         </div>
@@ -256,7 +279,7 @@ const Dashboard = () => {
                                         <th className="p-3">Proyecto</th>
                                         <th className="p-3 text-right">Inversión</th>
                                         <th className="p-3 text-right">Retorno (Est.)</th>
-                                        <th className="p-3 text-right">ROI</th>
+                                        <th className="p-3 text-right">ROAS</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -269,10 +292,10 @@ const Dashboard = () => {
                                             <td className="p-3 font-medium text-white group-hover:text-[#E8A631] transition-colors flex items-center gap-2">
                                                 {c.name} <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100"/>
                                             </td>
-                                            <td className="p-3 text-right font-mono text-white/70">${c.actualCost.toLocaleString()}</td>
-                                            <td className="p-3 text-right font-mono text-white/70">${c.estimatedValue.toLocaleString()}</td>
-                                            <td className={`p-3 text-right font-bold ${c.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                {c.roi.toFixed(1)}%
+                                            <td className="p-3 text-right font-mono text-white/70">{formatCurrency(c.actualCost)}</td>
+                                            <td className="p-3 text-right font-mono text-white/70">{formatCurrency(c.estimatedValue)}</td>
+                                            <td className={`p-3 text-right font-bold ${c.roas >= 1 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                {c.roas ? c.roas.toFixed(2) : '0.00'}x
                                             </td>
                                         </tr>
                                     ))}
@@ -293,16 +316,72 @@ const Dashboard = () => {
                  )}
             </div>
 
-            {/* Side Column */}
+            {/* NEW: Financial Projection Widget (Billing Integration) */}
+            <div className={`md:col-span-2 ${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-6 flex flex-col md:flex-row gap-6 items-center shadow-xl`}>
+                 <div className="flex-1 space-y-4 w-full">
+                    <h3 className="text-sm font-bold text-white uppercase flex items-center gap-2">
+                        <FileText size={16} className="text-purple-400"/>
+                        Proyección vs Ejecución (Global)
+                    </h3>
+                    
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-white/60">Costo Proyectado (Tarifario)</span>
+                            <span className="text-white font-mono">{formatCurrency(metrics.global.totalPlanned)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-white/60">Gasto Real (Facturado)</span>
+                            <span className={`font-mono font-bold ${metrics.global.budgetExecuted > metrics.global.totalPlanned ? 'text-red-400' : 'text-green-400'}`}>
+                                {formatCurrency(metrics.global.budgetExecuted)}
+                            </span>
+                        </div>
+                        {/* Progress Bar */}
+                        <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden relative">
+                             {/* Projection Marker (Target) */}
+                             <div className="absolute top-0 bottom-0 w-0.5 bg-white/30 z-10" style={{ left: `${Math.min((metrics.global.totalPlanned / (Math.max(metrics.global.totalPlanned, metrics.global.budgetExecuted) || 1)) * 100, 100)}%` }}></div>
+                             
+                             <div 
+                                className={`h-full transition-all duration-1000 ${metrics.global.budgetExecuted > metrics.global.totalPlanned ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-green-500 to-green-400'}`} 
+                                style={{ width: `${Math.min((metrics.global.budgetExecuted / (metrics.global.totalPlanned || 1)) * 100, 100)}%` }}
+                             ></div>
+                        </div>
+                        <p className="text-xs text-white/40 leading-relaxed">
+                            {metrics.global.budgetExecuted > metrics.global.totalPlanned 
+                                ? `⚠️ Has excedido la proyección inicial en ${formatCurrency(metrics.global.budgetExecuted - metrics.global.totalPlanned)}.`
+                                : `✅ Estás ${formatCurrency(metrics.global.totalPlanned - metrics.global.budgetExecuted)} por debajo de lo proyectado según tarifario.`
+                            }
+                        </p>
+                    </div>
+                 </div>
+
+                 {/* Mini Insight */}
+                 <div className="w-full md:w-1/3 bg-white/5 rounded-xl p-4 border border-white/5 flex flex-col justify-center gap-2">
+                    <div className="p-2 bg-blue-500/20 rounded-lg w-fit text-blue-400 mx-auto md:mx-0"><TrendingUp size={20}/></div>
+                    <div>
+                        <p className="text-[10px] uppercase font-bold text-white/50">Precisión Financiera</p>
+                        <p className="text-2xl font-bold text-white">
+                            {metrics.global.totalPlanned > 0 ? (100 - (Math.abs(metrics.global.budgetExecuted - metrics.global.totalPlanned) / metrics.global.totalPlanned * 100)).toFixed(1) : '100'}%
+                        </p>
+                        <p className="text-xs text-white/40 mt-1">Calidad de estimación</p>
+                    </div>
+                 </div>
+            </div>
             <div className="space-y-6 flex flex-col h-full">
+
+                {/* UPCOMING DEADLINES WIDGET - PHASE 5 */}
+                <div className="h-[300px]">
+                    <UpcomingDeadlinesWidget campaigns={campaigns} events={calendarEvents} />
+                </div>
+
                 {/* Campaigns Quick Stat */}
+                {dashboardConfig.showRecentActivity && (
                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-6 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer group`} onClick={() => navigate('/campaigns')}>
                      <div className="flex justify-between items-start mb-2">
                          <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider cursor-help`}>Proyectos Activos</h3>
                          <div className="p-2 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors"><Briefcase size={16} className="text-white"/></div>
                      </div>
                     <div className="flex items-end justify-between">
-                        <span className={`text-3xl md:text-4xl font-bold ${theme.text}`}>{filteredCampaigns.filter(c => c.status === 'En Curso').length}</span>
+                        <span className={`text-3xl md:text-4xl font-bold ${theme.text}`}>{filteredCampaigns.filter(c => c.status === 'En Curso' && c.type !== 'Especial').length}</span>
                         <div className="text-right">
                            <span className="text-xs text-green-400 font-bold block mb-1">En curso</span>
                            <div className="flex gap-1">
@@ -311,11 +390,18 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
+                )}
+
+                {/* RETAILER SHARE WIDGET - PHASE 3 (Replaces Objectives in Strategic View for better relevance) */}
+                <div className="h-[250px]">
+                    <RetailerShareWidget data={metrics.retailerShare} />
+                </div>
 
                 {/* Objectives Widget - NEW */}
-                <ObjectivesWidget />
+                {dashboardConfig.showObjectives && <ObjectivesWidget />}
 
                 {/* Proveedores Quick Stat */}
+                {dashboardConfig.showPartners && (
                 <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-6 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer group`} onClick={() => navigate('/directory')}>
                    <div className="flex justify-between items-start mb-2">
                        <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider`}>Proveedores</h3>
@@ -323,6 +409,7 @@ const Dashboard = () => {
                    </div>
                    <span className={`text-3xl md:text-4xl font-bold ${theme.text}`}>{dashboardPartners.length}</span>
                 </div>
+                )}
                 
                  {/* DYNAMIC REPORTS WIDGET - NEW */}
                  <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-5 border border-white/10 flex flex-col gap-3 flex-1 min-h-[160px]`}>
@@ -446,7 +533,7 @@ const Dashboard = () => {
                                 {tasks.filter(t => !t.done).length > 0 ? tasks.filter(t => !t.done).slice(0, 8).map(t => (
                                     <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
                                          <div 
-                                            onClick={() => actions.toggleTask(t.id)}
+                                            onClick={() => toggleTask(t.id)}
                                             className="w-5 h-5 rounded-full border border-white/30 flex items-center justify-center cursor-pointer hover:border-green-400 transition-colors group-hover:bg-green-500/10"
                                          >
                                             <div className="w-2.5 h-2.5 rounded-full bg-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -473,7 +560,7 @@ const Dashboard = () => {
                      <div 
                         onClick={() => {
                             const text = prompt("Nueva Tarea Rápida:"); // Keeping prompt for quick input or replace with modal logic
-                            if(text) actions.addTask(text);
+                            if(text) addTask(text);
                         }}
                         className={`${theme.cardBg} backdrop-blur-md rounded-[24px] border border-white/10 p-5 flex flex-col justify-center items-center cursor-pointer hover:bg-white/5 group transition-all`}
                      >
@@ -540,7 +627,7 @@ const Dashboard = () => {
                   <button 
                     onClick={() => {
                         const text = prompt("Nueva Tarea:");
-                        if(text) actions.addTask(text);
+                        if(text) addTask(text);
                     }}
                     className={`${theme.accentBg} text-black px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:opacity-90`}
                   >
@@ -563,7 +650,7 @@ const Dashboard = () => {
                                   <p className="text-sm font-medium text-white mb-2">{t.text}</p>
                                   <div className="flex justify-between items-center">
                                       <span className="text-[10px] text-white/30">{new Date(t.date).toLocaleDateString()}</span>
-                                      <button onClick={() => actions.updateTask(t.id, { status: 'in_progress' })} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded text-white/50 hover:text-white transition-all" title="Mover a En Curso">
+                                      <button onClick={() => updateTask(t.id, { status: 'in_progress' })} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded text-white/50 hover:text-white transition-all" title="Mover a En Curso">
                                           <ArrowUpRight size={14}/>
                                       </button>
                                   </div>
@@ -583,8 +670,8 @@ const Dashboard = () => {
                               <div key={t.id} className="bg-[#252525] p-3 rounded-xl border border-l-4 border-l-[#E8A631] border-white/5 group shadow-lg">
                                   <p className="text-sm font-bold text-white mb-2">{t.text}</p>
                                   <div className="flex justify-between items-center mt-2 border-t border-white/5 pt-2">
-                                      <button onClick={() => actions.updateTask(t.id, { status: 'todo' })} className="p-1 hover:bg-white/10 rounded text-white/30 hover:text-white"><ArrowDownRight size={14} className="rotate-90"/></button>
-                                      <button onClick={() => actions.toggleTask(t.id)} className="px-2 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 text-[10px] font-bold rounded transition-colors">Finalizar</button>
+                                      <button onClick={() => updateTask(t.id, { status: 'todo' })} className="p-1 hover:bg-white/10 rounded text-white/30 hover:text-white"><ArrowDownRight size={14} className="rotate-90"/></button>
+                                      <button onClick={() => toggleTask(t.id)} className="px-2 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 text-[10px] font-bold rounded transition-colors">Finalizar</button>
                                   </div>
                               </div>
                           ))}
@@ -603,7 +690,7 @@ const Dashboard = () => {
                                   <p className="text-sm text-white/50 line-through mb-1">{t.text}</p>
                                   <div className="flex justify-between">
                                       <span className="text-[10px] text-white/20">Finalizado</span>
-                                      <button onClick={() => actions.removeTask(t.id)} className="text-white/20 hover:text-red-400"><Trash2 size={12}/></button>
+                                      <button onClick={() => removeTask(t.id)} className="text-white/20 hover:text-red-400"><Trash2 size={12}/></button>
                                   </div>
                               </div>
                           ))}
@@ -634,18 +721,18 @@ const Dashboard = () => {
                           </div>
                       </div>
                       
-                      {/* Strategic KPI */}
-                      <div className="text-right">
+                      {/* Strategic KPI - PHASE 1: Hidden fake score */}
+                      <div className="text-right opacity-50">
                           <p className="text-[10px] uppercase font-bold text-white/40 mb-1">Performance Score</p>
                           <div className="flex items-end justify-end gap-2">
-                              <span className="text-4xl font-bold text-white tracking-tighter">98<span className="text-lg text-white/40">%</span></span>
+                              <span className="text-4xl font-bold text-white tracking-tighter">--<span className="text-lg text-white/40">%</span></span>
                               <div className="flex mb-1.5 gap-0.5">
                                   <div className="w-1.5 h-4 bg-green-500 rounded-sm"></div>
                                   <div className="w-1.5 h-3 bg-green-500/50 rounded-sm"></div>
                                   <div className="w-1.5 h-2 bg-green-500/20 rounded-sm"></div>
                               </div>
                           </div>
-                          <p className="text-xs text-green-400 font-bold mt-1">Excelencia Operativa</p>
+                          <p className="text-xs text-white/30 font-bold mt-1">Data Pendiente</p>
                       </div>
                   </div>
 
@@ -656,25 +743,30 @@ const Dashboard = () => {
                       <div className="space-y-4">
                           <h4 className="text-xs font-bold uppercase text-white/40 flex items-center gap-2"><Activity size={14} className={theme.accent}/> Métricas Estratégicas</h4>
                           
-                          {/* Share of Wallet */}
-                          <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                              <div className="flex justify-between mb-2">
+                          {/* Share of Wallet - PHASE 1: Data Truth (Hidden if no real data) */}
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/5 relative overflow-hidden">
+                              <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center z-10">
+                                   <div className="bg-black/80 px-3 py-1 rounded-full border border-white/10 text-[10px] text-white/50 uppercase font-bold tracking-wider">
+                                       Próximamente: Datos Reales
+                                   </div>
+                              </div>
+                              <div className="flex justify-between mb-2 opacity-30">
                                   <span className="text-sm font-bold text-white">Share of Wallet</span>
-                                  <span className="text-sm font-bold text-white">24%</span>
+                                  <span className="text-sm font-bold text-white">--%</span>
                               </div>
-                              <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden mb-2">
-                                  <div className="bg-blue-500 h-full w-[24%] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                              <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden mb-2 opacity-30">
+                                  <div className="bg-blue-500 h-full w-[0%] rounded-full"></div>
                               </div>
-                              <p className="text-xs text-white/50">Representa el 24% de tu inversión anual total.</p>
+                              <p className="text-xs text-white/50 opacity-30">Cálculo basado en facturación real.</p>
                           </div>
 
-                          {/* YTD Investment */}
-                          <div className="bg-white/5 rounded-xl p-4 border border-white/5 flex justify-between items-center">
+                          {/* YTD Investment - PHASE 1: Data Truth (Hidden if no real data) */}
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/5 flex justify-between items-center opacity-50 grayscale">
                               <div>
                                   <p className="text-xs text-white/50 uppercase font-bold">Inversión YTD</p>
-                                  <p className="text-xl font-bold text-white tracking-tight">$1.2M</p>
+                                  <p className="text-xl font-bold text-white tracking-tight">--</p>
                               </div>
-                              <div className="p-2 bg-white/5 rounded-lg text-green-400">
+                              <div className="p-2 bg-white/5 rounded-lg text-white/20">
                                   <TrendingUp size={20} />
                               </div>
                           </div>

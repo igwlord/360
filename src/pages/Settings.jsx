@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useData } from '../context/DataContext';
+// import { useData } from '../context/DataContext'; REMOVED
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { importData, exportData } from '../utils/dataUtils';
 import { Bell, Shield, Palette, Save, Moon, Sun, Smartphone, Mail, AlertTriangle, Monitor, CheckCircle, Clock, ChevronDown, Upload, Calendar } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useColorTheme } from '../context/ColorThemeContext';
 
 const Settings = () => {
     const { theme, setTheme, currentThemeKey } = useTheme();
-    const { notificationSettings, setNotificationSettings, exportData, importData } = useData();
+    
+    // Legacy DataContext replacement
+    const [notificationSettings, setNotificationSettings] = useLocalStorage('notification_settings', {
+        channels: { email: false, inApp: true, push: false },
+        thresholds: { budgetPercent: 90, ephemerisDays: 60, startWarningHours: 24 }
+    });
+    
     const { showToast: addToast } = useToast(); // Renamed to addToast as per instruction
 
     // Backup Logic

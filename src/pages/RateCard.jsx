@@ -1,17 +1,21 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useData } from '../context/DataContext';
 import { Search, Plus, Trash2, Edit, Copy, MoreVertical, Layout, Mic, MapPin, ShoppingBag, Smartphone, ArrowRight, X } from 'lucide-react';
 import Modal from '../components/common/Modal';
 
 import GlassTable from '../components/common/GlassTable';
 import ContextMenu from '../components/common/ContextMenu';
-import QuoteWizard from '../components/rate-card/QuoteWizard'; // New Import
+import QuoteWizard from '../components/rate-card/QuoteWizard'; 
+import { useRateCard, useCreateRateItem, useUpdateRateItem, useDeleteRateItem } from '../hooks/useRateCard';
 
 const RateCard = () => {
     const { theme } = useTheme();
-    const { rateCardItems, actions } = useData();
+    // const { rateCardItems, actions } = useData(); // Removed
+    const { data: rateCardItems = [] } = useRateCard();
+    const { mutate: createItem } = useCreateRateItem();
+    const { mutate: updateItem } = useUpdateRateItem();
+    const { mutate: deleteItem } = useDeleteRateItem();
     const [rateCardCategory, setRateCardCategory] = useState('Todos');
     const [rateCardSearch, setRateCardSearch] = useState('');
     const [isRateModalOpen, setIsRateModalOpen] = useState(false);
@@ -95,20 +99,28 @@ const RateCard = () => {
 
     const handleDelete = (id) => {
         if(window.confirm('¿Eliminar este item del tarifario?')) {
-            actions.deleteRateItem(id);
+            deleteItem(id);
         }
     };
 
     const handleDuplicate = (item) => {
-         const newItem = { ...item, id: null, item: `${item.item} (Copia)` };
-         actions.saveRateItem(newItem);
+         // eslint-disable-next-line no-unused-vars
+         const { id, ...rest } = item;
+         const newItem = { ...rest, item: `${item.item} (Copia)` };
+         createItem(newItem);
     };
 
     const handleSave = () => {
         if (!rateForm.item || !rateForm.price) return;
-        // Clean price for storage (remove dots to save as raw number/string)
+        // Clean price for storage
         const cleanPrice = rateForm.price.replace(/\./g, ''); 
-        actions.saveRateItem({ ...rateForm, price: cleanPrice });
+        const payload = { ...rateForm, price: cleanPrice };
+        
+        if (payload.id) {
+            updateItem(payload);
+        } else {
+            createItem(payload);
+        }
         setIsRateModalOpen(false);
     };
     
@@ -146,7 +158,6 @@ const RateCard = () => {
                 </div>
             )
         },
-        { header: 'Categoría', accessor: 'category', width: '20%', className: 'hidden md:block text-white/60', sortable: true },
         { header: 'Categoría', accessor: 'category', width: '20%', className: 'hidden md:block text-white/60', sortable: true },
         { 
             header: 'Inversión', 
