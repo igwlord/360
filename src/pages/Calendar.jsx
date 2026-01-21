@@ -41,21 +41,16 @@ const Calendar = () => {
       reminders: true
   });
   
-  // Selected Date for Modal
-  const [selectedDay, setSelectedDay] = useState(null);
+    // Selected Date for Modal (Just the Date, Events are derived)
+    const [selectedModalDate, setSelectedModalDate] = useState(null);
 
-
+    // ... (keep search logic) ...
 
     const [searchQuery, setSearchQuery] = useState('');
     
     // Derived State: Search Results
     const searchResults = React.useMemo(() => {
         if (!searchQuery.trim()) return [];
-        
-        // Flatten all possible events for searching
-        // We'll scan a reasonable range (e.g., current year +/- 1) OR just rely on what we have loaded if they are all loaded.
-        // Assuming 'calendarEvents' and 'projects' are ALL available data (not paginated by month in backend yet, which seems to be the case based on hooks).
-        
         const term = searchQuery.toLowerCase();
         
         const all = [
@@ -82,140 +77,77 @@ const Calendar = () => {
 
     }, [calendarEvents, projects, searchQuery]);
 
+    // Calendar Logic
+    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday
+    const prevMonthDays = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate(); // Unused but kept for ref reference if needed
 
-  // Calendar Logic
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday
-  const prevMonthDays = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+    const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  
+    // NEW: Year Navigation
+    const handlePrevYear = () => setCurrentDate(new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1));
+    const handleNextYear = () => setCurrentDate(new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), 1));
+  
+    const handleToday = () => {
+        setCurrentDate(new Date());
+        setSearchQuery(''); // Clear search on reset
+    };
 
-  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  
-  // NEW: Year Navigation
-  const handlePrevYear = () => setCurrentDate(new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1));
-  const handleNextYear = () => setCurrentDate(new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), 1));
-  
-  const handleToday = () => {
-      setCurrentDate(new Date());
-      setSearchQuery(''); // Clear search on reset
-  };
-  
-    // Helper: Safe Date Parsing (Noon Strategy to avoid Timezone shifts)
+    // Helper: Safe Date Parsing (Noon Strategy)
     const parseDate = (d) => {
         if (!d) return null;
-        
         let dateObj = d;
-        // Handle String inputs (ISO, YYYY-MM-DD, etc)
         if (typeof d === 'string') {
-            // Extract YYYY-MM-DD part safely
             const ymd = d.substring(0, 10);
-            // Verify structure roughly
             if (ymd.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                // Force Noon Local Time
-                // Note: new Date("YYYY-MM-DDT12:00:00") creates local date at noon
                 return new Date(`${ymd}T12:00:00`);
             }
-            // Fallback for other strings
             dateObj = new Date(d);
         }
-        
-        // If it's a Date object (or became one), ensure it's not shifted by hours
-        // actually, if we trust the string parsing above, we are good for strings.
-        // For Objects, we can't easily "move" to noon without knowing if it was UTC or Local.
-        // But usually data comes as string YYYY-MM-DD.
-        
         if (dateObj instanceof Date && !isNaN(dateObj)) {
-            // Force it to be treated as "That Day" by verifying hours? 
-            // Better: just assume if it's parsed, we rely on getDate().
             return dateObj;
         }
         return null;
     };
 
-    // Helper: Merge and Filter Events
-    const getEventsForDay = (day) => {
-        // Construct target date (Local Noon)
-        const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day, 12, 0, 0);
+    // Helper: Get Events for ANY specific date (Independent of View)
+    const getEventsForSpecificDate = (targetDate) => {
+        if (!targetDate) return [];
         
-        // Merge Projects & Events
+        const targetD = targetDate.getDate();
+        const targetM = targetDate.getMonth();
+        const targetY = targetDate.getFullYear();
+
         const allItems = [
             ...projects.map(p => ({
                 id: p.id,
                 title: p.name,
                 type: 'Proyectos', 
-                normalizedType: 'campaigns', // internal for filter
+                normalizedType: 'campaigns', 
                 date: parseDate(p.date || p.start_date),
+                time: '09:00', // Default for projects
+                isReadOnly: true,
                 original: p
             })),
             ...calendarEvents.map(e => ({
                 id: e.id,
                 title: e.title,
-                type: e.type, // e.g. 'meeting', 'campaign'
-                normalizedType: e.type, // internal
+                type: e.type, 
+                normalizedType: e.type, 
                 date: parseDate(e.date),
+                time: e.time || 'All Day',
                 original: e
             }))
         ];
 
         return allItems.filter(item => {
             if (!item.date || isNaN(item.date.getTime())) return false;
-            // Compare YYYY-MM-DD
-            return item.date.getDate() === day && 
-                   item.date.getMonth() === currentDate.getMonth() && 
-                   item.date.getFullYear() === currentDate.getFullYear();
+            return item.date.getDate() === targetD && 
+                   item.date.getMonth() === targetM && 
+                   item.date.getFullYear() === targetY;
         }).filter(item => {
-             // Apply Filters (Case Insensitive Mapped)
-             const t = (item.normalizedType || '').toLowerCase();
-             if (t === 'campaigns' || t === 'proyectos') return filters.campaigns;
-             if (t === 'marketing') return filters.marketing;
-             if (t === 'hitos' || t === 'campaign') return filters.specials; // 'campaign' tag in events = Hitos
-             if (t === 'deadlines' || t === 'deadline') return filters.deadlines;
-             if (t === 'meetings' || t === 'meeting') return filters.meetings;
-             if (t === 'reminders' || t === 'reminder') return filters.reminders;
-             return true; 
-        });
-    };
-
-    const onDayClick = (dayOrDate) => {
-        const date = typeof dayOrDate === 'number' 
-            ? new Date(currentDate.getFullYear(), currentDate.getMonth(), dayOrDate)
-            : dayOrDate;
-            
-        // Use the same robust fetcher
-        const dayNum = date.getDate();
-        // Warn: if date is from previous/next month, getEventsForDay(day) might check current month.
-        // But for MVP click, usually we click within the grid. 
-        // If clicking search result (arbitrary date), we need specific fetch.
-        
-        let events = [];
-        if (typeof dayOrDate === 'number') {
-             events = getEventsForDay(dayOrDate);
-        } else {
-             // Date Object Click (Search Result or List View)
-             // We need to fetch ALL and filter by this specific date
-             const targetY = date.getFullYear();
-             const targetM = date.getMonth();
-             const targetD = date.getDate();
-
-             events = [
-                ...projects.map(p => ({
-                    id: p.id, title: p.name, type: 'Proyectos', normalizedType: 'campaigns',
-                    date: parseDate(p.date || p.start_date), time: '09:00', isReadOnly: true
-                })),
-                ...calendarEvents.map(e => ({
-                     id: e.id, title: e.title, type: e.type, normalizedType: e.type,
-                     date: parseDate(e.date), time: e.time || 'All Day'
-                }))
-             ].filter(item => 
-                 item.date && 
-                 item.date.getDate() === targetD && 
-                 item.date.getMonth() === targetM && 
-                 item.date.getFullYear() === targetY
-             );
-        }
-
-        // Post-Filter for the Modal (Safety)
-        const visibleEvents = events.filter(item => {
+             // Apply Filters
              const t = (item.normalizedType || '').toLowerCase();
              if (t === 'campaigns' || t === 'proyectos') return filters.campaigns;
              if (t === 'marketing') return filters.marketing;
@@ -225,8 +157,20 @@ const Calendar = () => {
              if (t === 'reminders' || t === 'reminder') return filters.reminders;
              return true; 
         });
+    };
 
-        setSelectedDay({ date, events: visibleEvents });
+    // Helper: Merge and Filter Events (optimised for Grid which uses day number relative to currentDate)
+    const getEventsForDay = (day) => {
+        const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day, 12, 0, 0);
+        return getEventsForSpecificDate(targetDate);
+    };
+
+    const onDayClick = (dayOrDate) => {
+        const date = typeof dayOrDate === 'number' 
+            ? new Date(currentDate.getFullYear(), currentDate.getMonth(), dayOrDate)
+            : dayOrDate;
+            
+        setSelectedModalDate(date);
     };
 
     const renderCalendarGrid = () => {
@@ -513,13 +457,12 @@ const Calendar = () => {
       </div>
 
       {/* Detail Modal */}
-      {selectedDay && (
+      {selectedModalDate && (
           <DayDetailModal 
-            isOpen={!!selectedDay} 
-            onClose={() => setSelectedDay(null)} 
-            date={selectedDay.date}
-            events={selectedDay.events}
-            onUpdate={() => { /* Trigger refetch or re-render if needed, though state is global */ }}
+            isOpen={!!selectedModalDate} 
+            onClose={() => setSelectedModalDate(null)} 
+            date={selectedModalDate}
+            events={getEventsForSpecificDate(selectedModalDate)}
           />
       )}
     </div>

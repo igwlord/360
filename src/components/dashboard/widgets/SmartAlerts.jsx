@@ -92,8 +92,8 @@ const SmartAlerts = ({ campaigns = [], events = [] }) => {
                         <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4 animate-pulse">
                             <span className="text-3xl">✨</span>
                         </div>
-                        <p className="text-base font-bold text-white">Todo en orden</p>
-                        <p className="text-xs text-white/50 max-w-[180px]">No hay deadlines críticos ni desvíos financieros detectados.</p>
+                        <p className="text-base font-bold text-white">Sistema Activo</p>
+                        <p className="text-xs text-white/50 max-w-[200px] leading-relaxed">Monitoreamos el estado de tus proyectos en tiempo real. Aquí te avisaremos si hay deadlines críticos o desvíos de presupuesto.</p>
                     </div>
                 ) : (
                     activeAlerts.map(alert => (

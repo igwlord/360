@@ -71,18 +71,31 @@ const Billing = () => {
 
     // Helper: Handle Save
     const handleSave = async () => {
+        // Validation 1: Required Fields
         if (!form.amount || !form.description) {
             addToast('Monto y Descripción son obligatorios', 'error');
             return;
         }
 
+        // Validation 2: Category is Mandatory
+        if (!form.category || form.category.trim() === '') {
+            addToast('Debes seleccionar una categoría', 'error');
+            return;
+        }
+
         // Sanitize Payload
-        // Sanitize Payload
-        const rawAmount = String(form.amount).replace(/\./g, '').replace(/,/g, '.'); // Handle 1.000,00 format if needed, simplistic strip for now
+        const rawAmount = String(form.amount).replace(/\./g, '').replace(/,/g, '.'); 
+        const numericAmount = parseFloat(rawAmount);
+
+        // Validation 3: Numeric Check
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+            addToast('El monto debe ser un número válido mayor a 0', 'error');
+            return;
+        }
         
         const payload = {
             ...form,
-            amount: parseFloat(rawAmount) || 0,
+            amount: numericAmount,
             project_id: form.project_id && form.project_id !== "" ? form.project_id : null,
             provider_id: form.provider_id && form.provider_id !== "" ? form.provider_id : null
         };

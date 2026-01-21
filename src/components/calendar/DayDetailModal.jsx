@@ -47,6 +47,20 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
             }
         }
 
+        // Duplicate Check (Name + Time + Type)
+        // Checks if an event with same properties already exists for this day
+        const isDuplicate = events.some(evt => 
+            evt.id !== editingEventId && // Ignore self if editing
+            evt.title.toLowerCase() === newEventTitle.trim().toLowerCase() &&
+            evt.time === newEventTime &&
+            evt.type === newEventTag
+        );
+
+        if (isDuplicate) {
+            addToast('Ya existe un evento idéntico a la misma hora.', 'error');
+            return;
+        }
+
         const dateStr = date.toISOString().split('T')[0];
         const eventPayload = {
             id: editingEventId || `evt-${Date.now()}`,

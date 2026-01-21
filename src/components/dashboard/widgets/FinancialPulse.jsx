@@ -100,7 +100,7 @@ const FinancialPulse = ({ metrics, isExpanded, setIsExpanded }) => {
                                     <tr 
                                         key={c.id} 
                                         className="hover:bg-white/5 transition-colors cursor-pointer group"
-                                        onClick={() => navigate('/campaigns', { state: { openId: c.id, activeTab: 'financial' } })}
+                                        onClick={() => navigate('/projects', { state: { openId: c.id, activeTab: 'financial' } })}
                                     >
                                         <td className="p-3 font-medium text-white group-hover:text-[#E8A631] transition-colors flex items-center gap-2">
                                             {c.name} <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100"/>

@@ -128,6 +128,17 @@ const Directory = () => {
     const [selectedIds, setSelectedIds] = useState([]);
     const [interactionForm, setInteractionForm] = useState({ type: 'call', note: '', date: new Date().toISOString().split('T')[0] });
 
+    // Debounced Search State to prevent Lag
+    const [debouncedQuery, setDebouncedQuery] = useState('');
+    
+    // Effect to debounce input
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(searchQuery);
+        }, 300); // 300ms delay
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     // Flatten contacts for "All" view or filter by group
     const getAllContacts = useCallback(() => {
          return providerGroups.flatMap(g => g.contacts.map(c => ({...c, groupTitle: g.title, groupId: g.id})));
@@ -136,13 +147,14 @@ const Directory = () => {
 
 
     const contacts = useMemo(() => {
+        // Optimized: Only re-calc when DEBOUNCED query changes, not every keystroke
         let result = activeGroup === 'Todos' 
             ? getAllContacts()
             : providerGroups.find(g => g.id === activeGroup)?.contacts.map(c => ({...c, groupTitle: providerGroups.find(g => g.id === activeGroup).title, groupId: activeGroup})) || [];
         
         // Search
-        if (searchQuery) {
-            const q = searchQuery.toLowerCase();
+        if (debouncedQuery) {
+            const q = debouncedQuery.toLowerCase();
             result = result.filter(c => 
                 (c.proveedor || c.company || '').toLowerCase().includes(q) || 
                 (c.contacto_comercial_nombre || c.name || '').toLowerCase().includes(q) ||
@@ -154,9 +166,12 @@ const Directory = () => {
         if (showFavoritesOnly) {
             result = result.filter(c => c.isFavorite);
         }
+        
+        // Safety cap for rendering if list is huge (Virtualization poor man's version)
+        // if (result.length > 100) return result.slice(0, 100); 
 
         return result;
-    }, [activeGroup, providerGroups, searchQuery, showFavoritesOnly, getAllContacts]);
+    }, [activeGroup, providerGroups, debouncedQuery, showFavoritesOnly, getAllContacts]);
 
     // Move Logic
     const handleMoveClick = (contact) => {

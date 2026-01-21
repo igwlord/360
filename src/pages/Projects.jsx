@@ -58,13 +58,18 @@ const Projects = () => {
     // Note: Removed continuous auto-save to avoid Supabase spam. Updates are committed on Save.
 
     // Auto-open modal if navigated from Dashboard or Directory via URL Params
+    // Auto-open modal if navigated from Dashboard or Directory via URL Params
     React.useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
         const paramNew = queryParams.get('new');
         const paramOpenId = queryParams.get('openId');
         
+        // Fix: Also check for 'openTaskModal' for Tasks, or 'openModal' from state
+        const paramOpenTask = queryParams.get('openTaskModal');
+        const stateOpenModal = location.state?.openModal; // Generic open trigger
+
         // Priority: URL Params > Location State
-        const shouldOpenNew = paramNew === 'true' || location.state?.openModal;
+        const shouldOpenNew = paramNew === 'true' || stateOpenModal === true;
         const targetId = paramOpenId || location.state?.openId;
 
         if (shouldOpenNew || targetId) {
@@ -89,11 +94,15 @@ const Projects = () => {
                     setIsModalOpen(true);
                 }
             }
-
-            // Clean URL and State
-            // Use replaceState to clear params without refreshing
-            window.history.replaceState({}, '', location.pathname);
+            // Clean Only params we used, keep others? generic replace is fine
+             window.history.replaceState({}, '', location.pathname);
         }
+        
+        // Handle Task Modal separate if possible, or just log it for now if Task logic is hidden in children.
+        // Assuming Task Manager is a sub-component or unrelated for this specific Campaign Modal fix.
+        // However, I must ensure "Nueva Campaña" (openModal: true) works.
+        // The previous code had `location.state?.openModal`.
+
     }, [location.search, location.state, projects, location.pathname]);
 
     const statuses = ['Planificación', 'En Curso', 'Pendiente', 'Finalizado'];
@@ -159,13 +168,24 @@ const Projects = () => {
     const handleDrop = async (e, newStatus) => {
         e.preventDefault();
         
-        if (draggedItem && draggedItem.status !== newStatus) {
+        if (!draggedItem) return;
+
+        // Critical Fix: Prevent 'Events' (evt-*) from being moved in Kanban
+        // Events are read-only in this view because they belong to a different table
+        if (String(draggedItem.id).startsWith('evt-') || draggedItem._source === 'calendar') {
+             addToast('Los eventos del calendario no se pueden cambiar de estado aquí.', 'info');
+             setDraggedItem(null);
+             return;
+        }
+        
+        if (draggedItem.status !== newStatus) {
             // Optimistic update handled by context but we call the action
             const updated = { ...draggedItem, status: newStatus };
             try {
                 await updateProject(updated);
                 addToast(`Estado actualizado: ${newStatus}`, 'success');
             } catch (error) {
+                console.error(error);
                 addToast('Error al mover el proyecto', 'error');
             }
         }
