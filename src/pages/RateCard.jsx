@@ -89,10 +89,14 @@ const RateCard = () => {
         const formattedPrice = item.price ? new Intl.NumberFormat('es-AR').format(item.price) : '';
         setRateForm({ 
             ...item, 
+            // Ensure no nulls to prevent uncontrolled warnings
+            item: item.item || '',
+            specs: item.specs || '',
+            notes: item.notes || '',
+            unit: item.unit || '',
             price: formattedPrice,
-            // Ensure new fields exist if editing old items
             subcategory: item.subcategory || '',
-            format_size: item.format_size || '' // Map legacy if needed, or default empty
+            format_size: item.format_size || '' 
         });
         setIsRateModalOpen(true);
     };
@@ -273,7 +277,7 @@ const RateCard = () => {
                     <label className={`text-xs ${theme.textSecondary} ml-1`}>Especificaciones Técnicas</label>
                     <textarea 
                         rows={3}
-                        value={rateForm.specs} 
+                        value={rateForm.specs || ''} 
                         onChange={e => setRateForm({...rateForm, specs: e.target.value})} 
                         className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text} resize-none`} 
                         placeholder="Materialidad, medidas, terminación..." 
@@ -312,7 +316,7 @@ const RateCard = () => {
                     <label className={`text-xs ${theme.textSecondary} ml-1`}>Detalle / Notas Internas</label>
                     <textarea 
                         rows={3}
-                        value={rateForm.notes} 
+                        value={rateForm.notes || ''} 
                         onChange={e => setRateForm({...rateForm, notes: e.target.value})} 
                         className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text} resize-none`}
                         placeholder="Información adicional para el equipo..."

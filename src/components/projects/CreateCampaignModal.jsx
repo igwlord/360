@@ -21,7 +21,7 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
     const [form, setForm] = useState({
         id: null,
         name: '',
-        brand: '',
+        client: '',
         status: 'Planificación',
         type: 'Campaña',
         date: '',
@@ -37,24 +37,33 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
     // Initialize
     useEffect(() => {
         if (isOpen) {
-            setForm((prev) => {
-                if (initialData && initialData.id !== prev.id) {
-                    return { ...initialData, type: 'Campaña', transactions: initialData.transactions || [] }; // Fix: Ensure transactions array
-                } else if (!initialData) {
-                    return {
-                        id: null,
-                        name: '',
-                        brand: '',
-                        status: 'Planificación',
-                        type: 'Campaña',
-                        date: '',
-                        notes: '',
-                        transactions: [],
-                        providers: []
-                    };
-                }
-                return prev; 
-            });
+             const baseState = {
+                id: null,
+                name: '',
+                client: '',
+                status: 'Planificación',
+                type: 'Campaña',
+                date: '',
+                notes: '',
+                transactions: [],
+                providers: []
+            };
+
+            if (initialData) {
+                setForm({
+                    ...baseState,
+                    ...initialData,
+                    transactions: initialData.transactions || [],
+                    // Ensure strings for inputs
+                    name: initialData.name || '',
+                    client: initialData.client || initialData.brand || '', // Handle legacy brand key
+                    date: initialData.date || '',
+                    notes: initialData.notes || ''
+                });
+            } else {
+                setForm(baseState);
+            }
+            
             setActiveTab('details');
             setFinanceAmount('');
         }
@@ -127,13 +136,13 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
                 <div className="space-y-4 animate-in fade-in">
                     <div>
                         <label className="text-xs text-white/50 mb-1 block">Nombre de la Campaña</label>
-                        <input autoFocus type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. Verano 2026" />
+                        <input autoFocus type="text" value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. Verano 2026" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs text-white/50 mb-1 block">Marca (Lead Brand)</label>
-                            <input type="text" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. Coca-Cola" />
+                            <label className="text-xs text-white/50 mb-1 block">Cliente / Marca</label>
+                            <input type="text" value={form.client || ''} onChange={e => setForm({...form, client: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. Coca-Cola" />
                         </div>
                         <div>
                             <label className="text-xs text-white/50 mb-1 block">Estado</label>
@@ -147,7 +156,7 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
                     </div>
 
                     <div>
-                            <input type="text" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. 01 Ene - 31 Mar" />
+                            <input type="text" value={form.date || ''} onChange={e => setForm({...form, date: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. 01 Ene - 31 Mar" />
                         </div>
 
 

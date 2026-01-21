@@ -122,7 +122,7 @@ export const CampaignRepository = {
         const payload = { ...updates };
         
         // List of keys we KNOW we want to strip if they snuck in
-        const blockedKeys = ['_source', 'source', 'destination', 'draggableId', 'mode', 'description', 'venue', 'capacity', 'booth_type', 'dimensions', 'retailer_id', 'parent_id'];
+        const blockedKeys = ['_source', 'source', 'destination', 'draggableId', 'mode', 'description', 'venue', 'capacity', 'booth_type', 'dimensions', 'retailer_id', 'parent_id', 'brand'];
         blockedKeys.forEach(key => delete payload[key]);
 
         if (updates.type) { payload.project_type = updates.type; delete payload.type; }

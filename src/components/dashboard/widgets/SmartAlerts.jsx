@@ -73,7 +73,7 @@ const SmartAlerts = ({ campaigns = [], events = [] }) => {
             }
         });
 
-        return alerts.sort((a,b) => (a.priority === 'high' ? -1 : 1));
+        return alerts.sort((a) => (a.priority === 'high' ? -1 : 1));
     }, [campaigns, events]);
 
     return (

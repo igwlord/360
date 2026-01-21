@@ -16,7 +16,7 @@ const Calendar = () => {
   const { data: calendarEvents = [] } = useCalendarEvents();
   const { data: projects = [] } = useCampaigns();
   
-  const { getCategoryClasses, getCategoryStyle } = useColorTheme();
+  const { getCategoryClasses } = useColorTheme();
   
   const [currentDate, setCurrentDate] = useState(() => {
      return location.state?.focusDate ? new Date(location.state.focusDate) : new Date();
@@ -77,10 +77,8 @@ const Calendar = () => {
 
     }, [calendarEvents, projects, searchQuery]);
 
-    // Calendar Logic
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday
-    const prevMonthDays = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate(); // Unused but kept for ref reference if needed
 
     const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
     const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
