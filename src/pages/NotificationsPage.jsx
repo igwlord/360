@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-// import { useData } from '../context/DataContext'; REMOVED
 import { useNotifications } from '../hooks/useNotifications';
 import { Bell, Filter, CheckCircle, Clock, AlertTriangle, Trash2 } from 'lucide-react';
 

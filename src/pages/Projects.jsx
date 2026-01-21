@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-// import { useData } from '../context/DataContext'; REMOVED
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Plus, Search, Filter, Calendar, BarChart2, MoreVertical, Edit, Trash2, CheckCircle, Circle, AlertCircle, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, LayoutList, KanbanSquare, DollarSign, MapPin, Users } from 'lucide-react';
 import Modal from '../components/common/Modal';
@@ -27,7 +26,6 @@ import { calculateFinancials } from '../utils/financials';
 const Projects = () => {
     const { theme } = useTheme();
     // Removed campaigns, addProject, updateProject, deleteProject from useData
-    // const { formatCurrency } = useData(); REMOVED 
     
     // Query Hooks
     const { data: projects = [] } = useCampaigns();
@@ -140,19 +138,36 @@ const Projects = () => {
 
 
     const handleDragStart = (e, item) => {
-        setDraggedItem(item);
+        // Defer state update to allow drag to start without immediate re-render
+        setTimeout(() => setDraggedItem(item), 0);
+        
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify(item));
+        // Optional: Custom ghost image could be set here
+    };
+
+    const handleDragEnd = (e) => {
+        e.currentTarget.style.opacity = '1';
+        setDraggedItem(null);
     };
 
     const handleDragOver = (e) => {
         e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
     };
 
     const handleDrop = async (e, newStatus) => {
         e.preventDefault();
+        
         if (draggedItem && draggedItem.status !== newStatus) {
             // Optimistic update handled by context but we call the action
             const updated = { ...draggedItem, status: newStatus };
-            await updateProject(updated);
+            try {
+                await updateProject(updated);
+                addToast(`Estado actualizado: ${newStatus}`, 'success');
+            } catch (error) {
+                addToast('Error al mover el proyecto', 'error');
+            }
         }
         setDraggedItem(null);
     };
@@ -430,6 +445,7 @@ const Projects = () => {
                                     key={project.id}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, project)}
+                                    onDragEnd={handleDragEnd}
                                     onClick={() => openEdit(project)}
                                     onContextMenu={(e) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY, item: project }); }}
                                     className={`p-4 rounded-2xl border border-white/5 ${theme.cardBg} hover:bg-white/10 transition-all cursor-grab active:cursor-grabbing hover:translate-y-[-2px] hover:shadow-xl group relative overflow-hidden`}

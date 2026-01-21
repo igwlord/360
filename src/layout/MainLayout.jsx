@@ -13,7 +13,9 @@ const MainLayout = ({ children }) => {
   React.useEffect(() => {
         const handleKeyDown = (e) => {
             // Ignore if typing in an input
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            // Ignore if typing in an input, textarea or contentEditable
+            const tag = e.target.tagName.toUpperCase();
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
 
             // Ignore if modifier keys are pressed (Ctrl, Alt, Meta/Command)
             if (e.ctrlKey || e.altKey || e.metaKey) return;

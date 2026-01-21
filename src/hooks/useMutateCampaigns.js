@@ -16,9 +16,18 @@ export const useCreateCampaign = () => {
       // Optimistically update to the new value
       // Note: We need a temp ID for the UI key
       const tempId = `temp-${Date.now()}`;
+      const optimisitcProject = { 
+          ...newProject, 
+          id: tempId, 
+          status: newProject.status || 'Planificación',
+          providers: newProject.providers || [],
+          // Ensure calculated fields don't crash
+          cost: newProject.cost || 0
+      };
+
       queryClient.setQueryData(['campaigns'], (old) => [
         ...(old || []), 
-        { ...newProject, id: newProject.id || tempId, status: newProject.status || 'Planificación' }
+        optimisitcProject
       ]);
 
       // Return a context object with the snapshotted value

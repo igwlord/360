@@ -5,11 +5,15 @@ import { get, set, del } from 'idb-keyval';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes (data considers fresh for 5 mins)
-      cacheTime: 1000 * 60 * 60 * 24, // 24 hours (data stays in cache for 24h)
-      retry: 1, // Retry failed requests once
-      refetchOnWindowFocus: false, // Don't aggressive refetch on tab switch (save battery/data)
+      staleTime: 1000 * 60 * 5, // 5 minutes (Fresh data)
+      gcTime: 1000 * 60 * 60 * 24 * 7, // 7 Days (Keep cache garbage collection disabled for a week for offline)
+      retry: 1, 
+      refetchOnWindowFocus: false,
+      networkMode: 'offlineFirst', // CRITICAL: Treat cache as source of truth if offline
     },
+    mutations: {
+        networkMode: 'offlineFirst', // CRITICAL: Allow mutations to fire (and fail/queue) even if offline
+    }
   },
 });
 
@@ -31,5 +35,5 @@ const idbPersister = {
 // This automatically saves the cache to IndexedDB and rehydrates it on load
 export const persistOptions = {
   persister: idbPersister,
-  maxAge: 1000 * 60 * 60 * 24, // 24 hours
+  maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Days
 };

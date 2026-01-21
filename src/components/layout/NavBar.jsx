@@ -6,7 +6,7 @@ import { Layout, Calendar, Users, ShoppingBag, Megaphone, Settings, Bell, Menu, 
 import UserMenu from '../user/UserMenu';
 
 
-// import { useData } from '../../context/DataContext'; // Removed
+
 import { useNotifications } from '../../hooks/useNotifications';
 import InstallPrompt from '../common/InstallPrompt';
 

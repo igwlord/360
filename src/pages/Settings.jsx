@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-// import { useData } from '../context/DataContext'; REMOVED
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { importData, exportData } from '../utils/dataUtils';
 import { Bell, Shield, Palette, Save, Moon, Sun, Smartphone, Mail, AlertTriangle, Monitor, CheckCircle, Clock, ChevronDown, Upload, Calendar } from 'lucide-react';

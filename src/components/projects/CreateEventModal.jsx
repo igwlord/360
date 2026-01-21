@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { MapPin, Users, Calendar, Clock, Link, Music, Coffee, Truck } from 'lucide-react';
 import Modal from '../common/Modal';
 import { useCreateCampaign, useUpdateCampaign } from '../../hooks/useMutateCampaigns';
+import { useCreateTransaction } from '../../hooks/useTransactions'; // Billing Integration
 
 import GlassSelect from '../common/GlassSelect';
 import ResourceSelector from '../common/ResourceSelector';
@@ -17,6 +18,7 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
 
     const { mutateAsync: createProject } = useCreateCampaign();
     const { mutateAsync: updateProject } = useUpdateCampaign();
+    const { mutateAsync: createTransaction } = useCreateTransaction();
 
     const [isSubmitting, setIsSubmitting] = useState(false); // Fix: Prevent duplicates
 
@@ -67,11 +69,30 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
                 await updateProject(finalForm);
                 addToast('Evento actualizado', 'success');
             } else {
-                await createProject({ ...finalForm, progress: 0 });
-                addToast('Evento creado', 'success');
+                const newProject = await createProject({ ...finalForm, progress: 0 });
+                
+                // BILLING INTEGRATION: Automate Rate Card -> Transactions
+                if (newProject && newProject.id && form.resources?.length > 0) {
+                    const promises = form.resources.map(res => {
+                        return createTransaction({
+                             project_id: newProject.id,
+                             date: finalForm.date || new Date().toISOString(),
+                             amount: res.total,
+                             type: 'expense', // Gasto
+                             category: 'Producción', 
+                             concept: `[Tarifario] ${res.category} - ${res.item || res.name}`,
+                             status: 'Pendiente', // Always pending/projected initially
+                             supplier_id: null 
+                        });
+                    });
+                    await Promise.all(promises);
+                }
+                
+                addToast('Evento creado y proyección de costos generada', 'success');
             }
             onClose();
         } catch (err) {
+            console.error(err);
             addToast('Error al guardar', 'error');
         } finally {
             setIsSubmitting(false);

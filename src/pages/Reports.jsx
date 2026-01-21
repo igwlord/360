@@ -1,10 +1,9 @@
 
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-// import { useData } from '../context/DataContext'; REMOVED
 import { useCampaigns } from '../hooks/useCampaigns';
-import { useBudget } from '../hooks/useBudget';
-import { useRateCard } from '../hooks/useRateCard';
+// import { useBudget } from '../hooks/useBudget';
+// import { useRateCard } from '../hooks/useRateCard';
 import { useToast } from '../context/ToastContext';
 import { FileText, Download, PieChart, TrendingUp, DollarSign, Calendar, CheckSquare, Square, Sparkles } from 'lucide-react';
 import ReportConfigModal from '../components/reports/ReportConfigModal';
@@ -13,8 +12,8 @@ import { generateAndPrintReport } from '../utils/reportGenerator';
 const Reports = () => {
     const { theme } = useTheme();
     const { data: campaigns = [] } = useCampaigns();
-    const { budget } = useBudget();
-    const { data: rateCardItems = [] } = useRateCard();
+    // const { budget } = useBudget(); // Reserved for future use
+    // const { data: rateCardItems = [] } = useRateCard(); // Reserved for future use
     const { addToast } = useToast();
     
     // Mock Report Types

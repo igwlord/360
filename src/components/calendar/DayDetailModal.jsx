@@ -31,7 +31,7 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
     // Edit Mode State
     const [editingEventId, setEditingEventId] = useState(null);
 
-    if (!isOpen || !date) return null;
+    if (!isOpen || !date || isNaN(new Date(date).getTime())) return null;
 
     const handleAddEvent = async (e) => {
         e.preventDefault();

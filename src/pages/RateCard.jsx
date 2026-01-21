@@ -223,11 +223,11 @@ const RateCard = () => {
         </div>
 
         {/* Create/Edit Modal */}
-        <Modal isOpen={isRateModalOpen} onClose={() => setIsRateModalOpen(false)} title={rateForm.id ? "Editar Formato" : "Nuevo Formato"}>
+        <Modal isOpen={isRateModalOpen} onClose={() => setIsRateModalOpen(false)} title={rateForm.id ? "Editar Item" : "Nuevo Item"}>
              <div className="space-y-4">
                  <div className="grid grid-cols-2 gap-3">
                      <div className="col-span-2">
-                        <label className={`text-xs ${theme.textSecondary} ml-1`}>Nombre del Activo</label>
+                        <label className={`text-xs ${theme.textSecondary} ml-1`}>Nombre del Item</label>
                         <input type="text" value={rateForm.item} onChange={e => setRateForm({...rateForm, item: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text}`} autoFocus placeholder="Ej. Cabecera de Góndola"/>
                      </div>
                      
@@ -320,7 +320,7 @@ const RateCard = () => {
                  </div>
 
                  <button onClick={handleSave} className={`w-full ${theme.accentBg} text-black font-bold py-3 h-12 rounded-xl hover:opacity-90 mt-2 shadow-lg shadow-orange-900/10`}>
-                    {rateForm.id ? "Guardar Cambios" : "Crear Activo"}
+                    {rateForm.id ? "Guardar Cambios" : "Crear Item"}
                  </button>
              </div>
         </Modal>

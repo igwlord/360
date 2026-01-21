@@ -18,26 +18,64 @@ export const AVAILABLE_COLORS = {
 };
 
 // Default mappings
+// Default mappings
 const DEFAULT_CATEGORY_COLORS = {
-    campaign: 'purple',
-    marketing: 'blue',
-    deadline: 'red',
-    meeting: 'green',
-    reminder: 'yellow',
-    holiday: 'red',
-    // New Project Types
-    ongoing: 'teal',
-    puntual: 'orange',
-    interno: 'gray'
+    // Audit Standards
+    'Campaña': 'purple',
+    'campaña': 'purple',
+    'projects': 'purple',
+    
+    'Eventos': 'blue', // Marketing
+    'eventos': 'blue',
+    'marketing': 'blue',
+    
+    'deadline': 'red',
+    'deadlines': 'red',
+    
+    'meeting': 'green',
+    'meetings': 'green',
+    'reuniones': 'green',
+    
+    'reminder': 'orange',
+    'reminders': 'orange',
+    'recordatorios': 'orange',
+    
+    'Especiales': 'yellow', // Hitos/Gold
+    'especiales': 'yellow',
+    'hitos': 'yellow',
+    
+    // Legacy/Fallbacks
+    'holiday': 'red',
+    'ongoing': 'teal',
+    'puntual': 'orange',
+    'interno': 'gray'
 };
 
 export const ColorThemeProvider = ({ children }) => {
     // Persist user choices
-    const [categoryColors, setCategoryColors] = useLocalStorage('category-colors-v1', DEFAULT_CATEGORY_COLORS);
+    const [categoryColors, setCategoryColors] = useLocalStorage('category-colors-v2', DEFAULT_CATEGORY_COLORS); // Bump version to force reset
 
     // Helper to get full style object for a category
     const getCategoryStyle = (category) => {
-        const colorKey = categoryColors[category] || 'gray';
+        // Normalize input
+        const key = String(category).toLowerCase();
+        
+        // Direct match or search in keys
+        let colorKey = 'gray';
+        
+        // 1. Try direct match in keys (case insensitive)
+        const entries = Object.entries(categoryColors);
+        const match = entries.find(([k, v]) => k.toLowerCase() === key);
+        
+        if (match) {
+            colorKey = match[1];
+        } else {
+             // 2. Fallback logic for unmapped types
+             if (key.includes('campaña')) colorKey = 'purple';
+             else if (key.includes('evento')) colorKey = 'blue';
+             else if (key.includes('reunión')) colorKey = 'green';
+        }
+
         return AVAILABLE_COLORS[colorKey] || AVAILABLE_COLORS['gray'];
     };
 

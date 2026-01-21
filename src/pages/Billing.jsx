@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
-// import { useData } from '../context/DataContext'; REMOVED
 import { useToast } from '../context/ToastContext';
 import { 
     DollarSign, TrendingUp, TrendingDown, Plus, Filter, 
@@ -79,9 +78,13 @@ const Billing = () => {
 
         // Sanitize Payload
         // Sanitize Payload
+        const rawAmount = String(form.amount).replace(/\./g, '').replace(/,/g, '.'); // Handle 1.000,00 format if needed, simplistic strip for now
+        
         const payload = {
             ...form,
-            amount: parseFloat(form.amount.replace(/\./g, '')) // Parse formatted amount
+            amount: parseFloat(rawAmount) || 0,
+            project_id: form.project_id && form.project_id !== "" ? form.project_id : null,
+            provider_id: form.provider_id && form.provider_id !== "" ? form.provider_id : null
         };
 
         if (form.id) {

@@ -2,11 +2,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
-// import { DataProvider } from './context/DataContext'; REMOVED
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import MainLayout from './layout/MainLayout';
 import Login from './pages/Login';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -45,6 +45,7 @@ const App = () => {
     <ThemeProvider>
       <ColorThemeProvider>
         <ToastProvider>
+          <ErrorBoundary>
           <Router>
             <AuthProvider>
                 <Routes>
@@ -72,6 +73,7 @@ const App = () => {
                 </Routes>
             </AuthProvider>
           </Router>
+          </ErrorBoundary>
         </ToastProvider>
       </ColorThemeProvider>
     </ThemeProvider>
