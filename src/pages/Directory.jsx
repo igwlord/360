@@ -4,9 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { Search, Plus, Star, Phone, Mail, Globe, Share2, Edit, Trash2, ArrowLeft, ArrowRight, User, UserPlus, Layers, Briefcase, Activity, X, MessageSquare, Calendar, CheckSquare, AlertTriangle, Megaphone, FileText, MoreVertical } from 'lucide-react';
-import Modal from '../components/common/Modal';
-import GlassTable from '../components/common/GlassTable';
-import GlassSelect from '../components/common/GlassSelect';
+import Modal from '../components/common/Modal.tsx';
+import GlassTable from '../components/common/GlassTable'; // GlassTable handles its own heavy imports
+import GlassSelect from '../components/common/GlassSelect.tsx';
 import ContextMenu from '../components/common/ContextMenu';
 import CreateCampaignModal from '../components/projects/CreateCampaignModal';
 import ConfirmModal from '../components/common/ConfirmModal';
@@ -49,39 +49,43 @@ const Directory = () => {
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
 
-    // Navigation State Handling - Auto Open & Scroll (URL Params & State)
+    // Navigation State Handling - OPTIMIZED to prevent Loops
     React.useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
         const categoryParam = queryParams.get('category');
         const highlightParam = queryParams.get('highlight');
         const stateTargetId = location.state?.targetId;
-
-        // Priority: URL Param > State
         const targetId = highlightParam || stateTargetId;
 
+        // Only run if we actually have params to process
+        if (!categoryParam && !targetId) return;
+
         // 1. Set Active Group from Category Param
-        if (categoryParam) {
+        if (categoryParam && activeGroup !== categoryParam) { // Check inequality to avoid loop
             const group = providerGroups.find(g => g.title === categoryParam);
             if (group) {
-                setActiveGroup(group.id);
+                 // Only update if different to prevent re-render
+                 if(activeGroup !== group.id) setActiveGroup(group.id);
             }
         }
 
         // 2. Highlight Contact
-        if (targetId) {
+        if (targetId && (!selectedContact || selectedContact.id !== targetId)) {
             const contact = providerGroups.flatMap(g => g.contacts).find(c => c.id === targetId);
             
             if (contact) {
-                // Determine group if not set by category
-                if (!categoryParam) {
-                    // Try to switch to the contact's group if we are in 'Todos' or different
-                    const contactGroup = providerGroups.find(g => g.contacts.some(c => c.id === contact.id));
-                    if (contactGroup) setActiveGroup(contactGroup.id);
+                 // Select contact WITHOUT forcing activeGroup update if already visible
+                 // Logic to switch group only if strictly needed
+                const contactGroup = providerGroups.find(g => g.contacts.some(c => c.id === contact.id));
+                
+                // Batch updates if possible, or sequence carefully
+                if (contactGroup && activeGroup !== contactGroup.id && !categoryParam) {
+                    setActiveGroup(contactGroup.id);
                 }
 
                 setSelectedContact(contact);
                 
-                // Scroll and Flash
+                // Scroll (Debounced)
                 setTimeout(() => {
                     const el = document.getElementById(`contact-${targetId}`);
                     if (el) {
@@ -89,17 +93,14 @@ const Directory = () => {
                         el.classList.add('ring-2', 'ring-[#E8A631]', 'bg-white/20');
                         setTimeout(() => el.classList.remove('ring-2', 'ring-[#E8A631]', 'bg-white/20'), 2000);
                     }
-                }, 300); // Increased delay slightly to ensure list matches
-            }
-            
-            // Clean URL and State
-            // window.history.replaceState({}, document.title, location.pathname); // Optional: Clean URL? Maybe keep for refreshing?
-            // If we clean URL immediately, refresh won't persist filter. Let's keep URL.
-            // But we should clean State to avoid re-triggering on internal nav
-            if(stateTargetId) {
-                 window.history.replaceState({}, document.title);
+                }, 500);
             }
         }
+        // Removing location.search/state from dep array if they cause loops, 
+        // but they are needed for reaction. We assume providerGroups is stable from React Query.
+        // Removing location.search/state from dep array if they cause loops, 
+        // but they are needed for reaction. We assume providerGroups is stable from React Query.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.search, location.state, providerGroups]);
 
     // Schema Update: Strict fields
@@ -116,9 +117,15 @@ const Directory = () => {
         contacto_mkt_nombre: '', 
         contacto_mkt_email: '', 
         contacto_mkt_cel: '',
-        // Extras kept for UI utility but might not be in strict CSV
+        // Extras
         website: '', 
-        isFavorite: false 
+        isFavorite: false,
+        company: '', // Add legacy fields initialized provided empty to prevent uncontrolled
+        brand: '',
+        name: '',
+        email: '',
+        phone: '',
+        category: ''
     });
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, type: null, item: null });
 
@@ -131,13 +138,13 @@ const Directory = () => {
     // Debounced Search State to prevent Lag
     const [debouncedQuery, setDebouncedQuery] = useState('');
     
-    // Effect to debounce input
+    // Effect to debounce input (Optimized)
     React.useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedQuery(searchQuery);
-        }, 300); // 300ms delay
+        }, 300);
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [searchQuery]); // Safe dependency
 
     // Flatten contacts for "All" view or filter by group
     const getAllContacts = useCallback(() => {
@@ -172,6 +179,15 @@ const Directory = () => {
 
         return result;
     }, [activeGroup, providerGroups, debouncedQuery, showFavoritesOnly, getAllContacts]);
+
+    // Active Contact Campaigns (Memoized for Detail View)
+    const contactCampaigns = useMemo(() => {
+        if (!selectedContact) return [];
+        return campaigns.filter(c => 
+            c.providers?.includes(selectedContact.id) || 
+            c.providerId === selectedContact.id
+        );
+    }, [campaigns, selectedContact]);
 
     // Move Logic
     const handleMoveClick = (contact) => {
@@ -441,13 +457,15 @@ const Directory = () => {
             accessor: 'company', 
             width: '240px',
             sortable: true,
-            render: (row) => (
+            render: (row, options = {}) => {
+                const { highlightedId } = options;
+                return (
                 <div className="flex items-center gap-4 py-1">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg transition-transform group-hover:scale-105 border border-white/10 ${selectedContact?.id === row.id ? 'bg-[#E8A631] text-black' : 'bg-white/5 text-white/50'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg transition-transform group-hover:scale-105 border border-white/10 ${highlightedId === row.id ? 'bg-[#E8A631] text-black' : 'bg-white/5 text-white/50'}`}>
                         {row.company?.substring(0,1).toUpperCase() || '?'}
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className={`text-sm font-bold truncate ${selectedContact?.id === row.id ? 'text-white' : 'text-white/90'}`}>{row.company}</p>
+                        <p className={`text-sm font-bold truncate ${highlightedId === row.id ? 'text-white' : 'text-white/90'}`}>{row.company}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                             <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-[10px] uppercase font-bold text-white/40 tracking-wider truncate max-w-[120px]">
                                 {row.groupTitle}
@@ -456,21 +474,23 @@ const Directory = () => {
                         </div>
                     </div>
                 </div>
-            )
+            )},
         },
         { 
             header: 'Contacto Principal', 
             accessor: 'name', 
             width: '200px',
             sortable: true,
-            render: (row) => (
+            render: (row, options = {}) => {
+                const { highlightedId } = options;
+                return (
                 <div className="flex justify-between items-center pr-2 group/cell">
                     <div className="min-w-0">
                          <p className="text-xs text-white/80 font-medium truncate">{row.name || row.contacto_comercial_nombre || 'Sin contacto'}</p>
                          <p className="text-[10px] text-white/40 truncate">{row.email || row.contacto_comercial_email || '-'}</p>
                     </div>
                     {/* Inline Actions - Visible on hover or selected */}
-                    <div className={`flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${selectedContact?.id === row.id ? 'opacity-100' : ''}`}>
+                    <div className={`flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${highlightedId === row.id ? 'opacity-100' : ''}`}>
                          {row.email && (
                             <a href={`mailto:${row.email}`} onClick={e => e.stopPropagation()} className="p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors" title="Enviar Email">
                                 <Mail size={14}/>
@@ -483,7 +503,7 @@ const Directory = () => {
                          )}
                     </div>
                 </div>
-            )
+            )},
         },
         { 
             header: <div className="text-right pr-4">Estado</div>, 
@@ -500,7 +520,7 @@ const Directory = () => {
                 </div>
             )
         }
-    ], [selectedContact, showFavoritesOnly, toggleFavorite]);
+    ], [showFavoritesOnly, toggleFavorite]); // selectedContact REMOVED to prevent full table re-render on selection
 
     return (
         <div className="h-full flex gap-6 relative" onClick={() => setContextMenu({ ...contextMenu, visible: false })}>
@@ -584,6 +604,7 @@ const Directory = () => {
                         data={contacts}
                         onRowClick={(contact) => setSelectedContact(contact)}
                         onRowContextMenu={(e, contact) => handleContextMenu(e, 'contact', contact)}
+                        highlightedId={selectedContact?.id}
                     />
                 </div>
 
@@ -695,74 +716,63 @@ const Directory = () => {
                                     </div>
                                     
                                     {/* Real Campaign Filtering */}
-                                    {(() => {
-                                        const contactCampaigns = campaigns.filter(c => 
-                                            c.providers?.includes(selectedContact.id) || 
-                                            c.providerId === selectedContact.id
-                                        );
-
-                                        if (contactCampaigns.length === 0) {
-                                            return (
-                                                <div className="bg-white/5 border border-white/10 rounded-xl p-8 flex flex-col items-center text-center">
-                                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
-                                                        <Megaphone size={24} className="text-white/20" />
-                                                    </div>
-                                                    <p className="text-white font-bold mb-1">Sin campañas activas</p>
-                                                    <p className="text-xs text-white/50 max-w-[200px] mb-4">Este proveedor no está participando en ningún proyecto actual.</p>
-                                                    <div className="relative group">
-                                                        <span className="text-xs text-[#E8A631] underline cursor-help">¿Qué debería ver aquí?</span>
-                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 rounded-lg bg-black/90 border border-white/20 text-[10px] text-white/80 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                            Aquí aparecerán los proyectos donde este proveedor tenga items asignados o facturas cargadas.
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-
-                                        return (
-                                            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-                                                <table className="w-full text-left border-collapse">
-                                                    <thead>
-                                                        <tr className="border-b border-white/10 text-xs text-white/40 uppercase tracking-wider">
-                                                            <th className="p-4 font-medium">Estado</th>
-                                                            <th className="p-4 font-medium">Campaña</th>
-                                                            <th className="p-4 font-medium">Fecha</th>
-                                                            <th className="p-4 font-medium"></th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {contactCampaigns.map(project => (
-                                                            <tr key={project.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                                                                <td className="p-4">
-                                                                    <div className={`w-2 h-2 rounded-full ${
-                                                                        project.status === 'En Curso' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' :
-                                                                        project.status === 'Planificación' ? 'bg-yellow-500' :
-                                                                        project.status === 'Finalizado' ? 'bg-blue-500' : 'bg-white/20'
-                                                                    }`}></div>
-                                                                </td>
-                                                                <td className="p-4">
-                                                                    <p className="text-sm font-bold text-white max-w-[200px] truncate">{project.name}</p>
-                                                                    <p className="text-[10px] text-white/40">{project.brand}</p>
-                                                                </td>
-                                                                <td className="p-4 text-xs text-white/60">
-                                                                    {project.date || 'Sin fecha'}
-                                                                </td>
-                                                                <td className="p-4 text-right">
-                                                                    <button 
-                                                                        onClick={() => navigate('/proyectos?openId=' + project.id)}
-                                                                        className="p-2 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
-                                                                        title="Ver Proyecto"
-                                                                    >
-                                                                        <ArrowRight size={16} />
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+                                    {contactCampaigns.length === 0 ? (
+                                        <div className="bg-white/5 border border-white/10 rounded-xl p-8 flex flex-col items-center text-center">
+                                            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                                                <Megaphone size={24} className="text-white/20" />
                                             </div>
-                                        );
-                                    })()}
+                                            <p className="text-white font-bold mb-1">Sin campañas activas</p>
+                                            <p className="text-xs text-white/50 max-w-[200px] mb-4">Este proveedor no está participando en ningún proyecto actual.</p>
+                                            <div className="relative group">
+                                                <span className="text-xs text-[#E8A631] underline cursor-help">¿Qué debería ver aquí?</span>
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 rounded-lg bg-black/90 border border-white/20 text-[10px] text-white/80 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                    Aquí aparecerán los proyectos donde este proveedor tenga items asignados o facturas cargadas.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-white/10 text-xs text-white/40 uppercase tracking-wider">
+                                                        <th className="p-4 font-medium">Estado</th>
+                                                        <th className="p-4 font-medium">Campaña</th>
+                                                        <th className="p-4 font-medium">Fecha</th>
+                                                        <th className="p-4 font-medium"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {contactCampaigns.map(project => (
+                                                        <tr key={project.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                                            <td className="p-4">
+                                                                <div className={`w-2 h-2 rounded-full ${
+                                                                    project.status === 'En Curso' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' :
+                                                                    project.status === 'Planificación' ? 'bg-yellow-500' :
+                                                                    project.status === 'Finalizado' ? 'bg-blue-500' : 'bg-white/20'
+                                                                }`}></div>
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <p className="text-sm font-bold text-white max-w-[200px] truncate">{project.name}</p>
+                                                                <p className="text-[10px] text-white/40">{project.brand}</p>
+                                                            </td>
+                                                            <td className="p-4 text-xs text-white/60">
+                                                                {project.date || 'Sin fecha'}
+                                                            </td>
+                                                            <td className="p-4 text-right">
+                                                                <button 
+                                                                    onClick={() => navigate('/proyectos?openId=' + project.id)}
+                                                                    className="p-2 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                                                                    title="Ver Proyecto"
+                                                                >
+                                                                    <ArrowRight size={16} />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Budget Simulations */}

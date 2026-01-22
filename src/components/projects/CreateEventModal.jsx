@@ -41,12 +41,20 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
 
     useEffect(() => {
         if (isOpen) {
-            setForm((prev) => {
-                if (initialData && initialData.id !== prev.id) return { ...initialData, type: 'Eventos', resources: initialData.resources || [] };
-                if (!initialData) return { id: null, name: '', status: 'Planificación', type: 'Eventos', venue: '', capacity: '', start_date: '', end_date: '', parent_id: '', notes: '', providers: [], resources: [] };
-                return prev;
-            });
-            setActiveTab('details');
+                setForm((prev) => {
+                    if (initialData) {
+                        // Avoid unnecessary updates if id matches
+                        if (prev.id === initialData.id && prev.name === initialData.name) return prev;
+                        return { 
+                            ...initialData, 
+                            type: 'Eventos', 
+                            resources: initialData.resources || [] 
+                        };
+                    }
+                    // Reset if no initialData
+                    return { id: null, name: '', status: 'Planificación', type: 'Eventos', venue: '', capacity: '', start_date: '', end_date: '', parent_id: '', notes: '', providers: [], resources: [] };
+                });
+                setActiveTab('details');
         }
     }, [isOpen, initialData]);
 
@@ -56,13 +64,30 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
         setForm({ ...form, [field]: formatted });
     };
 
+    // Helper for datetime-local input
+    const formatDateTimeLocal = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '';
+            // Format to yyyy-MM-ddThh:mm
+            return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        } catch (e) {
+            return '';
+        }
+    };
+
     const handleSave = async () => {
         if (!form.name.trim()) return addToast('Nombre del evento obligatorio', 'error');
-        if (isSubmitting) return; // Fix: Prevent double click
+        if (isSubmitting) return; 
 
         setIsSubmitting(true);
-        // Sync main date field for compatibility (Optional now)
-        const finalForm = { ...form, date: form.start_date ? new Date(form.start_date).toLocaleDateString() : '' };
+        
+        // Ensure valid date format for DB (ISO)
+        const finalForm = { 
+            ...form, 
+            date: form.start_date ? new Date(form.start_date).toISOString() : new Date().toISOString()
+        };
 
         try {
             if (form.id) {
@@ -76,12 +101,12 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
                     const promises = form.resources.map(res => {
                         return createTransaction({
                              project_id: newProject.id,
-                             date: finalForm.date || new Date().toISOString(),
+                             date: finalForm.date,
                              amount: res.total,
                              type: 'expense', // Gasto
-                             category: 'Producción', 
+                             // category: 'Producción', // REMOVED: Column does not exist
                              concept: `[Tarifario] ${res.category} - ${res.item || res.name}`,
-                             status: 'Pendiente', // Always pending/projected initially
+                             status: 'Pendiente', 
                              supplier_id: null 
                         });
                     });
@@ -93,7 +118,7 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
             onClose();
         } catch (err) {
             console.error(err);
-            addToast('Error al guardar', 'error');
+            addToast('Error al guardar: ' + (err.message || ''), 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -139,14 +164,24 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="relative">
-                            <label className="text-[10px] text-white/50 mb-1 ml-1 block">Inicio (Opcional)</label>
+                            <label className="text-[10px] text-white/50 mb-1 ml-1 block">Inicio</label>
                             <Calendar size={16} className="absolute left-3 top-8 text-white/40"/>
-                            <input type="datetime-local" value={form.start_date} onChange={e => setForm({...form, start_date: e.target.value})} className={`w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:border-[#E8A631] outline-none`} />
+                            <input 
+                                type="datetime-local" 
+                                value={formatDateTimeLocal(form.start_date)} 
+                                onChange={e => setForm({...form, start_date: e.target.value})} 
+                                className={`w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:border-[#E8A631] outline-none`} 
+                            />
                         </div>
                         <div className="relative">
-                            <label className="text-[10px] text-white/50 mb-1 ml-1 block">Fin (Opcional)</label>
+                            <label className="text-[10px] text-white/50 mb-1 ml-1 block">Fin</label>
                             <Clock size={16} className="absolute left-3 top-8 text-white/40"/>
-                            <input type="datetime-local" value={form.end_date} onChange={e => setForm({...form, end_date: e.target.value})} className={`w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:border-[#E8A631] outline-none`} />
+                            <input 
+                                type="datetime-local" 
+                                value={formatDateTimeLocal(form.end_date)} 
+                                onChange={e => setForm({...form, end_date: e.target.value})} 
+                                className={`w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:border-[#E8A631] outline-none`} 
+                            />
                         </div>
                     </div>
                 </div>
@@ -184,7 +219,7 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
                 {/* COSTS TAB */}
                 {activeTab === 'costs' && (
                     <div className="space-y-4 animate-in fade-in h-[400px] overflow-y-auto custom-scrollbar">
-                        <ResourceSelector API 
+                        <ResourceSelector  
                             selectedResources={form.resources || []}
                             onChange={(newResources) => setForm({...form, resources: newResources})}
                             label="Costos Operativos Estimados"

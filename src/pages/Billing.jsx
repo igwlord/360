@@ -6,9 +6,9 @@ import {
     Search, Calendar, FileText, ArrowUpRight, ArrowDownRight, 
     MoreVertical, Trash2, Edit2, X, Users, Share2
 } from 'lucide-react';
-import GlassTable from '../components/common/GlassTable';
+import GlassTable from '../components/common/GlassTable.tsx'; // Explicit .tsx for cache busting
 import ContextMenu from '../components/common/ContextMenu';
-import Modal from '../components/common/Modal';
+import Modal from '../components/common/Modal.tsx';
 
 import { useTransactions, useCreateTransaction, useUpdateTransaction, useDeleteTransaction } from '../hooks/useTransactions';
 import { useCampaigns } from '../hooks/useCampaigns';
@@ -94,10 +94,15 @@ const Billing = () => {
         }
         
         const payload = {
-            ...form,
+            id: form.id,
+            type: form.type,
             amount: numericAmount,
+            date: form.date,
+            note: form.description, // Mapped to DB column 'note'
+            category: form.category, // Restored: Exists in schema
             project_id: form.project_id && form.project_id !== "" ? form.project_id : null,
-            provider_id: form.provider_id && form.provider_id !== "" ? form.provider_id : null
+            provider_id: form.provider_id && form.provider_id !== "" ? form.provider_id : null,
+            status: form.status
         };
 
         if (form.id) {
@@ -123,7 +128,8 @@ const Billing = () => {
     const filteredTransactions = useMemo(() => {
         return transactions.filter(t => {
             const matchesType = filterType === 'all' || t.type === filterType;
-            const matchesSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            const desc = t.note || t.description || '';
+            const matchesSearch = desc.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                   (t.category && t.category.toLowerCase().includes(searchTerm.toLowerCase()));
             return matchesType && matchesSearch;
         }).sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -274,7 +280,7 @@ const Billing = () => {
                                             <div className={`p-1.5 rounded-lg ${t.type === 'income' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                                                 {t.type === 'income' ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
                                             </div>
-                                            {t.description}
+                                            {t.note || t.description}
                                         </div>
                                     </td>
                                     <td className="p-4 text-white/60">

@@ -1,27 +1,26 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CampaignRepository } from '../services/CampaignRepository';
+import { useOfflineMutation } from './useOfflineMutation';
 
 export const useCreateCampaign = () => {
   const queryClient = useQueryClient();
+  const { mutate } = useOfflineMutation();
 
   return useMutation({
-    mutationFn: (newProject) => CampaignRepository.create(newProject),
+    mutationFn: (newProject) => mutate({ 
+        table: 'campaigns', 
+        type: 'POST', 
+        data: newProject 
+    }),
     onMutate: async (newProject) => {
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: ['campaigns'] });
-
-      // Snapshot the previous value
       const previousCampaigns = queryClient.getQueryData(['campaigns']);
 
-      // Optimistically update to the new value
-      // Note: We need a temp ID for the UI key
       const tempId = `temp-${Date.now()}`;
       const optimisitcProject = { 
           ...newProject, 
           id: tempId, 
           status: newProject.status || 'Planificación',
           providers: newProject.providers || [],
-          // Ensure calculated fields don't crash
           cost: newProject.cost || 0
       };
 
@@ -30,15 +29,12 @@ export const useCreateCampaign = () => {
         optimisitcProject
       ]);
 
-      // Return a context object with the snapshotted value
       return { previousCampaigns };
     },
     onError: (err, newProject, context) => {
-      // Rollback to the previous value
       queryClient.setQueryData(['campaigns'], context.previousCampaigns);
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure server sync
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
     },
   });
@@ -46,9 +42,14 @@ export const useCreateCampaign = () => {
 
 export const useUpdateCampaign = () => {
   const queryClient = useQueryClient();
+  const { mutate } = useOfflineMutation();
 
   return useMutation({
-    mutationFn: (updatedProject) => CampaignRepository.update(updatedProject),
+    mutationFn: (updatedProject) => mutate({ 
+        table: 'campaigns', 
+        type: 'PUT', 
+        data: updatedProject 
+    }),
     onMutate: async (updatedProject) => {
       await queryClient.cancelQueries({ queryKey: ['campaigns'] });
       const previousCampaigns = queryClient.getQueryData(['campaigns']);
@@ -70,9 +71,14 @@ export const useUpdateCampaign = () => {
 
 export const useDeleteCampaign = () => {
   const queryClient = useQueryClient();
+  const { mutate } = useOfflineMutation();
 
   return useMutation({
-    mutationFn: (id) => CampaignRepository.delete(id),
+    mutationFn: (id) => mutate({ 
+        table: 'campaigns', 
+        type: 'DELETE', 
+        data: { id } 
+    }),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['campaigns'] });
       const previousCampaigns = queryClient.getQueryData(['campaigns']);

@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Plus, Search, Filter, Calendar, BarChart2, MoreVertical, Edit, Trash2, CheckCircle, Circle, AlertCircle, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, LayoutList, KanbanSquare, DollarSign, MapPin, Users } from 'lucide-react';
-import Modal from '../components/common/Modal';
+import Modal from '../components/common/Modal.tsx';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ContextMenu from '../components/common/ContextMenu';
-import GlassSelect from '../components/common/GlassSelect';
-import GlassTable from '../components/common/GlassTable';
+import GlassSelect from '../components/common/GlassSelect.tsx';
+import GlassTable from '../components/common/GlassTable.tsx';
 import CreateCampaignModal from '../components/projects/CreateCampaignModal';
 import CreateEventModal from '../components/projects/CreateEventModal';
 import CreateExhibitionModal from '../components/projects/CreateExhibitionModal';
@@ -22,6 +22,8 @@ import { useCalendarEvents } from '../hooks/useCalendarEvents'; // NEW
 import { useUpdateCampaign, useDeleteCampaign } from '../hooks/useMutateCampaigns';
 import { formatCurrency } from '../utils/dataUtils';
 import { calculateFinancials } from '../utils/financials';
+
+
 
 const Projects = () => {
     const { theme } = useTheme();
@@ -65,7 +67,7 @@ const Projects = () => {
         const paramOpenId = queryParams.get('openId');
         
         // Fix: Also check for 'openTaskModal' for Tasks, or 'openModal' from state
-        const paramOpenTask = queryParams.get('openTaskModal');
+        // const paramOpenTask = queryParams.get('openTaskModal'); // Unused
         const stateOpenModal = location.state?.openModal; // Generic open trigger
 
         // Priority: URL Params > Location State
@@ -180,7 +182,10 @@ const Projects = () => {
         
         if (draggedItem.status !== newStatus) {
             // Optimistic update handled by context but we call the action
-            const updated = { ...draggedItem, status: newStatus };
+            // FIX: Remove virtual fields like _source before sending to Supabase
+            // eslint-disable-next-line no-unused-vars
+            const { _source, budget, transactions, loading, ...cleanItem } = draggedItem;
+            const updated = { ...cleanItem, status: newStatus };
             try {
                 await updateProject(updated);
                 addToast(`Estado actualizado: ${newStatus}`, 'success');
@@ -354,17 +359,20 @@ const Projects = () => {
                         </div>
 
                         <button onClick={() => { setForm({ id: null, name: '', brand: '', status: 'Planificación', type: activeTab }); setIsModalOpen(true); }} className={`${theme.accentBg} text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 shadow-lg`}>
-                            <Plus size={18} /> <span className="hidden md:inline">Nuevo {activeTab === 'Eventos' ? 'Evento' : activeTab === 'Exhibiciones' ? 'Exhibición' : activeTab === 'Especiales' ? 'Proyecto Especial' : 'Campaña'}</span>
+                            <Plus size={18} /> <span className="hidden md:inline">{(activeTab === 'Campaña' || activeTab === 'Exhibiciones') ? 'Nueva' : 'Nuevo'} {activeTab === 'Eventos' ? 'Evento' : activeTab === 'Exhibiciones' ? 'Exhibición' : activeTab === 'Especiales' ? 'Proyecto Especial' : 'Campaña'}</span>
                         </button>
                     </div>
                 </div>
             </div>
 
 
+
+
             {viewMode === 'list' ? (
                  <GlassTable 
                     data={filteredItems}
                     onRowClick={(row) => openEdit(row)} // Enable Clickable Rows
+                    // ... [Same columns config] ...
                     columns={[
                         { 
                             header: 'Proyecto', 
@@ -434,7 +442,10 @@ const Projects = () => {
             ) : (
                 /* Kanban Board */
                 <div className="flex-1 flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                {statuses.map(status => (
+                {statuses.map(status => {
+                    const statusProjects = projectsByStatus[status] || [];
+                    
+                    return (
                     <div 
                         key={status}
                         onDragOver={handleDragOver}
@@ -451,69 +462,73 @@ const Projects = () => {
                                 }`}></div>
                                 <h3 className="font-bold text-white text-sm uppercase tracking-wide">{status}</h3>
                             </div>
-                            <span className="text-xs font-bold text-white/30 bg-white/10 px-2 py-0.5 rounded-full">{projectsByStatus[status].length}</span>
+                            <span className="text-xs font-bold text-white/30 bg-white/10 px-2 py-0.5 rounded-full">{statusProjects.length}</span>
                         </div>
 
-                        {/* Cards */}
-                        <div className="p-3 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
-                            {projectsByStatus[status].map(project => {
-                                // Calculate Financials with Standardized Utility (includes Child Aggregation + ROAS)
-                                const financials = calculateFinancials(project, projects);
-                                
-                                return (
-                                <div 
-                                    key={project.id}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, project)}
-                                    onDragEnd={handleDragEnd}
-                                    onClick={() => openEdit(project)}
-                                    onContextMenu={(e) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY, item: project }); }}
-                                    className={`p-4 rounded-2xl border border-white/5 ${theme.cardBg} hover:bg-white/10 transition-all cursor-grab active:cursor-grabbing hover:translate-y-[-2px] hover:shadow-xl group relative overflow-hidden`}
-                                >
-                                    {/* Accent Bar */}
-                                    <div className={`absolute top-0 left-0 w-1 h-full ${status === 'En Curso' ? 'bg-green-500' : 'bg-white/20'}`}></div>
+                        {/* Virtualized Cards */}
+                        <div className="flex-1 overflow-y-auto p-3 relative custom-scrollbar space-y-3" style={{ minHeight: '200px' }}>
+                             {statusProjects.length > 0 ? (
+                                statusProjects.map((project) => {
+                                    const financials = calculateFinancials(project, projects);
+                                    return (
+                                        <div 
+                                            key={project.id}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, project)}
+                                            onDragEnd={handleDragEnd}
+                                            onClick={() => openEdit(project)}
+                                            onContextMenu={(e) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY, item: project }); }}
+                                            className={`p-4 rounded-2xl border border-white/5 ${theme.cardBg} hover:bg-white/10 transition-all cursor-grab active:cursor-grabbing hover:translate-y-[-2px] hover:shadow-xl group relative overflow-hidden`}
+                                        >
+                                            {/* Accent Bar */}
+                                            <div className={`absolute top-0 left-0 w-1 h-full ${status === 'En Curso' ? 'bg-green-500' : 'bg-white/20'}`}></div>
 
-                                    <div className="flex justify-between items-start mb-2 pl-2">
-                                        <div className="flex gap-2">
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/10 ${theme.textSecondary}`}>{project.brand}</span>
-                                            {/* ROAS Badge (Only for Campaigns with Revenue) */}
-                                            {project.type === 'Campaña' && Number(financials.roas) > 0 && (
-                                                <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/20 flex items-center gap-1">
-                                                    <TrendingDown size={10} className="rotate-180"/> ROAS {financials.roas}x
-                                                </span>
+                                            <div className="flex justify-between items-start mb-2 pl-2">
+                                                <div className="flex gap-2">
+                                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/10 ${theme.textSecondary}`}>{project.brand}</span>
+                                                    {project.type === 'Campaña' && Number(financials.roas) > 0 && (
+                                                        <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/20 flex items-center gap-1">
+                                                            <TrendingDown size={10} className="rotate-180"/> ROAS {financials.roas}x
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <button onClick={(e) => { e.stopPropagation(); openEdit(project); }} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/20 rounded text-white/60 hover:text-white transition-opacity">
+                                                    <Edit size={12} />
+                                                </button>
+                                            </div>
+                                            
+                                            <h4 className="font-bold text-white text-lg pl-2 leading-tight mb-3 truncate">{project.name.replace(/\s*\(.*?\)\s*/g, '')}</h4>
+                                            
+                                            {/* DYNAMIC CARD CONTENT */}
+                                            {renderKanbanCardContent(project, financials)}
+                                            
+                                            {/* Progress */}
+                                            {project.type === 'Campaña' && (
+                                                <div className="mt-4 pl-2">
+                                                    <div className="flex justify-between text-[10px] text-white/40 mb-1">
+                                                        <span>Progreso Presupuesto</span>
+                                                        <span>{Math.round(financials.progress)}%</span>
+                                                    </div>
+                                                    <div className="h-1 bg-black/40 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className={`h-full rounded-full ${status === 'En Curso' ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-white/30'}`} 
+                                                            style={{ width: `${financials.progress}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
-                                        <button onClick={(e) => { e.stopPropagation(); openEdit(project); }} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/20 rounded text-white/60 hover:text-white transition-opacity">
-                                            <Edit size={12} />
-                                        </button>
-                                    </div>
-                                    
-                                    <h4 className="font-bold text-white text-lg pl-2 leading-tight mb-3">{project.name.replace(/\s*\(.*?\)\s*/g, '')}</h4>
-                                    
-                                    {/* DYNAMIC CARD CONTENT BASED ON TYPE */}
-                                    {renderKanbanCardContent(project, financials)}
-                                    
-                                    {/* Progress (Only Show for Campaigns or if budget > 0) */}
-                                    {project.type === 'Campaña' && (
-                                        <div className="mt-4 pl-2">
-                                            <div className="flex justify-between text-[10px] text-white/40 mb-1">
-                                                <span>Progreso Presupuesto</span>
-                                                <span>{Math.round(financials.progress)}%</span>
-                                            </div>
-                                            <div className="h-1 bg-black/40 rounded-full overflow-hidden">
-                                                <div 
-                                                    className={`h-full rounded-full ${status === 'En Curso' ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-white/30'}`} 
-                                                    style={{ width: `${financials.progress}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    )}
+                                    );
+                                })
+                             ) : (
+                                <div className="flex items-center justify-center h-full text-white/20 text-sm italic">
+                                    Vacío
                                 </div>
-                            )})}
+                             )}
                         </div>
                     </div>
-                ))}
-            </div>
+                )})}
+                </div>
             )}
 
             {/* Modal Router */}

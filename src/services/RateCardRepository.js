@@ -21,7 +21,7 @@ export const RateCardRepository = {
     async create(item) {
         // Ensure price is number
         const payload = { ...item, price: Number(item.price) };
-        const { id, ...cleanPayload } = payload; // Remove temp ID if present
+        const { id: _id, ...cleanPayload } = payload; // Remove temp ID if present
 
         const { data, error } = await supabase.from('rate_card').insert([cleanPayload]).select();
         if (error) throw error;

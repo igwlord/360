@@ -17,6 +17,7 @@ export const THEMES = {
     accent: 'text-[#4ade80]', // Verde Neón (Toque tecnológico)
     accentBg: 'bg-[#4ade80]',
     accentBorder: 'border-[#4ade80]',
+    accentRing: 'ring-[#4ade80]',
     sidebarBg: 'bg-[#0a1f16]/90',
     inputBg: 'bg-[#05110c]/50',
     tooltipBg: 'bg-[#05110c]/95'
@@ -31,6 +32,7 @@ export const THEMES = {
     accent: 'text-[#FCA311]', // Dorado intenso
     accentBg: 'bg-[#FCA311]',
     accentBorder: 'border-[#FCA311]',
+    accentRing: 'ring-[#FCA311]',
     sidebarBg: 'bg-[#1e293b]/40',
     inputBg: 'bg-[#0f172a]/50',
     tooltipBg: 'bg-[#0f172a]/95'
@@ -45,6 +47,7 @@ export const THEMES = {
     accent: 'text-[#fbbf24]', // Ámbar Quemado (Dorado)
     accentBg: 'bg-[#fbbf24]',
     accentBorder: 'border-[#fbbf24]',
+    accentRing: 'ring-[#fbbf24]',
     sidebarBg: 'bg-[#2b080c]/90',
     inputBg: 'bg-[#150204]/60',
     tooltipBg: 'bg-[#150204]/95'

@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Search, Plus, Trash2, Edit, Copy, MoreVertical, Layout, Mic, MapPin, ShoppingBag, Smartphone, ArrowRight, X } from 'lucide-react';
-import Modal from '../components/common/Modal';
+import Modal from '../components/common/Modal.tsx';
 
-import GlassTable from '../components/common/GlassTable';
+import GlassTable from '../components/common/GlassTable.tsx';
 import ContextMenu from '../components/common/ContextMenu';
 import QuoteWizard from '../components/rate-card/QuoteWizard'; 
 import { useRateCard, useCreateRateItem, useUpdateRateItem, useDeleteRateItem } from '../hooks/useRateCard';
@@ -39,12 +39,12 @@ const RateCard = () => {
     const categories = ['Todos', ...new Set((rateCardItems || []).map(i => i.category))];
     
     // Filter Items
-    const filteredItems = (rateCardItems || []).filter(item => {
+    const filteredItems = React.useMemo(() => (rateCardItems || []).filter(item => {
       const matchesCategory = rateCardCategory === 'Todos' || item.category === rateCardCategory;
       const matchesSearch = item.item.toLowerCase().includes(rateCardSearch.toLowerCase()) || 
                             item.specs.toLowerCase().includes(rateCardSearch.toLowerCase());
       return matchesCategory && matchesSearch;
-    });
+    }), [rateCardItems, rateCardCategory, rateCardSearch]);
 
     const [initialWizardConfig, setInitialWizardConfig] = useState(null);
 
@@ -144,7 +144,7 @@ const RateCard = () => {
     };
 
     // Table Columns Config
-    const columns = [
+    const columns = React.useMemo(() => [
         { 
             header: 'Item / Activo', 
             accessor: 'item', 
@@ -171,7 +171,7 @@ const RateCard = () => {
             render: (row) => <span className={`font-bold ${theme.accent}`}>$ {Number(row.price).toLocaleString()}</span> 
         },
         { header: 'Unidad', accessor: 'unit', width: '10%', className: 'text-white/40 text-xs', sortable: true },
-    ];
+    ], [theme]);
 
     return (
       <div className="h-full flex flex-col relative" onClick={() => setContextMenu({ ...contextMenu, visible: false })}>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { Star, Calendar, Flag } from 'lucide-react';
-import Modal from '../common/Modal';
+import Modal from '../common/Modal.tsx';
 import { useCreateCampaign, useUpdateCampaign } from '../../hooks/useMutateCampaigns';
 
 const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {

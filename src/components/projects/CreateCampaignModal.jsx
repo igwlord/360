@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { DollarSign, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Trash2, Calendar, FileText, Users } from 'lucide-react';
-import Modal from '../common/Modal';
-import GlassSelect from '../common/GlassSelect';
+import Modal from '../common/Modal.tsx';
+import GlassSelect from '../common/GlassSelect.tsx';
 import { useCreateCampaign, useUpdateCampaign } from '../../hooks/useMutateCampaigns';
 import { useSuppliers } from '../../hooks/useSuppliers';
 import { formatCurrency } from '../../utils/dataUtils';
+import { calculateBudget, calculateExecuted, calculateAvailable } from '../../utils/financialUtils';
 
 const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
     const { theme } = useTheme();
@@ -50,15 +51,20 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
             };
 
             if (initialData) {
-                setForm({
-                    ...baseState,
-                    ...initialData,
-                    transactions: initialData.transactions || [],
-                    // Ensure strings for inputs
-                    name: initialData.name || '',
-                    client: initialData.client || initialData.brand || '', // Handle legacy brand key
-                    date: initialData.date || '',
-                    notes: initialData.notes || ''
+                setForm(prev => {
+                    // Avoid unnecessary updates if id matches
+                    if (prev.id === initialData.id && prev.name === initialData.name) return prev;
+                    
+                    return {
+                        ...baseState,
+                        ...initialData,
+                        transactions: initialData.transactions || [],
+                        // Ensure strings for inputs
+                        name: initialData.name || '',
+                        client: initialData.client || initialData.brand || '', // Handle legacy brand key
+                        date: initialData.date || '',
+                        notes: initialData.notes || ''
+                    };
                 });
             } else {
                 setForm(baseState);
@@ -117,9 +123,9 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
         setForm(prev => ({ ...prev, transactions: prev.transactions.filter(t => t.id !== id) }));
     };
 
-    const totalBudget = form.transactions?.reduce((acc, t) => t.type === 'initial' || t.type === 'income' ? acc + t.amount : acc, 0) || 0;
-    const executed = form.transactions?.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0) || 0;
-    const available = totalBudget - executed;
+    const totalBudget = calculateBudget(form.transactions);
+    const executed = calculateExecuted(form.transactions);
+    const available = calculateAvailable(form.transactions);
 
 
     return (
@@ -253,7 +259,7 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
 
             <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-white/10">
                 <button onClick={onClose} className="px-4 py-2 text-white/60 hover:text-white text-sm font-bold">Cancelar</button>
-                <button onClick={handleSave} className="bg-[#E8A631] text-black px-6 py-2 rounded-xl font-bold text-sm hover:opacity-90">Guardar Campaña</button>
+                <button data-testid="save-campaign-btn" onClick={handleSave} className="bg-[#E8A631] text-black px-6 py-2 rounded-xl font-bold text-sm hover:opacity-90">Guardar Campaña</button>
             </div>
         </Modal>
     );

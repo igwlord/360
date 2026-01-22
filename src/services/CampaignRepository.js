@@ -2,9 +2,18 @@ import { supabase } from '../supabase/client';
 
 export const CampaignRepository = {
     async getAll() {
+        const CACHE_KEY = 'campaigns_cache_v1';
         try {
             const { data, error } = await supabase.from('campaigns').select('*');
+            
             if (error) {
+                // If offline or error, try cache first
+                const cached = localStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    console.info('Serving campaigns from LocalStorage cache (Offline Mode)');
+                    return { data: JSON.parse(cached), error: null, source: 'cache' };
+                }
+
                 // Handle 404 specifically if table missing
                 if (error.code === 'PGRST205' || error.code === '42P01') {
                     console.warn("Table 'campaigns' not found. Returning empty list (or fallback).");
@@ -13,7 +22,6 @@ export const CampaignRepository = {
                 throw error;
             }
 
-            // Transform Data for Frontend Compatibility (Map DB columns to UI state)
             // Transform Data for Frontend Compatibility (Map DB columns to UI state)
             const mappedData = data.map(item => {
                 const notes = item.notes || '';
@@ -44,9 +52,17 @@ export const CampaignRepository = {
                 };
             });
 
+            // Update Cache
+            localStorage.setItem(CACHE_KEY, JSON.stringify(mappedData));
+
             return { data: mappedData, error: null, source: 'remote' };
         } catch (e) {
             console.error("CampaignRepository.getAll failed:", e);
+            // Last ditch cache attempt
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                 return { data: JSON.parse(cached), error: null, source: 'cache_error_fallback' };
+            }
             return { data: null, error: e, source: 'error' };
         }
     },
@@ -103,14 +119,30 @@ export const CampaignRepository = {
         
         if (error) {
             console.error("Supabase Create Error:", error);
-            throw error;
+            // Offline Support: Save to Sync Queue
+            const offlineQueue = JSON.parse(localStorage.getItem('offline_queue') || '[]');
+            const tempId = `temp-${Date.now()}`;
+            offlineQueue.push({ 
+                type: 'CREATE_CAMPAIGN', 
+                payload: { ...payload, id: tempId }, 
+                timestamp: Date.now() 
+            });
+            localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
+            
+            // Also update the local cache optimistically
+            const currentCache = JSON.parse(localStorage.getItem('campaigns_cache_v1') || '[]');
+            const optimisticCampaign = { ...payload, id: tempId };
+            localStorage.setItem('campaigns_cache_v1', JSON.stringify([optimisticCampaign, ...currentCache]));
+
+            console.warn("Offline: Action queued and cache updated optimistically.");
+            return optimisticCampaign; // Return valid object so UI doesn't crash
         }
         return data?.[0];
     },
 
     async update(campaign) {
         // Sanitize Payload: Strict Filter
-        // eslint-disable-next-line
+         
         const { 
             id, activeTab, transactions, statusColor, 
             _source, source, destination, draggableId, mode, // explicitly exclude known junk

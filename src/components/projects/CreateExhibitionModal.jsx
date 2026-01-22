@@ -29,7 +29,7 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
         name: '',
         status: 'Planificación',
         type: 'Exhibiciones',
-        date: '', // Added Date
+        date: new Date().toISOString().split('T')[0], // Fixed: Initialize with date string to avoid undefined
         booth_type: '',
         dimensions: '',
         retailer_id: '',
@@ -43,8 +43,37 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
     useEffect(() => {
         if (isOpen) {
             setForm((prev) => {
-                if (initialData && initialData.id !== prev.id) return { ...initialData, type: 'Exhibiciones', resources: initialData.resources || [] };
-                if (!initialData) return { id: null, name: '', status: 'Planificación', type: 'Exhibiciones', date: '', booth_type: '', dimensions: '', retailer_id: '', notes: '', providers: [], resources: [] };
+                const safeDate = (dateStr) => {
+                    if (!dateStr) return '';
+                    try {
+                        return new Date(dateStr).toISOString().split('T')[0];
+                    } catch { return ''; }
+                };
+
+                if (initialData && initialData.id !== prev.id) {
+                    return { 
+                        ...initialData, 
+                        type: 'Exhibiciones', 
+                        date: safeDate(initialData.date), 
+                        resources: initialData.resources || [] 
+                    };
+                }
+                
+                if (!initialData) {
+                    return { 
+                        id: null, 
+                        name: '', 
+                        status: 'Planificación', 
+                        type: 'Exhibiciones', 
+                        date: '', 
+                        booth_type: '', 
+                        dimensions: '', 
+                        retailer_id: '', 
+                        notes: '', 
+                        providers: [], 
+                        resources: [] 
+                    };
+                }
                 return prev;
             });
             setActiveTab('details');
@@ -63,11 +92,18 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
         }
 
         // Sanitize Payload (ensure no null/undefined in critical fields)
+        // Schema Fix: Move booth_type and dimensions to notes as they don't exist in 'campaigns' table
+        const extraDetails = `\n\n[Detalles Exhibición]\nTipo: ${form.booth_type || 'N/A'}\nDimensiones: ${form.dimensions || 'N/A'}`;
+        
         const finalForm = { 
-            ...form, 
-            providers: finalProviders.filter(Boolean), // Filter falsy values
-            retailer_id: form.retailer_id || '', // Ensure string
-            date: form.date ? new Date(form.date).toLocaleDateString() : '' // Ensure valid date string
+            name: form.name,
+            status: form.status,
+            type: 'Exhibiciones',
+            date: form.date ? new Date(form.date).toISOString() : new Date().toISOString(),
+            notes: (form.notes || '') + extraDetails,
+            retailer_id: form.retailer_id || '', 
+            providers: finalProviders.filter(Boolean),
+            id: form.id // Include ID for updates
         };
 
         try {
@@ -79,7 +115,8 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
                 addToast('Exhibición creada', 'success');
             }
             onClose();
-        } catch (err) {
+        } catch (error) {
+            console.error(error);
             addToast('Error al guardar', 'error');
         } finally {
             setIsSubmitting(false);

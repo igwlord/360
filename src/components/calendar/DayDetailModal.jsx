@@ -9,7 +9,7 @@ import { useToast } from '../../context/ToastContext';
 
 import { useCreateEvent, useUpdateEvent, useDeleteEvent } from '../../hooks/useMutateCalendarEvents';
 
-const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
+const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId = null }) => {
     const { theme } = useTheme();
     const { getCategoryClasses } = useColorTheme(); // Keep this
     const { addToast } = useToast();
@@ -30,6 +30,19 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
     
     // Edit Mode State
     const [editingEventId, setEditingEventId] = useState(null);
+
+    // Scroll to highlighted event
+    React.useEffect(() => {
+        if (isOpen && highlightedEventId) {
+            setTimeout(() => {
+                const el = document.getElementById(`event-card-${highlightedEventId}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Optional: Trigger a one-time flash animation logic here if CSS isn't enough
+                }
+            }, 300); // Small delay for modal animation
+        }
+    }, [isOpen, highlightedEventId]);
 
     if (!isOpen || !date || isNaN(new Date(date).getTime())) return null;
 
@@ -97,7 +110,11 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
         if (evt.isReadOnly) return;
         setEditingEventId(evt.id);
         setNewEventTitle(evt.title);
-        setNewEventTime(evt.time || '09:00');
+        
+        // Safety check for time format (HH:mm)
+        const timeValue = (evt.time && /^\d{2}:\d{2}$/.test(evt.time)) ? evt.time : '09:00';
+        setNewEventTime(timeValue);
+        
         setNewEventTag(evt.type || 'meeting');
     };
 
@@ -145,14 +162,21 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
                             <p>No hay eventos programados</p>
                         </div>
                     ) : (
-                        events.map(evt => (
-                            <div key={evt.id} className="flex gap-4 group">
-                                <div className="text-sm font-mono text-white/40 pt-1 w-12 text-right">{evt.time || 'All Day'}</div>
-                                <div 
-                                    onClick={() => startEdit(evt)}
-                                    className={`flex-1 p-3 rounded-xl border ${editingEventId === evt.id ? 'border-[#E8A631] bg-[#E8A631]/10' : 'border-white/5 bg-white/5 hover:bg-white/10'} transition-colors flex justify-between items-start group ${evt.isReadOnly ? 'cursor-default opacity-80' : 'cursor-pointer'}`}
-                                >
-                                    <div>
+                        events.map(evt => {
+                            const isHighlighted = highlightedEventId === evt.id;
+                            return (
+                                <div key={evt.id} className="flex gap-4 group">
+                                    <div className="text-sm font-mono text-white/40 pt-1 w-12 text-right">{evt.time || 'All Day'}</div>
+                                    <div 
+                                        id={`event-card-${evt.id}`}
+                                        onClick={() => startEdit(evt)}
+                                        className={`flex-1 p-3 rounded-xl border transition-all flex justify-between items-start group relative overflow-hidden
+                                            ${isHighlighted ? `ring-2 ${theme.accentRing} bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.2)]` : ''}
+                                            ${editingEventId === evt.id ? 'border-[#E8A631] bg-[#E8A631]/10' : 'border-white/5 bg-white/5 hover:bg-white/10'} 
+                                            ${evt.isReadOnly ? 'cursor-default opacity-80' : 'cursor-pointer'}`}
+                                    >
+                                        {isHighlighted && <div className={`absolute inset-0 ${theme.accentBg} opacity-10 animate-pulse pointer-events-none`} />}
+                                        <div>
                                         <div className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase mb-1 ${getTagColor(evt.type)}`}>
                                             {evt.type}
                                         </div>
@@ -171,7 +195,8 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [] }) => {
                                     )}
                                 </div>
                             </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
 

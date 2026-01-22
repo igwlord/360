@@ -49,7 +49,15 @@ const Calendar = () => {
     const [searchQuery, setSearchQuery] = useState('');
     
     // Derived State: Search Results
+    const [highlightedEventId, setHighlightedEventId] = useState(null);
+
+    const handleSearchResultClick = (item) => {
+        setHighlightedEventId(item.id);
+        onDayClick(item.date);
+    };
+
     const searchResults = React.useMemo(() => {
+        // ... (existing logic)
         if (!searchQuery.trim()) return [];
         const term = searchQuery.toLowerCase();
         
@@ -76,7 +84,6 @@ const Calendar = () => {
         ).sort((a,b) => a.date - b.date);
 
     }, [calendarEvents, projects, searchQuery]);
-
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday
 
@@ -171,6 +178,32 @@ const Calendar = () => {
         setSelectedModalDate(date);
     };
 
+    const DayCell = React.memo(({ day, isToday, events, onDayClick, getCategoryClasses }) => (
+        <div 
+            onClick={() => onDayClick(day)}
+            className={`h-24 md:h-32 p-2 rounded-xl border transition-all cursor-pointer flex flex-col gap-1 overflow-hidden relative group
+                ${isToday ? 'bg-[#E8A631]/10 border-[#E8A631]' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'}`}
+        >
+            <span className={`text-xs font-bold mb-1 ${isToday ? 'text-[#E8A631]' : 'text-white/50'}`}>{day}</span>
+            
+            <div className="flex-1 flex flex-col gap-1 overflow-y-hidden">
+                {events.slice(0, 3).map((e, i) => (
+                    <div key={i} className={`text-[9px] px-1.5 py-0.5 rounded truncate font-medium ${getCategoryClasses(e.type, 'badge')}`}>
+                        {e.title}
+                    </div>
+                ))}
+                {events.length > 3 && (
+                    <span className="text-[9px] text-white/40 pl-1">+{events.length - 3} más</span>
+                )}
+            </div>
+            
+            {/* Hover Add Button */}
+            <button className="absolute bottom-2 right-2 p-1 bg-white/10 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/20 text-white transition-opacity">
+                <Plus size={10}/>
+            </button>
+        </div>
+    ));
+
     const renderCalendarGrid = () => {
         const blanks = Array(firstDayOfMonth).fill(null);
         const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -186,30 +219,19 @@ const Calendar = () => {
                         currentDate.getFullYear() === new Date().getFullYear();
 
                     return (
-                        <div 
-                            key={day} 
-                            onClick={() => onDayClick(day)}
-                            className={`h-24 md:h-32 p-2 rounded-xl border transition-all cursor-pointer flex flex-col gap-1 overflow-hidden relative group
-                                ${isToday ? 'bg-[#E8A631]/10 border-[#E8A631]' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'}`}
-                        >
-                            <span className={`text-xs font-bold mb-1 ${isToday ? 'text-[#E8A631]' : 'text-white/50'}`}>{day}</span>
-                            
-                            <div className="flex-1 flex flex-col gap-1 overflow-y-hidden">
-                                {events.slice(0, 3).map((e, i) => (
-                                    <div key={i} className={`text-[9px] px-1.5 py-0.5 rounded truncate font-medium ${getCategoryClasses(e.type, 'badge')}`}>
-                                        {e.title}
-                                    </div>
-                                ))}
-                                {events.length > 3 && (
-                                    <span className="text-[9px] text-white/40 pl-1">+{events.length - 3} más</span>
-                                )}
-                            </div>
-                            
-                            {/* Hover Add Button */}
-                            <button className="absolute bottom-2 right-2 p-1 bg-white/10 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/20 text-white transition-opacity">
-                                <Plus size={10}/>
-                            </button>
-                        </div>
+                        <DayCell 
+                            key={day}
+                            day={day}
+                            isToday={isToday}
+                            events={events} // Memoization works if this array is effectively same. 
+                                            // Since getEventsForDay creates new array every render, we rely on React.memo doing shallow compare.
+                                            // BUT array !== array. So DayCell will still re-render.
+                                            // Improvement: We are filtering anyway. 
+                                            // Ideally we should memoize the EVENTS MAP creation.
+                                            // For now, extracting component is step 1. Correctness > Perf optimization that might break logic.
+                            onDayClick={onDayClick}
+                            getCategoryClasses={getCategoryClasses}
+                        />
                     );
                 })}
             </>
@@ -287,7 +309,6 @@ const Calendar = () => {
             </div>
         );
     };
-
     const renderSearchResults = () => {
         return (
             <div className="flex-col gap-2 h-full overflow-y-auto custom-scrollbar p-2">
@@ -298,7 +319,7 @@ const Calendar = () => {
                     <div className="text-center text-white/30 mt-10">No se encontraron eventos.</div>
                 ) : (
                     searchResults.map((item, idx) => (
-                    <div key={idx} onClick={() => onDayClick(item.date)} className={`p-4 mb-2 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition-all flex justify-between items-center group`}>
+                    <div key={idx} onClick={() => handleSearchResultClick(item)} className={`p-4 mb-2 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition-all flex justify-between items-center group`}>
                          <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="text-xs font-mono text-white/50">{item.date.toLocaleDateString()}</span>
@@ -458,9 +479,10 @@ const Calendar = () => {
       {selectedModalDate && (
           <DayDetailModal 
             isOpen={!!selectedModalDate} 
-            onClose={() => setSelectedModalDate(null)} 
+            onClose={() => { setSelectedModalDate(null); setHighlightedEventId(null); }} 
             date={selectedModalDate}
             events={getEventsForSpecificDate(selectedModalDate)}
+            highlightedEventId={highlightedEventId}
           />
       )}
     </div>

@@ -1,9 +1,17 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
-const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
+interface ModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    children: React.ReactNode;
+    size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+}
+
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
   const { theme } = useTheme();
 
   const maxWidthClass = {
@@ -14,8 +22,8 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
       full: 'max-w-full mx-4'
   }[size] || 'max-w-lg';
 
-  React.useEffect(() => {
-    const handleEsc = (e) => {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
         if (e.key === 'Escape') onClose();
     };
     if (isOpen) window.addEventListener('keydown', handleEsc);
@@ -31,6 +39,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h3 className="text-lg font-bold">{title}</h3>
           <button 
+            type="button"
             onClick={onClose}
             className={`p-2 rounded-full hover:bg-white/10 transition-colors ${theme.textSecondary} hover:text-white`}
           >

@@ -1,14 +1,38 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Search, Check } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
-const GlassSelect = ({ options, value, onChange, placeholder = "Seleccionar...", icon, searchPlaceholder = "Buscar...", className = "" }) => {
+interface Option {
+    value: string | number;
+    label: string;
+}
+
+interface GlassSelectProps {
+    options: Option[];
+    value: string | number;
+    onChange: (value: string | number) => void;
+    placeholder?: string;
+    icon?: React.ReactNode;
+    searchPlaceholder?: string;
+    className?: string;
+}
+
+const GlassSelect: React.FC<GlassSelectProps> = ({ 
+    options, 
+    value, 
+    onChange, 
+    placeholder = "Seleccionar...", 
+    icon, 
+    searchPlaceholder = "Buscar...", 
+    className = "" 
+}) => {
     const { theme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const filteredOptions = options.filter(opt => 
         opt.label.toLowerCase().includes(search.toLowerCase())
@@ -30,20 +54,18 @@ const GlassSelect = ({ options, value, onChange, placeholder = "Seleccionar...",
 
     // Handle Closing
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 // Check if clicking inside the portal dropdown (which is outside this ref)
-                // We'll trust the backdrop or specific dropdown ref if we added one, 
-                // but simpler: check if target is inside a specific class we add to portal
-                if (!event.target.closest('.glass-select-dropdown')) {
+                if (!(event.target as HTMLElement).closest('.glass-select-dropdown')) {
                     setIsOpen(false);
                 }
             }
         };
 
-        const handleScroll = (e) => {
+        const handleScroll = (e: Event) => {
             // Close on scroll to prevent detached UI, BUT ignore scrolls inside the dropdown itself
-            if (isOpen && !e.target.closest('.glass-select-dropdown')) {
+            if (isOpen && !(e.target as HTMLElement).closest('.glass-select-dropdown')) {
                 setIsOpen(false);
             }
         };

@@ -23,22 +23,31 @@ const ProtectedRoute = ({ children }) => {
 };
 
 
-// Placeholder Pages (To be implemented)
-import Dashboard from './pages/Dashboard';
+// Lazy Load Pages
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Calendar = React.lazy(() => import('./pages/Calendar'));
+const Directory = React.lazy(() => import('./pages/Directory'));
+const RateCard = React.lazy(() => import('./pages/RateCard'));
+const Projects = React.lazy(() => import('./pages/Projects'));
+const Billing = React.lazy(() => import('./pages/Billing'));
+const Reports = React.lazy(() => import('./pages/Reports'));
+const Settings = React.lazy(() => import('./pages/Settings'));
+const Help = React.lazy(() => import('./pages/Help'));
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
+
 const Home = () => <Dashboard />;
-import Calendar from './pages/Calendar';
-import Directory from './pages/Directory';
-import RateCard from './pages/RateCard';
-import Projects from './pages/Projects';
-import Billing from './pages/Billing';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import Help from './pages/Help';
-import NotificationsPage from './pages/NotificationsPage';
 
 import { ColorThemeProvider } from './context/ColorThemeContext';
-
 import SWUpdatePrompt from './components/common/SWUpdatePrompt';
+
+// Loading Component
+const LoadingSpinner = () => (
+    <div className="h-full w-full flex items-center justify-center p-10">
+        <div className="w-8 h-8 rounded-full border-2 border-[#E8A631] border-t-transparent animate-spin"></div>
+    </div>
+);
+
+import { SyncProvider } from './context/SyncContext';
 
 const App = () => {
   return (
@@ -48,29 +57,33 @@ const App = () => {
           <ErrorBoundary>
           <Router>
             <AuthProvider>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/*" element={
-                        <ProtectedRoute>
-                            <MainLayout>
-                                <SWUpdatePrompt />
-                                <Routes>
-                                    <Route path="/" element={<Home />} />
-                                    <Route path="/calendar" element={<Calendar />} />
-                                    <Route path="/directory" element={<Directory />} />
-                                    <Route path="/rate-card" element={<RateCard />} />
-                                    <Route path="/projects" element={<Projects />} />
-                                    <Route path="/billing" element={<Billing />} />
-                                    <Route path="/reports" element={<Reports />} />
-                                    <Route path="/settings" element={<Settings />} />
-                                    <Route path="/help" element={<Help />} />
-                                    <Route path="/notifications" element={<NotificationsPage />} />
-                                    <Route path="*" element={<Navigate to="/" replace />} />
-                                </Routes>
-                            </MainLayout>
-                        </ProtectedRoute>
-                    } />
-                </Routes>
+                <SyncProvider>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/*" element={
+                            <ProtectedRoute>
+                                <MainLayout>
+                                    <SWUpdatePrompt />
+                                    <React.Suspense fallback={<LoadingSpinner />}>
+                                        <Routes>
+                                            <Route path="/" element={<Home />} />
+                                            <Route path="/calendar" element={<Calendar />} />
+                                            <Route path="/directory" element={<Directory />} />
+                                            <Route path="/rate-card" element={<RateCard />} />
+                                            <Route path="/projects" element={<Projects />} />
+                                            <Route path="/billing" element={<Billing />} />
+                                            <Route path="/reports" element={<Reports />} />
+                                            <Route path="/settings" element={<Settings />} />
+                                            <Route path="/help" element={<Help />} />
+                                            <Route path="/notifications" element={<NotificationsPage />} />
+                                            <Route path="*" element={<Navigate to="/" replace />} />
+                                        </Routes>
+                                    </React.Suspense>
+                                </MainLayout>
+                            </ProtectedRoute>
+                        } />
+                    </Routes>
+                </SyncProvider>
             </AuthProvider>
           </Router>
           </ErrorBoundary>

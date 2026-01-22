@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for data manipulation, formatting and parsing.
  * Centralizes logic previously scattered in hooks and components.
@@ -6,7 +5,7 @@
 
 // --- Currency & Numbers ---
 
-export const parseCurrency = (val) => {
+export const parseCurrency = (val: string | number | null | undefined): number => {
     if (typeof val === 'number') return val;
     if (!val) return 0;
     // Remove '$', '.', and keep only numbers and maybe a decimal comma/point if needed
@@ -16,7 +15,7 @@ export const parseCurrency = (val) => {
     return parseFloat(val.toString().replace(/[^0-9]/g, '')) || 0;
 };
 
-export const formatCurrency = (amount) => {
+export const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
       currency: 'ARS',
@@ -27,16 +26,26 @@ export const formatCurrency = (amount) => {
 
 // --- Dates ---
 
-export const MONTHS_MAP = {
+type MonthMap = {
+    [key: string]: number;
+};
+
+export const MONTHS_MAP: MonthMap = {
     'ene': 0, 'feb': 1, 'mar': 2, 'abr': 3, 'may': 4, 'jun': 5,
     'jul': 6, 'ago': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dic': 11
 };
+
+interface DateParseResult {
+    year: number;
+    monthIndex: number;
+    isValid: boolean;
+}
 
 /**
  * Parses a campaign date string like "08 Ene - 11 Ene" or "Feb 2026"
  * Returns an object with { year, monthIndex, isValid } for filtering.
  */
-export const parseCampaignDate = (dateStr) => {
+export const parseCampaignDate = (dateStr: string | null | undefined): DateParseResult => {
     if (!dateStr) return { year: new Date().getFullYear(), monthIndex: -1, isValid: false };
     
     const lower = dateStr.toLowerCase();
@@ -60,11 +69,11 @@ export const parseCampaignDate = (dateStr) => {
 /**
  * Checks if a campaign matches the selected filters (Year/Month)
  */
-export const isCampaignInPeriod = (campaignDateStr, filterYear, filterMonthShort) => {
+export const isCampaignInPeriod = (campaignDateStr: string | undefined, filterYear: string | number, filterMonthShort: string): boolean => {
     const { year, monthIndex } = parseCampaignDate(campaignDateStr);
     
     // 1. Year Check
-    if (filterYear !== 'All' && year !== filterYear) return false;
+    if (filterYear !== 'All' && year !== Number(filterYear)) return false;
     
     // 2. Month Check
     if (filterMonthShort === 'All') return true;
@@ -77,12 +86,17 @@ export const isCampaignInPeriod = (campaignDateStr, filterYear, filterMonthShort
 
 // --- Backup & Restore ---
 
-export const exportData = () => {
+interface ExportResult {
+    success: boolean;
+    message: string;
+}
+
+export const exportData = (): ExportResult => {
     try {
-        const data = {};
+        const data: Record<string, string | null> = {};
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            data[key] = localStorage.getItem(key);
+            if (key) data[key] = localStorage.getItem(key);
         }
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -100,7 +114,7 @@ export const exportData = () => {
     }
 };
 
-export const importData = (jsonString) => {
+export const importData = (jsonString: string): ExportResult => {
     try {
         const data = JSON.parse(jsonString);
         if (!data || typeof data !== 'object') throw new Error('Format Invalid');
