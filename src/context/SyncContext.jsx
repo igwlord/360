@@ -67,7 +67,7 @@ export const SyncProvider = ({ children }) => {
                 return;
             }
 
-            console.log(`[Sync] Processing ${queue.length} mutations...`);
+
             
             for (const mutation of queue) {
                 try {

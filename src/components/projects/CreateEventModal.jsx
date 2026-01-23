@@ -7,6 +7,7 @@ import { useCreateCampaign, useUpdateCampaign } from '../../hooks/useMutateCampa
 import { useCreateTransaction } from '../../hooks/useTransactions'; // Billing Integration
 
 import GlassSelect from '../common/GlassSelect';
+import GlassInput from '../common/GlassInput';
 import ResourceSelector from '../common/ResourceSelector';
 import { useCampaigns } from '../../hooks/useCampaigns';
 
@@ -72,7 +73,7 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
             if (isNaN(d.getTime())) return '';
             // Format to yyyy-MM-ddThh:mm
             return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-        } catch (e) {
+        } catch (_) {
             return '';
         }
     };
@@ -131,8 +132,14 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
                 {/* Header Info */}
                 <div className="flex gap-4">
                     <div className="flex-1">
-                        <label className="text-xs text-white/50 mb-1 block">Nombre del Evento</label>
-                        <input autoFocus type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none font-bold`} placeholder="Ej. Lanzamiento Producto X" />
+                        <GlassInput 
+                            label="Nombre del Evento"
+                            autoFocus 
+                            value={form.name} 
+                            onChange={e => setForm({...form, name: e.target.value})} 
+                            placeholder="Ej. Lanzamiento Producto X" 
+                            className="font-bold"
+                        />
                     </div>
                     <div className="w-1/3">
                         <label className="text-xs text-white/50 mb-1 block">Estado</label>
@@ -163,24 +170,22 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="relative">
-                            <label className="text-[10px] text-white/50 mb-1 ml-1 block">Inicio</label>
-                            <Calendar size={16} className="absolute left-3 top-8 text-white/40"/>
-                            <input 
+                        <div>
+                            <GlassInput 
+                                label="Inicio"
                                 type="datetime-local" 
                                 value={formatDateTimeLocal(form.start_date)} 
                                 onChange={e => setForm({...form, start_date: e.target.value})} 
-                                className={`w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:border-[#E8A631] outline-none`} 
+                                icon={<Calendar size={16}/>}
                             />
                         </div>
-                        <div className="relative">
-                            <label className="text-[10px] text-white/50 mb-1 ml-1 block">Fin</label>
-                            <Clock size={16} className="absolute left-3 top-8 text-white/40"/>
-                            <input 
+                        <div>
+                            <GlassInput 
+                                label="Fin"
                                 type="datetime-local" 
                                 value={formatDateTimeLocal(form.end_date)} 
                                 onChange={e => setForm({...form, end_date: e.target.value})} 
-                                className={`w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:border-[#E8A631] outline-none`} 
+                                icon={<Clock size={16}/>}
                             />
                         </div>
                     </div>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
-import { DollarSign, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Trash2, Calendar, FileText, Users } from 'lucide-react';
+import { DollarSign, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Trash2, Calendar, FileText, Users, Activity } from 'lucide-react';
 import Modal from '../common/Modal.tsx';
 import GlassSelect from '../common/GlassSelect.tsx';
+import GlassInput from '../common/GlassInput'; // Standardized Input
 import { useCreateCampaign, useUpdateCampaign } from '../../hooks/useMutateCampaigns';
 import { useSuppliers } from '../../hooks/useSuppliers';
 import { formatCurrency } from '../../utils/dataUtils';
@@ -31,6 +32,8 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
         providers: [] // Keeping for future extensibility if needed
     });
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [financeAmount, setFinanceAmount] = useState('');
     const [transType, setTransType] = useState('expense');
     const [activeTab, setActiveTab] = useState('details'); // 'details' | 'financial'
@@ -51,17 +54,15 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
             };
 
             if (initialData) {
+                // Determine if we actually need to update checking against current form state
                 setForm(prev => {
-                    // Avoid unnecessary updates if id matches
-                    if (prev.id === initialData.id && prev.name === initialData.name) return prev;
-                    
-                    return {
+                   if (prev.id === initialData.id && prev.name === initialData.name) return prev;
+                   return {
                         ...baseState,
                         ...initialData,
                         transactions: initialData.transactions || [],
-                        // Ensure strings for inputs
                         name: initialData.name || '',
-                        client: initialData.client || initialData.brand || '', // Handle legacy brand key
+                        client: initialData.client || initialData.brand || '',
                         date: initialData.date || '',
                         notes: initialData.notes || ''
                     };
@@ -88,6 +89,9 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
             return;
         }
 
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+
         try {
             if (form.id) {
                 await updateProject(form);
@@ -100,6 +104,8 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
         } catch (error) {
             console.error(error);
             addToast('Error al guardar', 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -141,28 +147,54 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
             {activeTab === 'details' && (
                 <div className="space-y-4 animate-in fade-in">
                     <div>
-                        <label className="text-xs text-white/50 mb-1 block">Nombre de la Campaña</label>
-                        <input autoFocus type="text" value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. Verano 2026" />
+                        <GlassInput 
+                            label="Nombre de la Campaña"
+                            autoFocus 
+                            value={form.name || ''} 
+                            onChange={e => setForm({...form, name: e.target.value})} 
+                            placeholder="Ej. Verano 2026" 
+                            icon={<FileText size={16}/>}
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs text-white/50 mb-1 block">Cliente / Marca</label>
-                            <input type="text" value={form.client || ''} onChange={e => setForm({...form, client: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. Coca-Cola" />
+                            <GlassInput 
+                                label="Cliente / Marca"
+                                value={form.client || ''} 
+                                onChange={e => setForm({...form, client: e.target.value})} 
+                                placeholder="Ej. Coca-Cola"
+                                icon={<Users size={16}/>}
+                            />
                         </div>
                         <div>
-                            <label className="text-xs text-white/50 mb-1 block">Estado</label>
-                            <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}>
-                                <option>Planificación</option>
-                                <option>En Curso</option>
-                                <option>Pendiente</option>
-                                <option>Finalizado</option>
-                            </select>
+                             <label className="text-xs text-white/50 mb-1 block uppercase tracking-wider font-medium">Estado</label>
+                             <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
+                                    <Activity size={16} />
+                                </div>
+                                <select 
+                                    value={form.status} 
+                                    onChange={e => setForm({...form, status: e.target.value})} 
+                                    className={`w-full ${theme.inputBg} border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#E8A631] outline-none appearance-none cursor-pointer`}
+                                >
+                                    <option>Planificación</option>
+                                    <option>En Curso</option>
+                                    <option>Pendiente</option>
+                                    <option>Finalizado</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                            <input type="text" value={form.date || ''} onChange={e => setForm({...form, date: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. 01 Ene - 31 Mar" />
+                        <div>
+                           <GlassInput 
+                                label="Fechas / Periodo"
+                                value={form.date || ''} 
+                                onChange={e => setForm({...form, date: e.target.value})} 
+                                placeholder="Ej. 01 Ene - 31 Mar"
+                                icon={<Calendar size={16}/>}
+                            />
                         </div>
 
 
@@ -206,8 +238,15 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
                     </div>
 
                     <div>
-                         <label className="text-xs text-white/50 mb-1 block">Notas Estratégicas</label>
-                         <textarea value={form.notes || ''} onChange={e => setForm({...form, notes: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none h-32 resize-none`} placeholder="Objetivos, KPIs esperados..." />
+                         <GlassInput 
+                            label="Notas Estratégicas"
+                            multiline
+                            rows={4}
+                            value={form.notes || ''} 
+                            onChange={e => setForm({...form, notes: e.target.value})} 
+                            placeholder="Objetivos, KPIs esperados..."
+                            icon={<FileText size={16}/>}
+                        />
                     </div>
                 </div>
             )}
@@ -259,7 +298,9 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
 
             <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-white/10">
                 <button onClick={onClose} className="px-4 py-2 text-white/60 hover:text-white text-sm font-bold">Cancelar</button>
-                <button data-testid="save-campaign-btn" onClick={handleSave} className="bg-[#E8A631] text-black px-6 py-2 rounded-xl font-bold text-sm hover:opacity-90">Guardar Campaña</button>
+                <button data-testid="save-campaign-btn" onClick={handleSave} disabled={isSubmitting} className="bg-[#E8A631] text-black px-6 py-2 rounded-xl font-bold text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isSubmitting ? 'Guardando...' : 'Guardar Campaña'}
+                </button>
             </div>
         </Modal>
     );
