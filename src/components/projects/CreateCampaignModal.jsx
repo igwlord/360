@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { useToast } from '../../context/ToastContext';
-import { DollarSign, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Trash2, Calendar, FileText, Users, Activity } from 'lucide-react';
+import { DollarSign, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Trash2, Calendar, FileText, Users, Activity, Loader2 } from 'lucide-react';
 import Modal from '../common/Modal.tsx';
 import GlassSelect from '../common/GlassSelect.tsx';
 import GlassInput from '../common/GlassInput'; // Standardized Input
@@ -295,8 +295,8 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
 
             <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-white/10">
                 <button onClick={onClose} className="px-4 py-2 text-white/60 hover:text-white text-sm font-bold">Cancelar</button>
-                <button data-testid="save-campaign-btn" onClick={handleSave} disabled={isSubmitting} className="bg-[#E8A631] text-black px-6 py-2 rounded-xl font-bold text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {isSubmitting ? 'Guardando...' : 'Guardar Campaña'}
+                <button data-testid="save-campaign-btn" onClick={handleSave} disabled={isSubmitting} className="bg-[#E8A631] text-black px-6 py-2 rounded-xl font-bold text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[140px]">
+                    {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> Guardando...</> : 'Guardar Campaña'}
                 </button>
             </div>
         </Modal>

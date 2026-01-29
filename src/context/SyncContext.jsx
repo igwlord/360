@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { OfflineQueue } from '../services/OfflineQueue';
 import { useToast } from './ToastContext';
 import { supabase } from '../supabase/client';
+import { logError } from '../utils/logger';
 
 const SyncContext = createContext();
 
@@ -51,16 +52,14 @@ export const SyncProvider = ({ children }) => {
                     await processMutation(mutation);
                     await OfflineQueue.dequeue(mutation.id); // Success! Remove from queue
                 } catch (err) {
-                    console.error('[Sync] Mutation failed:', err);
-                    // Update retry count logic could go here
-                    // For now, if it fails, we leave it in queue but maybe mark as 'failed' to stop infinite loop
+                    logError('Sync', err, { mutationId: mutation.id, endpoint: mutation.endpoint });
                     await OfflineQueue.update(mutation.id, { status: 'failed', lastError: err.message });
                 }
             }
             
             addToast('Sincronización completada', 'success');
         } catch (err) {
-            console.error('[Sync] Fatal error:', err);
+            logError('Sync', err, { context: 'syncQueue' });
         } finally {
             setIsSyncing(false);
         }

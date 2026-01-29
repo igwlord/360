@@ -139,6 +139,41 @@ const Billing = () => {
         };
     }, [transactions]);
 
+    // F3: Resumen del mes actual (Total Facturado vs Costo de Producción + Objetivo mensual)
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const monthlySummary = useMemo(() => {
+        const inMonth = (t) => {
+            if (!t?.date) return false;
+            const d = new Date(t.date);
+            return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+        };
+        const incomeMonth = transactions.filter(t => t.type === 'income' && inMonth(t)).reduce((acc, curr) => acc + (curr.amount || 0), 0);
+        const expenseMonth = transactions.filter(t => t.type === 'expense' && inMonth(t)).reduce((acc, curr) => acc + (curr.amount || 0), 0);
+        return {
+            totalFacturado: incomeMonth,
+            costoProduccion: expenseMonth,
+            balanceMes: incomeMonth - expenseMonth
+        };
+    }, [transactions, currentYear, currentMonth]);
+
+    // Objetivo mensual (guardado en localStorage; opcional)
+    const [monthlyGoal, setMonthlyGoal] = useState(() => {
+        try {
+            const v = localStorage.getItem('billing_monthly_goal');
+            return v ? Number(v) : null;
+        } catch { return null; }
+    });
+    const handleMonthlyGoalChange = (e) => {
+        const val = e.target.value === '' ? null : Number(e.target.value);
+        setMonthlyGoal(val);
+        try {
+            if (val != null) localStorage.setItem('billing_monthly_goal', String(val));
+            else localStorage.removeItem('billing_monthly_goal');
+        } catch (_) {}
+    };
+
     // Computed: Projected Costs (From Rate Cards/Projects)
     const projectedCosts = useMemo(() => {
         return projects.reduce((acc, p) => acc + (p.cost || 0), 0);
@@ -160,6 +195,38 @@ const Billing = () => {
                 >
                     <Plus size={20} /> Nueva Transacción
                 </button>
+            </div>
+
+            {/* F3: Resumen del mes actual — Total Facturado vs Costo vs Objetivo */}
+            <div className={`${theme.cardBg} backdrop-blur-md rounded-2xl p-6 border border-white/10`}>
+                <h3 className="text-sm font-bold text-white/60 uppercase mb-4 flex items-center gap-2">
+                    <Calendar size={16} /> Este mes ({now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <p className="text-xs uppercase font-bold text-white/40 mb-1">Total Facturado</p>
+                        <p className="text-2xl font-bold text-green-400">{formatCurrency(monthlySummary.totalFacturado)}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs uppercase font-bold text-white/40 mb-1">Costo de Producción</p>
+                        <p className="text-2xl font-bold text-red-400">{formatCurrency(monthlySummary.costoProduccion)}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs uppercase font-bold text-white/40 mb-1">Objetivo mensual</p>
+                        <input
+                            type="number"
+                            placeholder="Ej. 500000"
+                            value={monthlyGoal ?? ''}
+                            onChange={handleMonthlyGoalChange}
+                            className={`w-full max-w-[180px] ${theme.inputBg} border border-white/10 rounded-lg px-3 py-2 text-lg font-bold text-white focus:outline-none focus:border-[#E8A631]`}
+                        />
+                        {monthlyGoal != null && (
+                            <p className={`text-xs mt-1 ${monthlySummary.totalFacturado >= monthlyGoal ? 'text-green-400' : 'text-amber-400'}`}>
+                                {monthlySummary.totalFacturado >= monthlyGoal ? 'Objetivo cumplido' : `Faltan ${formatCurrency(monthlyGoal - monthlySummary.totalFacturado)}`}
+                            </p>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* KPI Cards */}

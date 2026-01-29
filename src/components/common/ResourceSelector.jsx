@@ -52,7 +52,7 @@ const ResourceSelector = ({ selectedResources = [], onChange, label = "Recursos 
                 </label>
                 {selectedResources.length > 0 && (
                      <span className="text-xs font-bold text-[#E8A631]">
-                        Est: ${formatCurrency(totalEstimated)}
+                        Est: {formatCurrency(totalEstimated)}
                      </span>
                 )}
              </div>
@@ -86,7 +86,7 @@ const ResourceSelector = ({ selectedResources = [], onChange, label = "Recursos 
                                          <div className="text-[10px] text-white/40 uppercase">{item.category}</div>
                                      </div>
                                      <div className="text-right">
-                                         <div className="text-[#E8A631] text-xs font-mono font-bold">${formatCurrency(item.price)}</div>
+                                         <div className="text-[#E8A631] text-xs font-mono font-bold">{formatCurrency(item.price)}</div>
                                          <div className="text-[10px] text-white/30">{item.unit}</div>
                                      </div>
                                  </button>
@@ -109,11 +109,11 @@ const ResourceSelector = ({ selectedResources = [], onChange, label = "Recursos 
                          <div key={resource.id} className="flex items-center justify-between p-3 border-b border-white/5 last:border-0 group hover:bg-white/5 transition-colors">
                              <div className="flex-1 min-w-0 mr-4">
                                  <div className="text-sm font-bold text-white truncate">{resource.name}</div>
-                                 <div className="text-[10px] text-white/40 flex items-center gap-2">
-                                     <span>${formatCurrency(resource.price)} unit.</span>
-                                     <span>•</span>
-                                     <span className="text-[#E8A631] font-mono">Total: ${formatCurrency(resource.price * resource.quantity)}</span>
-                                 </div>
+                                <div className="text-[10px] text-white/40 flex items-center gap-2">
+                                    <span>{formatCurrency(resource.price)} unit.</span>
+                                    <span>•</span>
+                                    <span className="text-[#E8A631] font-mono">Total: {formatCurrency(resource.price * resource.quantity)}</span>
+                                </div>
                              </div>
                              
                              <div className="flex items-center gap-3">

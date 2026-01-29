@@ -5,6 +5,7 @@ import { X, Plus, Clock, Tag, Trash2, Calendar as CalIcon } from 'lucide-react';
 import { useColorTheme } from '../../context/ColorThemeContext';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import CreateCampaignModal from '../projects/CreateCampaignModal';
+import ConfirmModal from '../common/ConfirmModal';
 import { useToast } from '../../context/ToastContext';
 
 import { useCreateEvent, useUpdateEvent, useDeleteEvent } from '../../hooks/useMutateCalendarEvents';
@@ -28,7 +29,8 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [suppressChillAlert, setSuppressChillAlert] = useLocalStorage('chill-alert-suppressed', false);
     const [dontShowChecked, setDontShowChecked] = useState(false);
-    
+    const [eventToDelete, setEventToDelete] = useState(null);
+
     // Edit Mode State
     const [editingEventId, setEditingEventId] = useState(null);
 
@@ -99,7 +101,14 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId
         setNewEventTime('09:00'); // Reset time too
     };
 
-    const handleDeleteEvent = async (id) => {
+    const handleDeleteEvent = (id) => {
+        setEventToDelete(id);
+    };
+
+    const confirmDeleteEvent = async () => {
+        if (!eventToDelete) return;
+        const id = eventToDelete;
+        setEventToDelete(null);
         await deleteEvent(id);
         addToast('Evento eliminado', 'info');
         if (editingEventId === id) {
@@ -190,6 +199,7 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleDeleteEvent(evt.id); }} 
                                             className="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:bg-red-500/20 rounded-lg transition-all"
+                                            aria-label="Eliminar evento"
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -265,11 +275,23 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId
                 </div>
             </div>
 
-            {/* Project Modal */}
+            {/* Project Modal (crear proyecto desde calendario: fecha pre-rellenada) */}
             <CreateCampaignModal 
                 isOpen={isProjectModalOpen} 
                 onClose={() => setIsProjectModalOpen(false)} 
                 initialData={{ date: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '' }} 
+            />
+
+            {/* Confirmación eliminar evento */}
+            <ConfirmModal 
+                isOpen={!!eventToDelete} 
+                onClose={() => setEventToDelete(null)} 
+                onConfirm={confirmDeleteEvent} 
+                title="Eliminar evento" 
+                message="¿Eliminar este evento? Esta acción no se puede deshacer." 
+                variant="danger" 
+                confirmText="Eliminar" 
+                cancelText="Cancelar" 
             />
 
             {/* CHILL MODAL */}

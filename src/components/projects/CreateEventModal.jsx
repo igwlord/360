@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../../context/ToastContext';
-import { MapPin, Users, Calendar, Clock, Link, Music, Coffee, Truck } from 'lucide-react';
+import { MapPin, Users, Calendar, Clock, Link, Music, Coffee, Truck, Loader2 } from 'lucide-react';
 import Modal from '../common/Modal';
 import { useCreateCampaign, useUpdateCampaign } from '../../hooks/useMutateCampaigns';
 import { useCreateTransaction } from '../../hooks/useTransactions'; // Billing Integration
@@ -235,8 +235,8 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
                     <button onClick={onClose} className="px-4 py-2 text-white/60 hover:text-white text-sm font-bold">Cancelar</button>
-                    <button onClick={handleSave} disabled={isSubmitting} className="bg-white text-black px-6 py-2 rounded-xl font-bold text-sm hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                        {isSubmitting ? 'Guardando...' : 'Guardar Evento'}
+                    <button onClick={handleSave} disabled={isSubmitting} className="bg-white text-black px-6 py-2 rounded-xl font-bold text-sm hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[140px]">
+                        {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> Guardando...</> : 'Guardar Evento'}
                     </button>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
-import { Star, Calendar, Flag } from 'lucide-react';
+import { Star, Calendar, Flag, Loader2 } from 'lucide-react';
 import Modal from '../common/Modal.tsx';
 import { useCreateCampaign, useUpdateCampaign } from '../../hooks/useMutateCampaigns';
 
@@ -26,9 +26,9 @@ const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {
     const { mutateAsync: createProject } = useCreateCampaign();
     const { mutateAsync: updateProject } = useUpdateCampaign();
 
-    // Calculate initial form state based on initialData
     const initialForm = useMemo(() => getInitialForm(initialData), [initialData]);
     const [form, setForm] = useState(initialForm);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Reset form when modal opens with new initialData
     React.useEffect(() => {
@@ -40,7 +40,8 @@ const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {
 
     const handleSave = async () => {
         if (!form.name.trim()) return addToast('Nombre obligatorio', 'error');
-
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             if (form.id) {
                 await updateProject(form);
@@ -52,6 +53,8 @@ const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {
             onClose();
         } catch {
             addToast('Error al guardar', 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -98,7 +101,9 @@ const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
                     <button onClick={onClose} className="px-4 py-2 text-white/60 hover:text-white text-sm font-bold">Cancelar</button>
-                    <button onClick={handleSave} className="bg-yellow-500 text-black px-6 py-2 rounded-xl font-bold text-sm hover:bg-yellow-400 shadow-lg shadow-yellow-500/20">Guardar Especial</button>
+                    <button onClick={handleSave} disabled={isSubmitting} className="bg-yellow-500 text-black px-6 py-2 rounded-xl font-bold text-sm hover:bg-yellow-400 shadow-lg shadow-yellow-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[150px]">
+                        {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> Guardando...</> : 'Guardar Especial'}
+                    </button>
                 </div>
             </div>
         </Modal>

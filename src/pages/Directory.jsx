@@ -935,11 +935,17 @@ const Directory = () => {
                                         <span className="text-[10px] uppercase font-bold text-white/40 group-hover:text-white">WhatsApp</span>
                                     </a>
                                     <a 
-                                        href={`https://teams.microsoft.com/l/call/0/0?users=${selectedContact.email}`} 
-                                        target="_blank" 
+                                        href={selectedContact.email ? `https://teams.microsoft.com/l/call/0/0?users=${encodeURIComponent(selectedContact.email)}` : '#'}
+                                        target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex flex-col items-center gap-2 group p-3 rounded-xl hover:bg-white/5 transition-colors"
-                                        title="Llamar por Teams"
+                                        onClick={(e) => {
+                                            if (!selectedContact.email) {
+                                                e.preventDefault();
+                                                addToast('Agrega un email al contacto para abrir Teams', 'warning');
+                                            }
+                                        }}
+                                        className={`flex flex-col items-center gap-2 group p-3 rounded-xl hover:bg-white/5 transition-colors ${!selectedContact.email ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        title={selectedContact.email ? 'Llamar por Microsoft Teams' : 'Necesitas email del contacto'}
                                     >
                                         <div className={`w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-[#5059C9] group-hover:text-white transition-all shadow-lg`}>
                                             <Phone size={18} className="rotate-45" />

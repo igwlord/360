@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { logError } from '../../utils/logger';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,7 +13,7 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
+    logError('ErrorBoundary', error, { componentStack: errorInfo?.componentStack });
     this.setState({ error, errorInfo });
   }
 

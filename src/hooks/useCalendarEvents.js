@@ -42,9 +42,14 @@ export const useCalendarEvents = () => {
 
       const allEvents = [...remoteEvents, ...mappedHolidays];
 
-      // Fallback if strictly empty and no error (simulate initial load mock)
+      // Fallback if strictly empty and no error: datos de ejemplo (solo lectura en calendario)
       if (allEvents.length === mappedHolidays.length && !error) {
-           return [...CALENDAR_EVENTS_DATA, ...mappedHolidays];
+        const exampleEvents = CALENDAR_EVENTS_DATA.map((e) => ({
+          ...e,
+          isReadOnly: true,
+          time: e.time || (e.date ? '09:00' : null),
+        }));
+        return [...exampleEvents, ...mappedHolidays];
       }
 
       return allEvents;

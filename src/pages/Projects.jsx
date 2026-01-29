@@ -29,8 +29,9 @@ const Projects = () => {
     const { theme } = useTheme();
     // Removed campaigns, addProject, updateProject, deleteProject from useData
     
-    // Query Hooks
-    const { data: projects = [] } = useCampaigns();
+    // Query Hooks (manejo de error: no bloquear navegación)
+    const { data: projectsRaw, isError: campaignsError, error: campaignsErrorDetail } = useCampaigns();
+    const projects = Array.isArray(projectsRaw) ? projectsRaw : [];
     const { data: calendarEvents = [] } = useCalendarEvents(); // NEW
     const { data: providerGroups = [] } = useSuppliers();
     const { mutateAsync: updateProject } = useUpdateCampaign();
@@ -364,8 +365,17 @@ const Projects = () => {
                 </div>
             </div>
 
-
-
+            {/* C2: Mensaje de error no bloqueante — permite seguir navegando */}
+            {campaignsError && (
+                <div className="mb-4 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm flex items-center justify-between gap-4">
+                    <span>
+                        No se pudieron cargar las campañas. Puedes cambiar de pestaña o recargar la página.
+                        {campaignsErrorDetail?.message && (
+                            <span className="block mt-1 text-xs opacity-80 truncate">{campaignsErrorDetail.message}</span>
+                        )}
+                    </span>
+                </div>
+            )}
 
             {viewMode === 'list' ? (
                  <GlassTable 

@@ -1,4 +1,5 @@
 import { supabase } from '../supabase/client';
+import { logError, logWarn } from '../utils/logger';
 
 export const CampaignRepository = {
     async getAll() {
@@ -16,7 +17,7 @@ export const CampaignRepository = {
 
                 // Handle 404 specifically if table missing
                 if (error.code === 'PGRST205' || error.code === '42P01') {
-                    console.warn("Table 'campaigns' not found. Returning empty list (or fallback).");
+                    logWarn('CampaignRepository', "Table 'campaigns' not found. Returning empty list.", { code: error.code });
                     return { data: [], error, source: 'missing_table' };
                 }
                 throw error;
@@ -37,7 +38,7 @@ export const CampaignRepository = {
                     try {
                         resources = JSON.parse(resourcesMatch[1]);
                     } catch (e) {
-                         console.warn('Failed to parse Resources JSON from notes', e);
+                         logWarn('CampaignRepository', 'Failed to parse Resources JSON from notes', { note: e?.message });
                     }
                 }
 
@@ -57,7 +58,7 @@ export const CampaignRepository = {
 
             return { data: mappedData, error: null, source: 'remote' };
         } catch (e) {
-            console.error("CampaignRepository.getAll failed:", e);
+            logError('CampaignRepository', e, { method: 'getAll' });
             // Last ditch cache attempt
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
@@ -79,7 +80,7 @@ export const CampaignRepository = {
             try {
                 resourcesString = JSON.stringify(resources);
             } catch (e) {
-                console.error("Failed to stringify resources", e);
+                logError('CampaignRepository', e, { context: 'stringify resources' });
             }
         }
 
@@ -118,7 +119,7 @@ export const CampaignRepository = {
             .select();
         
         if (error) {
-            console.error("Supabase Create Error:", error);
+            logError('CampaignRepository', error, { method: 'create', payload: payload?.name });
             // Offline Support: Save to Sync Queue
             const offlineQueue = JSON.parse(localStorage.getItem('offline_queue') || '[]');
             const tempId = `temp-${Date.now()}`;
@@ -134,7 +135,7 @@ export const CampaignRepository = {
             const optimisticCampaign = { ...payload, id: tempId };
             localStorage.setItem('campaigns_cache_v1', JSON.stringify([optimisticCampaign, ...currentCache]));
 
-            console.warn("Offline: Action queued and cache updated optimistically.");
+            logWarn('CampaignRepository', 'Offline: Action queued and cache updated optimistically.');
             return optimisticCampaign; // Return valid object so UI doesn't crash
         }
         return data?.[0];

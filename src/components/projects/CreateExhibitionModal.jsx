@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
-import { Layout, Maximize, Store, Link } from 'lucide-react';
+import { Layout, Maximize, Store, Link, Loader2 } from 'lucide-react';
 import Modal from '../common/Modal';
 import GlassSelect from '../common/GlassSelect'; // Re-use generic select
 import ResourceSelector from '../common/ResourceSelector';
@@ -95,6 +95,12 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
         // Schema Fix: Move booth_type and dimensions to notes as they don't exist in 'campaigns' table
         const extraDetails = `\n\n[Detalles Exhibición]\nTipo: ${form.booth_type || 'N/A'}\nDimensiones: ${form.dimensions || 'N/A'}`;
         
+        // Recursos con total calculado para coste (price * quantity)
+        const resourcesWithTotal = (form.resources || []).map(r => ({
+            ...r,
+            total: (r.price || 0) * (r.quantity || 1)
+        }));
+
         const finalForm = { 
             name: form.name,
             status: form.status,
@@ -103,6 +109,7 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
             notes: (form.notes || '') + extraDetails,
             retailer_id: form.retailer_id || '', 
             providers: finalProviders.filter(Boolean),
+            resources: resourcesWithTotal,
             id: form.id // Include ID for updates
         };
 
@@ -126,29 +133,31 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
         <Modal isOpen={isOpen} onClose={onClose} title={form.id ? "Gestionar Exhibición" : "Nueva Exhibición"} size="lg">
             <div className="space-y-6 animate-in fade-in">
                 
-                {/* Header Info */}
-                <div className="grid grid-cols-3 gap-4">
-                     <div className="col-span-2">
-                        <label className="text-xs text-white/50 mb-1 block">Nombre de la Implementación</label>
-                        <input autoFocus type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none font-bold`} placeholder="Ej. Isla Samsung Alto Las Condes" />
-                     </div>
-                     <div>
-                        <GlassSelect 
-                            label="Estado"
-                            options={[
-                                { value: 'Planificación', label: 'Planificación' },
-                                { value: 'En Curso', label: 'En Curso' },
-                                { value: 'Pendiente', label: 'Pendiente' },
-                                { value: 'Finalizado', label: 'Finalizado' }
-                            ]}
-                            value={form.status}
-                            onChange={(val) => setForm({...form, status: val})}
-                        />
-                     </div>
-                     <div className="col-span-3">
+                {/* Header Info: Nombre y Estado en la misma línea */}
+                <div className="space-y-4">
+                    <div className="flex flex-wrap items-end gap-4">
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="text-xs text-white/50 mb-1 block">Nombre de la Implementación</label>
+                            <input autoFocus type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none font-bold`} placeholder="Ej. Isla Samsung Alto Las Condes" />
+                        </div>
+                        <div className="w-full sm:w-[180px]">
+                            <label className="text-xs text-white/50 mb-1 block">Estado</label>
+                            <GlassSelect 
+                                options={[
+                                    { value: 'Planificación', label: 'Planificación' },
+                                    { value: 'En Curso', label: 'En Curso' },
+                                    { value: 'Pendiente', label: 'Pendiente' },
+                                    { value: 'Finalizado', label: 'Finalizado' }
+                                ]}
+                                value={form.status}
+                                onChange={(val) => setForm({...form, status: val})}
+                            />
+                        </div>
+                    </div>
+                    <div>
                         <label className="text-xs text-white/50 mb-1 block">Fecha de Implementación</label>
-                        <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} />
-                     </div>
+                        <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className={`w-full max-w-xs ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} />
+                    </div>
                 </div>
 
                 <div className="flex gap-6 border-b border-white/10 mb-6">
@@ -244,8 +253,8 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
                     <button onClick={onClose} className="px-4 py-2 text-white/60 hover:text-white text-sm font-bold">Cancelar</button>
-                    <button onClick={handleSave} disabled={isSubmitting} className="bg-purple-500 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-purple-400 shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                        {isSubmitting ? 'Guardando...' : 'Guardar Exhibición'}
+                    <button onClick={handleSave} disabled={isSubmitting} className="bg-purple-500 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-purple-400 shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[160px]">
+                        {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> Guardando...</> : 'Guardar Exhibición'}
                     </button>
                 </div>
             </div>
