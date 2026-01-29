@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import { DollarSign, ChevronUp, ChevronDown, Activity, Settings, TrendingUp, ArrowUpRight } from 'lucide-react';
 import { DonutChart } from '../Widgets';
@@ -6,7 +6,7 @@ import { formatCurrency } from '../../../utils/dataUtils';
 import Tooltip from '../../common/Tooltip';
 import { useNavigate } from 'react-router-dom';
 
-const FinancialPulse = ({ metrics, isExpanded, setIsExpanded }) => {
+const FinancialPulse = memo(({ metrics, isExpanded, setIsExpanded }) => {
     const { theme } = useTheme();
     const navigate = useNavigate();
 
@@ -96,7 +96,10 @@ const FinancialPulse = ({ metrics, isExpanded, setIsExpanded }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {metrics.campaigns.sort((a,b)=>b.actualCost-a.actualCost).slice(0,5).map(c => (
+                                {useMemo(() => 
+                                    metrics.campaigns.sort((a,b)=>b.actualCost-a.actualCost).slice(0,5),
+                                    [metrics.campaigns]
+                                ).map(c => (
                                     <tr 
                                         key={c.id} 
                                         className="hover:bg-white/5 transition-colors cursor-pointer group"
@@ -129,6 +132,8 @@ const FinancialPulse = ({ metrics, isExpanded, setIsExpanded }) => {
              )}
         </div>
     );
-};
+});
+
+FinancialPulse.displayName = 'FinancialPulse';
 
 export default FinancialPulse;

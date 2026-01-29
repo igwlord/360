@@ -138,8 +138,7 @@ Un único bloque de código HTML completo con estilos CSS y scripts JS integrado
             try {
                 await navigator.clipboard.writeText(prompt);
                 addToast('Prompt Maestro copiado al portapapeles. Pégalo en Gemini/ChatGPT.', 'success');
-            } catch (err) {
-                console.error(err);
+            } catch {
                 addToast('Error al copiar al portapapeles', 'error');
             }
         } else if (config.format === 'pdf') {

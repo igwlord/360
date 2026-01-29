@@ -115,8 +115,7 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
                 addToast('Exhibición creada', 'success');
             }
             onClose();
-        } catch (error) {
-            console.error(error);
+        } catch {
             addToast('Error al guardar', 'error');
         } finally {
             setIsSubmitting(false);
@@ -134,13 +133,17 @@ const CreateExhibitionModal = ({ isOpen, onClose, initialData = null }) => {
                         <input autoFocus type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none font-bold`} placeholder="Ej. Isla Samsung Alto Las Condes" />
                      </div>
                      <div>
-                        <label className="text-xs text-white/50 mb-1 block">Estado</label>
-                         <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}>
-                                <option>Planificación</option>
-                                <option>En Curso</option>
-                                <option>Pendiente</option>
-                                <option>Finalizado</option>
-                        </select>
+                        <GlassSelect 
+                            label="Estado"
+                            options={[
+                                { value: 'Planificación', label: 'Planificación' },
+                                { value: 'En Curso', label: 'En Curso' },
+                                { value: 'Pendiente', label: 'Pendiente' },
+                                { value: 'Finalizado', label: 'Finalizado' }
+                            ]}
+                            value={form.status}
+                            onChange={(val) => setForm({...form, status: val})}
+                        />
                      </div>
                      <div className="col-span-3">
                         <label className="text-xs text-white/50 mb-1 block">Fecha de Implementación</label>

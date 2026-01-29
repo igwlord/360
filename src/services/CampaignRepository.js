@@ -69,7 +69,7 @@ export const CampaignRepository = {
 
     async create(campaign) {
         // Sanitize Payload: Strict Allow-List to prevent schema errors
-        const { id, activeTab, resources, ...rest } = campaign;
+        const { id: _, activeTab: _activeTab, resources, ...rest } = campaign;
         
         // Calculate Cost from Resources if available
         let calculatedCost = 0;
@@ -144,8 +144,8 @@ export const CampaignRepository = {
         // Sanitize Payload: Strict Filter
          
         const { 
-            id, activeTab, transactions, statusColor, 
-            _source, source, destination, draggableId, mode, // explicitly exclude known junk
+            id, activeTab: _activeTab, transactions: _transactions, statusColor: _statusColor, 
+            _source, source: _source2, destination: _destination, draggableId: _draggableId, mode: _mode, // explicitly exclude known junk
             resources, // extract resources to handle separately
             ...updates 
         } = campaign;

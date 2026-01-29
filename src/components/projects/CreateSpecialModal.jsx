@@ -1,17 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { Star, Calendar, Flag } from 'lucide-react';
 import Modal from '../common/Modal.tsx';
 import { useCreateCampaign, useUpdateCampaign } from '../../hooks/useMutateCampaigns';
 
-const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {
-    const { theme } = useTheme();
-    const { addToast } = useToast();
-    const { mutateAsync: createProject } = useCreateCampaign();
-    const { mutateAsync: updateProject } = useUpdateCampaign();
-
-    const [form, setForm] = useState({
+const getInitialForm = (initialData) => {
+    if (initialData) {
+        return { ...initialData, type: 'Especiales' };
+    }
+    return {
         id: null,
         name: '',
         status: 'Planificación',
@@ -19,15 +17,24 @@ const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {
         date: '',
         notes: '',
         providers: []
-    });
+    };
+};
 
-    useEffect(() => {
+const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {
+    const { theme } = useTheme();
+    const { addToast } = useToast();
+    const { mutateAsync: createProject } = useCreateCampaign();
+    const { mutateAsync: updateProject } = useUpdateCampaign();
+
+    // Calculate initial form state based on initialData
+    const initialForm = useMemo(() => getInitialForm(initialData), [initialData]);
+    const [form, setForm] = useState(initialForm);
+
+    // Reset form when modal opens with new initialData
+    React.useEffect(() => {
         if (isOpen) {
-            setForm((prev) => {
-                if (initialData && initialData.id !== prev.id) return { ...initialData, type: 'Especiales' };
-                if (!initialData) return { id: null, name: '', status: 'Planificación', type: 'Especiales', date: '', notes: '', providers: [] };
-                return prev;
-            });
+            const newForm = getInitialForm(initialData);
+            setForm(newForm);
         }
     }, [isOpen, initialData]);
 
@@ -43,7 +50,7 @@ const CreateSpecialModal = ({ isOpen, onClose, initialData = null }) => {
                 addToast('Proyecto Especial creado', 'success');
             }
             onClose();
-        } catch (err) {
+        } catch {
             addToast('Error al guardar', 'error');
         }
     };

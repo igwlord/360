@@ -77,12 +77,6 @@ const Billing = () => {
             return;
         }
 
-        // Validation 2: Category is Mandatory
-        if (!form.category || form.category.trim() === '') {
-            addToast('Debes seleccionar una categoría', 'error');
-            return;
-        }
-
         // Sanitize Payload
         const rawAmount = String(form.amount).replace(/\./g, '').replace(/,/g, '.'); 
         const numericAmount = parseFloat(rawAmount);
@@ -99,7 +93,6 @@ const Billing = () => {
             amount: numericAmount,
             date: form.date,
             note: form.description, // Mapped to DB column 'note'
-            category: form.category, // Restored: Exists in schema
             project_id: form.project_id && form.project_id !== "" ? form.project_id : null,
             provider_id: form.provider_id && form.provider_id !== "" ? form.provider_id : null,
             status: form.status
@@ -361,27 +354,7 @@ const Billing = () => {
                          <input type="text" value={form.description} onChange={e => setForm({...form, description: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Ej. Pago de Campaña X..." />
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                         <div className="space-y-1">
-                             <label className="text-xs font-bold text-white/40 uppercase">Categoría</label>
-                             <input list="categories" type="text" value={form.category} onChange={e => setForm({...form, category: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none`} placeholder="Seleccionar..." />
-                             <datalist id="categories">
-                                 <option value="Producción" />
-                                 <option value="Medios" />
-                                 <option value="Fee Agencia" />
-                                 <option value="Impuestos" />
-                                 <option value="Logística" />
-                                 <option value="Software/Suscripciones" />
-                             </datalist>
-                         </div>
-                         <div className="space-y-1">
-                             <label className="text-xs font-bold text-white/40 uppercase">Estado</label>
-                             <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}>
-                                 <option value="pending">Pendiente</option>
-                                 <option value="paid">Pagado</option>
-                             </select>
-                         </div>
-                    </div>
+                    {/* Simplified form: categoría y estado se eliminan del modal */}
 
                     {/* Associations (Project / Provider) */}
                     {form.type === 'income' ? (

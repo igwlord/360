@@ -135,6 +135,10 @@ const Directory = () => {
     const [selectedIds, setSelectedIds] = useState([]);
     const [interactionForm, setInteractionForm] = useState({ type: 'call', note: '', date: new Date().toISOString().split('T')[0] });
 
+    // Paginación (cliente)
+    const [page, setPage] = useState(1);
+    const pageSize = 50;
+
     // Debounced Search State to prevent Lag
     const [debouncedQuery, setDebouncedQuery] = useState('');
     
@@ -153,11 +157,24 @@ const Directory = () => {
 
 
 
-    const contacts = useMemo(() => {
-        // Optimized: Only re-calc when DEBOUNCED query changes, not every keystroke
-        let result = activeGroup === 'Todos' 
-            ? getAllContacts()
-            : providerGroups.find(g => g.id === activeGroup)?.contacts.map(c => ({...c, groupTitle: providerGroups.find(g => g.id === activeGroup).title, groupId: activeGroup})) || [];
+    // Reset a la primera página cuando cambian filtros o búsqueda
+    React.useEffect(() => {
+        setPage(1);
+    }, [activeGroup, debouncedQuery, showFavoritesOnly]);
+
+    const contactsState = useMemo(() => {
+        // Optimizado: solo recalcular cuando cambian filtros / grupos
+        let result = [];
+
+        if (activeGroup === 'Todos') {
+            result = getAllContacts();
+        } else {
+            const group = providerGroups.find(g => g.id === activeGroup);
+            if (group) {
+                const { title } = group;
+                result = group.contacts.map(c => ({ ...c, groupTitle: title, groupId: activeGroup }));
+            }
+        }
         
         // Search
         if (debouncedQuery) {
@@ -169,16 +186,24 @@ const Directory = () => {
             );
         }
 
-        // Favorites Filter
+        // Favorites: solo filtrar cuando el usuario activa el botón "Favoritos".
+        // "Todos" debe mostrar TODOS los contactos; no ocultar al marcar favorito.
         if (showFavoritesOnly) {
-            result = result.filter(c => c.isFavorite);
+            result = result.filter(c => Boolean(c.isFavorite));
         }
-        
-        // Safety cap for rendering if list is huge (Virtualization poor man's version)
-        // if (result.length > 100) return result.slice(0, 100); 
 
-        return result;
-    }, [activeGroup, providerGroups, debouncedQuery, showFavoritesOnly, getAllContacts]);
+        const total = result.length;
+
+        // Paginación en cliente
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize;
+        const paged = result.slice(start, end);
+
+        return { contacts: paged, totalContacts: total };
+    }, [activeGroup, providerGroups, debouncedQuery, showFavoritesOnly, getAllContacts, page, pageSize]);
+
+    const contacts = contactsState.contacts;
+    const totalContacts = contactsState.totalContacts;
 
     // Active Contact Campaigns (Memoized for Detail View)
     const contactCampaigns = useMemo(() => {
@@ -188,6 +213,28 @@ const Directory = () => {
             c.providerId === selectedContact.id
         );
     }, [campaigns, selectedContact]);
+
+    // KPIs reales para History tab
+    const totalInvestmentAll = useMemo(
+        () => campaigns.reduce((acc, c) => acc + (c.cost || 0), 0),
+        [campaigns]
+    );
+
+    const totalInvestmentContact = useMemo(
+        () => contactCampaigns.reduce((acc, c) => acc + (c.cost || 0), 0),
+        [contactCampaigns]
+    );
+
+    const performanceScore = useMemo(() => {
+        if (!contactCampaigns.length) return 0;
+        const completed = contactCampaigns.filter(c => c.status === 'Finalizado').length;
+        return Math.round((completed / contactCampaigns.length) * 100);
+    }, [contactCampaigns]);
+
+    const shareOfSpend = useMemo(() => {
+        if (!totalInvestmentAll || !totalInvestmentContact) return 0;
+        return Math.round((totalInvestmentContact / totalInvestmentAll) * 100);
+    }, [totalInvestmentAll, totalInvestmentContact]);
 
     // Move Logic
     const handleMoveClick = (contact) => {
@@ -236,6 +283,24 @@ const Directory = () => {
             }
         });
         setContextMenu({ ...contextMenu, visible: false });
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) return;
+        setConfirm({
+            isOpen: true,
+            title: '¿Eliminar contactos seleccionados?',
+            message: `Vas a eliminar ${selectedIds.length} contactos del directorio. Esta acción es irreversible.`,
+            onConfirm: async () => {
+                // Borrado en paralelo para reducir tiempo de espera
+                await Promise.all(selectedIds.map(id => deleteContact(id)));
+                setSelectedIds([]);
+                if (selectedContact && selectedIds.includes(selectedContact.id)) {
+                    setSelectedContact(null);
+                }
+                setConfirm({ isOpen: false, title: '', message: '', onConfirm: null });
+            }
+        });
     };
     // confirmDelete removed, logic moved to onConfirm above
 
@@ -334,8 +399,7 @@ const Directory = () => {
                  addToast("Contacto creado", 'success');
             }
             setIsContactModalOpen(false);
-        } catch (error) {
-            console.error("Failed to save contact:", error);
+        } catch {
             addToast("Error al guardar contacto.", 'error');
         }
     };
@@ -441,7 +505,7 @@ const Directory = () => {
         reader.readAsText(file);
     };
 
-    const toggleFavorite = async (contact, e) => {
+    const toggleFavorite = React.useCallback(async (contact, e) => {
         if(e) e.stopPropagation();
         await updateContact({ ...contact, isFavorite: !contact.isFavorite });
         
@@ -449,7 +513,7 @@ const Directory = () => {
         if (selectedContact && selectedContact.id === contact.id) {
             setSelectedContact({ ...selectedContact, isFavorite: !selectedContact.isFavorite });
         }
-    };
+    }, [updateContact, selectedContact, setSelectedContact]);
 
     const columns = React.useMemo(() => [
         { 
@@ -509,18 +573,23 @@ const Directory = () => {
             header: <div className="text-right pr-4">Estado</div>, 
             accessor: 'status', 
             width: '100px',
-            render: (row) => (
+            render: (row) => {
+                const isFav = selectedContact && row.id === selectedContact.id
+                    ? selectedContact.isFavorite
+                    : row.isFavorite;
+                return (
                 <div className="flex justify-end pr-2 gap-2">
                      <button 
                         onClick={(e) => toggleFavorite(row, e)}
-                        className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${row.isFavorite ? 'text-[#E8A631]' : 'text-white/10 hover:text-white/30'}`}
+                        className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${isFav ? 'text-[#E8A631]' : 'text-white/10 hover:text-white/30'}`}
                      >
-                        <Star size={16} className={row.isFavorite ? 'fill-[#E8A631]' : ''}/>
+                        <Star size={16} className={isFav ? 'fill-[#E8A631]' : ''}/>
                      </button>
                 </div>
-            )
+            );
+            }
         }
-    ], [showFavoritesOnly, toggleFavorite]); // selectedContact REMOVED to prevent full table re-render on selection
+    ], [toggleFavorite, selectedContact]);
 
     return (
         <div className="h-full flex gap-6 relative" onClick={() => setContextMenu({ ...contextMenu, visible: false })}>
@@ -559,10 +628,13 @@ const Directory = () => {
                         </div>
                         <button 
                             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                            className={`p-2 rounded-xl border transition-colors ${showFavoritesOnly ? 'bg-[#E8A631]/20 border-[#E8A631] text-[#E8A631]' : 'bg-black/20 border-white/10 text-white/40 hover:text-white'}`}
-                            title="Ver Favoritos"
+                            className={`px-3 py-1.5 rounded-xl border transition-colors flex items-center gap-1 text-xs font-bold ${
+                                showFavoritesOnly ? 'bg-[#E8A631]/20 border-[#E8A631] text-[#E8A631]' : 'bg-black/20 border-white/10 text-white/40 hover:text-white'
+                            }`}
+                            title="Ver solo favoritos"
                         >
-                            <Star size={20} className={showFavoritesOnly ? 'fill-[#E8A631]' : ''} />
+                            <Star size={14} className={showFavoritesOnly ? 'fill-[#E8A631]' : ''} />
+                            <span>Favoritos</span>
                         </button>
                     </div>
                 </div>
@@ -594,18 +666,56 @@ const Directory = () => {
                 </div>
 
                 {/* Contact List via GlassTable */}
-                <div className="flex-1 overflow-hidden">
-                    <GlassTable 
-                        tableName="directory-table"
-                        enableSelection={true}
-                        selectedIds={selectedIds}
-                        onSelectionChange={setSelectedIds}
-                        columns={columns}
-                        data={contacts}
-                        onRowClick={(contact) => setSelectedContact(contact)}
-                        onRowContextMenu={(e, contact) => handleContextMenu(e, 'contact', contact)}
-                        highlightedId={selectedContact?.id}
-                    />
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    {/* Para evitar lag mientras se edita/crea un proveedor, no renderizamos la tabla debajo del modal */}
+                    {!isContactModalOpen ? (
+                        <>
+                            <GlassTable 
+                                tableName="directory-table"
+                                enableSelection={true}
+                                selectedIds={selectedIds}
+                                onSelectionChange={setSelectedIds}
+                                columns={columns}
+                                data={contacts}
+                                onRowClick={(contact) => setSelectedContact(contact)}
+                                onRowContextMenu={(e, contact) => handleContextMenu(e, 'contact', contact)}
+                                highlightedId={selectedContact?.id}
+                            />
+
+                            {/* Paginación simple */}
+                            {totalContacts > pageSize && (
+                                <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 bg-black/20 text-xs text-white/60">
+                                    <span>
+                                        Mostrando {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalContacts)} de {totalContacts}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                            disabled={page === 1}
+                                            className={`px-3 py-1 rounded-lg border border-white/10 ${
+                                                page === 1 ? 'opacity-40 cursor-default' : 'hover:bg-white/10'
+                                            }`}
+                                        >
+                                            Anterior
+                                        </button>
+                                        <button
+                                            onClick={() => setPage((p) => (p * pageSize < totalContacts ? p + 1 : p))}
+                                            disabled={page * pageSize >= totalContacts}
+                                            className={`px-3 py-1 rounded-lg border border-white/10 ${
+                                                page * pageSize >= totalContacts ? 'opacity-40 cursor-default' : 'hover:bg-white/10'
+                                            }`}
+                                        >
+                                            Siguiente
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center text-xs text-white/30">
+                            Editando proveedor…
+                        </div>
+                    )}
                 </div>
 
                 
@@ -614,10 +724,21 @@ const Directory = () => {
                     <div className="absolute bottom-6 left-6 right-6 bg-[#E8A631] text-black p-3 rounded-xl shadow-2xl flex justify-between items-center animate-in slide-in-from-bottom-2 z-20 border border-black/10">
                         <span className="font-bold text-sm pl-2">{selectedIds.length} seleccionados</span>
                         <div className="flex gap-2">
-                             <button onClick={() => setMoveModal({isOpen: true, contact: null, bulk: true})} className="px-3 py-1.5 bg-black/80 text-white hover:bg-black rounded-lg text-xs font-bold transition-colors flex items-center gap-2">
+                             <button 
+                                onClick={() => setMoveModal({isOpen: true, contact: null, bulk: true})} 
+                                className="px-3 py-1.5 bg-black/80 text-white hover:bg-black rounded-lg text-xs font-bold transition-colors flex items-center gap-2"
+                             >
                                 <Layers size={14}/> Mover a...
                              </button>
-                             <button onClick={() => setSelectedIds([])} className="p-1.5 hover:bg-black/10 rounded-lg transition-colors"><X size={16}/></button>
+                             <button 
+                                onClick={handleBulkDelete} 
+                                className="px-3 py-1.5 bg-red-700/90 text-white hover:bg-red-800 rounded-lg text-xs font-bold transition-colors flex items-center gap-2"
+                             >
+                                <Trash2 size={14}/> Eliminar
+                             </button>
+                             <button onClick={() => setSelectedIds([])} className="p-1.5 hover:bg-black/10 rounded-lg transition-colors">
+                                <X size={16}/>
+                             </button>
                         </div>
                     </div>
                 )}
@@ -872,28 +993,32 @@ const Directory = () => {
 
                         {activeDetailTab === 'history' && (
                             <div className="animate-in fade-in slide-in-from-right-2 duration-300 space-y-6">
-                                {/* Strategic Metrics */}
+                                {/* Strategic Metrics (reales) */}
                                 <div className="grid grid-cols-2 gap-4">
                                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                                          <p className="text-[10px] uppercase font-bold text-white/40 mb-2">Performance Score</p>
                                          <div className="flex items-baseline gap-2">
-                                             <span className="text-3xl font-bold text-white">98%</span>
+                                             <span className="text-3xl font-bold text-white">{performanceScore}%</span>
                                              <div className="flex gap-1 h-2">
-                                                 <div className="w-2 bg-green-500 rounded-sm"></div>
-                                                 <div className="w-2 bg-green-500 rounded-sm"></div>
-                                                 <div className="w-2 bg-green-500/30 rounded-sm"></div>
+                                                 <div className={`w-2 rounded-sm ${performanceScore >= 70 ? 'bg-green-500' : 'bg-yellow-400'}`}></div>
+                                                 <div className={`w-2 rounded-sm ${performanceScore >= 40 ? 'bg-green-500' : 'bg-yellow-400/60'}`}></div>
+                                                 <div className={`w-2 rounded-sm ${performanceScore >= 90 ? 'bg-green-500' : 'bg-green-500/30'}`}></div>
                                              </div>
                                          </div>
-                                         <p className="text-xs text-green-400 mt-1">Nivel: Top Tier</p>
+                                         <p className="text-xs mt-1">
+                                             {performanceScore >= 80 && <span className="text-green-400">Nivel: Top Tier</span>}
+                                             {performanceScore > 0 && performanceScore < 80 && <span className="text-yellow-300">Nivel: En Desarrollo</span>}
+                                             {performanceScore === 0 && <span className="text-white/40">Sin historial de campañas finalizadas</span>}
+                                         </p>
                                      </div>
                                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                                          <p className="text-[10px] uppercase font-bold text-white/40 mb-2">Participación de Inversión</p>
                                          <div className="flex items-baseline gap-2">
-                                             <span className="text-3xl font-bold text-white">24%</span>
+                                             <span className="text-3xl font-bold text-white">{shareOfSpend}%</span>
                                              <span className="text-xs text-white/40">del presupuesto</span>
                                          </div>
                                           <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden mt-2">
-                                              <div className="bg-blue-500 h-full w-[24%] rounded-full"></div>
+                                              <div className="bg-blue-500 h-full rounded-full" style={{ width: `${Math.min(shareOfSpend, 100)}%` }}></div>
                                           </div>
                                      </div>
                                 </div>

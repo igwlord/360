@@ -48,7 +48,6 @@ export const useOfflineMutation = () => {
                 if (onSuccess) onSuccess(result.data);
                 return result.data;
             } catch (err) {
-                console.error('Mutation error:', err);
                 addToast('Error al guardar: ' + err.message, 'error');
                 throw err;
             }

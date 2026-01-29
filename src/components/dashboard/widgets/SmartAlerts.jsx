@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo, useCallback } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import { AlertCircle, ArrowUpRight, Clock, DollarSign, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const SmartAlerts = ({ campaigns = [], events = [] }) => {
+const SmartAlerts = memo(({ campaigns = [], events = [] }) => {
     const { theme } = useTheme();
     const navigate = useNavigate();
 
@@ -76,6 +76,19 @@ const SmartAlerts = ({ campaigns = [], events = [] }) => {
         return alerts.sort((a) => (a.priority === 'high' ? -1 : 1));
     }, [campaigns, events]);
 
+    const handleAlertClick = useCallback((alert) => {
+        if (alert.type === 'event' || alert.type === 'deadline') {
+            navigate('/calendar', { 
+                state: { 
+                    focusDate: alert.rawDate,
+                    highlightId: alert.id
+                } 
+            });
+        } else {
+            navigate(alert.link);
+        }
+    }, [navigate]);
+
     return (
         <div className={`h-full min-h-[300px] ${theme.cardBg} backdrop-blur-md rounded-[32px] border border-white/10 p-6 flex flex-col relative overflow-hidden shadow-2xl`}>
              <div className="flex items-center gap-3 mb-6 z-10 transition-all hover:translate-x-1">
@@ -99,20 +112,7 @@ const SmartAlerts = ({ campaigns = [], events = [] }) => {
                     activeAlerts.map(alert => (
                         <div 
                             key={alert.id} 
-                            onClick={() => {
-                                // Enhance Navigation with Context
-                                if (alert.type === 'event' || alert.type === 'deadline') {
-                                    // Navigate to Calendar with specific date highlight
-                                    navigate('/calendar', { 
-                                        state: { 
-                                            focusDate: alert.rawDate, // Pass real Date object or ISO string
-                                            highlightId: alert.id
-                                        } 
-                                    });
-                                } else {
-                                    navigate(alert.link);
-                                }
-                            }}
+                            onClick={() => handleAlertClick(alert)}
                             className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 hover:scale-[1.02] transition-all group flex items-start gap-4 cursor-pointer relative overflow-hidden"
                         >
                             {/* Priority Indicator */}
@@ -143,6 +143,8 @@ const SmartAlerts = ({ campaigns = [], events = [] }) => {
              </div>
         </div>
     );
-};
+});
+
+SmartAlerts.displayName = 'SmartAlerts';
 
 export default SmartAlerts;

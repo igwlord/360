@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import { Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const ProjectTimeline = ({ campaigns, title = "Proyectos Activos", showRecentActivity }) => {
+const ProjectTimeline = memo(({ campaigns, title = "Proyectos Activos", showRecentActivity }) => {
     const { theme } = useTheme();
     const navigate = useNavigate();
 
-    // Logic for "Active" vs "Planning"
-    const activeProjects = campaigns.filter(c => c.status === 'En Curso' && c.type !== 'Especial');
+    // Logic for "Active" vs "Planning" - memoized
+    const activeProjects = useMemo(() => 
+        campaigns.filter(c => c.status === 'En Curso' && c.type !== 'Especial'),
+        [campaigns]
+    );
+    
+    const handleProjectClick = useCallback((projectId) => {
+        navigate('/projects', { state: { openId: projectId } });
+    }, [navigate]);
+
+    const handleViewAll = useCallback(() => {
+        navigate('/projects');
+    }, [navigate]);
     
     // Only show if configured
     if (!showRecentActivity) return null;
@@ -17,7 +28,7 @@ const ProjectTimeline = ({ campaigns, title = "Proyectos Activos", showRecentAct
         <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-6 border border-white/10 flex flex-col h-full shadow-lg relative overflow-hidden`}>
              <div className="flex justify-between items-center mb-4 z-10">
                  <h3 className={`text-sm font-bold ${theme.textSecondary} uppercase tracking-wider`}>{title}</h3>
-                 <button onClick={() => navigate('/projects')} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+                 <button onClick={handleViewAll} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
                     <Briefcase size={16} className="text-white"/>
                  </button>
              </div>
@@ -27,7 +38,7 @@ const ProjectTimeline = ({ campaigns, title = "Proyectos Activos", showRecentAct
                     activeProjects.slice(0, 5).map(project => (
                         <div 
                             key={project.id} 
-                            onClick={() => navigate('/projects', { state: { openId: project.id } })}
+                            onClick={() => handleProjectClick(project.id)}
                             className="p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
                         >
                             <div className="flex justify-between items-start">
@@ -50,12 +61,14 @@ const ProjectTimeline = ({ campaigns, title = "Proyectos Activos", showRecentAct
              </div>
              
              {activeProjects.length > 5 && (
-                <div onClick={() => navigate('/projects')} className="mt-4 text-center text-[10px] text-white/40 uppercase font-bold cursor-pointer hover:text-white transition-colors">
+                <div onClick={handleViewAll} className="mt-4 text-center text-[10px] text-white/40 uppercase font-bold cursor-pointer hover:text-white transition-colors">
                     Ver {activeProjects.length - 5} más...
                 </div>
              )}
         </div>
     );
-};
+});
+
+ProjectTimeline.displayName = 'ProjectTimeline';
 
 export default ProjectTimeline;

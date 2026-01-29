@@ -10,29 +10,8 @@ export const SyncProvider = ({ children }) => {
     const [isSyncing, setIsSyncing] = useState(false);
     const { addToast } = useToast();
 
-    // Check internet connection
-    useEffect(() => {
-        const handleOnline = () => {
-            setIsOnline(true);
-            addToast('Conexión restaurada. Sincronizando...', 'info');
-            syncQueue();
-        };
-        const handleOffline = () => {
-            setIsOnline(false);
-            addToast('Modo Offline: Los cambios se guardarán localmente', 'warning');
-        };
-
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
-    }, []);
-
     // Process Mutation
-    const processMutation = async (mutation) => {
+    const processMutation = useCallback(async (mutation) => {
         const { endpoint, type, body } = mutation;
         
         // Dynamic Supabase call based on endpoint string
@@ -53,9 +32,9 @@ export const SyncProvider = ({ children }) => {
              const { error } = await query.delete().eq('id', id);
              if (error) throw error;
         }
-    };
+    }, []);
 
-    // Main Sync Logic
+    // Main Sync Logic - Defined BEFORE useEffect that uses it
     const syncQueue = useCallback(async () => {
         if (isSyncing) return;
         setIsSyncing(true);
@@ -67,8 +46,6 @@ export const SyncProvider = ({ children }) => {
                 return;
             }
 
-
-            
             for (const mutation of queue) {
                 try {
                     await processMutation(mutation);
@@ -87,14 +64,35 @@ export const SyncProvider = ({ children }) => {
         } finally {
             setIsSyncing(false);
         }
-    }, [isSyncing, addToast]);
+    }, [isSyncing, addToast, processMutation]);
+
+    // Check internet connection
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOnline(true);
+            addToast('Conexión restaurada. Sincronizando...', 'info');
+            syncQueue();
+        };
+        const handleOffline = () => {
+            setIsOnline(false);
+            addToast('Modo Offline: Los cambios se guardarán localmente', 'warning');
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [addToast, syncQueue]);
     
     // Initial sync check on mount
     useEffect(() => {
         if (isOnline) {
              syncQueue();
         }
-    }, [isOnline]); // Run when online status becomes true or mount
+    }, [isOnline, syncQueue]); // Run when online status becomes true or mount
 
     return (
         <SyncContext.Provider value={{ isOnline, isSyncing, syncQueue }}>

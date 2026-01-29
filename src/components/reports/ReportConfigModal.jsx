@@ -1,23 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Calendar, FileText, CheckSquare, Sparkles, Copy, Download, Info, Zap } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { useToast } from '../../context/ToastContext';
 
 const ReportConfigModal = ({ isOpen, onClose, reportType, onGenerate }) => {
     const { theme } = useTheme();
-    const { addToast } = useToast();
     
-    // Config States
+    // Config States - Reset when reportType changes
     const [dateRange, setDateRange] = useState('this_month');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
     const [format, setFormat] = useState('pdf'); // 'pdf', 'excel', 'ai_prompt'
 
-    // Reset when opening new report
-    useEffect(() => {
-        setDateRange('this_month');
-        setFormat('pdf');
-    }, [reportType]);
+    // Reset when opening new report - using key change pattern
+    React.useEffect(() => {
+        if (isOpen && reportType) {
+            setDateRange('this_month');
+            setFormat('pdf');
+            setCustomStart('');
+            setCustomEnd('');
+        }
+    }, [isOpen, reportType]);
 
     if (!isOpen || !reportType) return null;
 
@@ -239,13 +241,14 @@ const RangeBtn = ({ label, value, current, set }) => (
     </button>
 );
 
-const FormatOption = ({ id, label, sub, icon: Icon, selected, set, color }) => (
+// eslint-disable-next-line no-unused-vars
+const FormatOption = ({ id, label, sub, icon: IconComponent, selected, set, color }) => (
     <div 
         onClick={() => set(id)}
         className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center gap-4 ${selected === id ? 'bg-white/10 border-[#E8A631] shadow-lg ring-1 ring-[#E8A631]/50' : 'bg-black/20 border-white/5 hover:bg-white/5'}`}
     >
         <div className={`p-2 rounded-lg bg-black/40 ${selected === id ? color : 'text-white/30'}`}>
-            <Icon size={20} />
+            <IconComponent size={20} />
         </div>
         <div>
             <p className={`font-bold text-sm ${selected === id ? 'text-white' : 'text-white/70'}`}>{label}</p>

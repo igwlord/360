@@ -1,4 +1,3 @@
-/* eslint-env cypress */
 describe('Flow Crítico: Creación de Campaña', () => {
 // ...
     // Save

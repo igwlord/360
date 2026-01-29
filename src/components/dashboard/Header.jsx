@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { Activity, Briefcase, Sliders, Filter, Clock, Eye, CloudOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { FilterPill, VisibilityToggle } from './Widgets';
 import { useSync } from '../../context/SyncContext';
 
-const Header = ({ 
+const Header = memo(({ 
     viewMode, 
     setViewMode
 }) => {
@@ -58,6 +58,8 @@ const Header = ({
       
       </>
     );
-};
+});
+
+Header.displayName = 'Header';
 
 export default Header;

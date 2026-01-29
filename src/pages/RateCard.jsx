@@ -16,13 +16,13 @@ const RateCard = () => {
     const { mutate: createItem } = useCreateRateItem();
     const { mutate: updateItem } = useUpdateRateItem();
     const { mutate: deleteItem } = useDeleteRateItem();
-    const [rateCardCategory, setRateCardCategory] = useState('Todos');
+    const [rateCardCategory, setRateCardCategory] = useState('TODOS');
     const [rateCardSearch, setRateCardSearch] = useState('');
     const [isRateModalOpen, setIsRateModalOpen] = useState(false);
     const [isQuoteWizardOpen, setIsQuoteWizardOpen] = useState(false); // New State
     const [rateForm, setRateForm] = useState({ 
         id: null, 
-        category: 'Espacios Preferenciales', 
+        category: 'OFF LINE / PUNTO DE VENTA', 
         subcategory: '', // New
         item: '', 
         specs: '', 
@@ -32,19 +32,53 @@ const RateCard = () => {
         format_size: '' // New (medida_formato)
     });
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // Paginación (cliente)
+    const [page, setPage] = useState(1);
+    const pageSize = 50;
     
     // Context Menu State
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, item: null });
 
-    const categories = ['Todos', ...new Set((rateCardItems || []).map(i => i.category))];
+    // Categorías fijas según requerimiento de negocio
+    const categories = [
+        'TODOS',
+        'OFF LINE / PUNTO DE VENTA',
+        'DIGITAL',
+        'WEB SITE & LANDING',
+        'REDES SOCIALES',
+        'EMAIL',
+        'REPORTING',
+        'PANTALLAS',
+        'AGENCIA/PRODUCTORA',
+        'ACTIVACIONES'
+    ];
     
     // Filter Items
-    const filteredItems = React.useMemo(() => (rateCardItems || []).filter(item => {
-      const matchesCategory = rateCardCategory === 'Todos' || item.category === rateCardCategory;
-      const matchesSearch = item.item.toLowerCase().includes(rateCardSearch.toLowerCase()) || 
-                            item.specs.toLowerCase().includes(rateCardSearch.toLowerCase());
-      return matchesCategory && matchesSearch;
-    }), [rateCardItems, rateCardCategory, rateCardSearch]);
+    // Reset page cuando cambian filtros/búsqueda
+    React.useEffect(() => {
+        setPage(1);
+    }, [rateCardCategory, rateCardSearch]);
+
+    const filteredState = React.useMemo(() => {
+        const base = (rateCardItems || []).filter(item => {
+            const matchesCategory = rateCardCategory === 'TODOS' || item.category === rateCardCategory;
+            const matchesSearch =
+                item.item.toLowerCase().includes(rateCardSearch.toLowerCase()) ||
+                item.specs.toLowerCase().includes(rateCardSearch.toLowerCase());
+            return matchesCategory && matchesSearch;
+        });
+
+        const total = base.length;
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize;
+        const paged = base.slice(start, end);
+
+        return { items: paged, totalItems: total };
+    }, [rateCardItems, rateCardCategory, rateCardSearch, page, pageSize]);
+
+    const filteredItems = filteredState.items;
+    const totalItems = filteredState.totalItems;
 
     const [initialWizardConfig, setInitialWizardConfig] = useState(null);
 
@@ -131,7 +165,7 @@ const RateCard = () => {
     const openCreateModal = () => {
         setRateForm({ 
             id: null, 
-            category: 'Punto de Venta/Off Line', // Default first option
+            category: 'OFF LINE / PUNTO DE VENTA', // Default first option alineado a nuevo listado
             subcategory: '',
             item: '', 
             specs: '', 
@@ -213,7 +247,7 @@ const RateCard = () => {
         </div>
 
         {/* Main Table View */}
-        <div className="flex-1 overflow-hidden pb-6">
+        <div className="flex-1 overflow-hidden pb-6 flex flex-col">
             <GlassTable 
                 tableName="ratecard-table"
                 enableSelection={true}
@@ -224,6 +258,35 @@ const RateCard = () => {
                 onRowClick={(item) => handleEdit(item)} 
                 onRowContextMenu={handleContextMenu}
             />
+
+            {/* Paginación simple */}
+            {totalItems > pageSize && (
+                <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 bg-black/20 text-xs text-white/60 mt-2 rounded-b-xl">
+                    <span>
+                        Mostrando {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalItems)} de {totalItems}
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className={`px-3 py-1 rounded-lg border border-white/10 ${
+                                page === 1 ? 'opacity-40 cursor-default' : 'hover:bg-white/10'
+                            }`}
+                        >
+                            Anterior
+                        </button>
+                        <button
+                            onClick={() => setPage(p => (p * pageSize < totalItems ? p + 1 : p))}
+                            disabled={page * pageSize >= totalItems}
+                            className={`px-3 py-1 rounded-lg border border-white/10 ${
+                                page * pageSize >= totalItems ? 'opacity-40 cursor-default' : 'hover:bg-white/10'
+                            }`}
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
 
         {/* Create/Edit Modal */}
@@ -243,7 +306,7 @@ const RateCard = () => {
                             onChange={e => setRateForm({...rateForm, category: e.target.value, subcategory: ''})} // Reset sub on change
                             className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-2 mt-1 text-sm ${theme.text} [&>option]:text-black`}
                         >
-                            {['Punto de Venta/Off Line', 'Digital', 'Medios', 'Producción', 'Activaciones'].map(c => <option key={c} value={c}>{c}</option>)}
+                            {categories.filter(c => c !== 'TODOS').map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                      </div>
 

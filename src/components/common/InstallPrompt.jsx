@@ -32,13 +32,9 @@ const InstallPrompt = () => {
         deferredPrompt.prompt();
 
         // Wait for the user to respond to the prompt
-        const { outcome } = await deferredPrompt.userChoice;
+        await deferredPrompt.userChoice;
         
-        if (outcome === 'accepted') {
-            console.log('User accepted the install prompt');
-        } else {
-            console.log('User dismissed the install prompt');
-        }
+        // User interaction handled - no logging needed
 
         // We've used the prompt, and can't use it again, throw it away
         setDeferredPrompt(null);

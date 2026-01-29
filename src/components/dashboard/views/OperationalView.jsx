@@ -1,10 +1,10 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import SmartAlerts from '../widgets/SmartAlerts';
 import ProjectTimeline from '../widgets/ProjectTimeline';
 import QuickActions from '../widgets/QuickActions';
 
-const OperationalView = ({ campaigns, calendarEvents, filteredCampaigns, dashboardConfig, handleAddQuickTask }) => {
+const OperationalView = memo(({ campaigns, calendarEvents, filteredCampaigns, dashboardConfig, handleAddQuickTask }) => {
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Column 1: Alerts (Critical) */}
@@ -29,6 +29,8 @@ const OperationalView = ({ campaigns, calendarEvents, filteredCampaigns, dashboa
             </div>
         </div>
     );
-};
+});
+
+OperationalView.displayName = 'OperationalView';
 
 export default OperationalView;

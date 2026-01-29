@@ -1,10 +1,10 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import { TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../../utils/dataUtils';
 
-const BurnRateWidget = ({ value = 0, trend = 'neutral' }) => {
+const BurnRateWidget = memo(({ value = 0 }) => {
     const { theme } = useTheme();
 
     return (
@@ -21,6 +21,8 @@ const BurnRateWidget = ({ value = 0, trend = 'neutral' }) => {
             </div>
         </div>
     );
-};
+});
+
+BurnRateWidget.displayName = 'BurnRateWidget';
 
 export default BurnRateWidget;

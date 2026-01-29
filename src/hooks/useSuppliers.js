@@ -15,9 +15,17 @@ export const useSuppliers = () => {
            return PROVIDER_GROUPS_DATA;
       }
 
+      // Normalización de categorías de Directorio
+      const normalizeCategory = (category) => {
+          let cat = category || "General";
+          if (cat === 'Frescos') cat = 'Perecederos';
+          if (cat === 'Limpieza') cat = 'Perfumería & Limpieza';
+          return cat;
+      };
+
       // Grouping Logic
       const groups = rawSuppliers.reduce((acc, curr) => {
-          const cat = curr.category || "General";
+      const cat = normalizeCategory(curr.category);
           if (!acc[cat]) acc[cat] = [];
           acc[cat].push({
             id: curr.id,
@@ -45,11 +53,22 @@ export const useSuppliers = () => {
           return acc;
         }, {});
 
-        return Object.keys(groups).map((key, idx) => ({
+        const grouped = Object.keys(groups).map((key, idx) => ({
           id: `g-${idx}`,
           title: key,
           contacts: groups[key],
         }));
+
+        // Garantizar que exista la categoría "Nonfood" aunque todavía no tenga contactos
+        if (!grouped.find(g => g.title === 'Nonfood')) {
+            grouped.push({
+                id: `g-nonfood`,
+                title: 'Nonfood',
+                contacts: []
+            });
+        }
+
+        return grouped;
     },
     staleTime: 1000 * 60 * 60 * 24, // 24 hours (Static-ish data)
   });
@@ -57,11 +76,10 @@ export const useSuppliers = () => {
 
 // Helper to map UI fields back to DB columns
 const mapContactToDB = (contact) => {
-    // console.log("Mapping Contact:", contact); // Debug if needed
     return {
-        // ID & Group logic
+        // ID & Group logic (groupTitle = nombre de categoría en UI, no cambiar al actualizar solo isFavorite)
         ...(contact.id && !contact.id.toString().startsWith('temp-') ? { id: contact.id } : {}),
-        category: contact.category || 'General',
+        category: contact.groupTitle || contact.category || 'General',
         
         // Company (Handle legacy "proveedor" vs "company")
         name: contact.company || contact.proveedor,

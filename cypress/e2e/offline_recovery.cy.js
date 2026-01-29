@@ -1,4 +1,3 @@
-/* eslint-env cypress */
 describe('Flow Crítico: Recuperación Offline', () => {
     beforeEach(() => {
         // Mock Supabase Auth (Reuse logic from campaign_creation)

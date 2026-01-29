@@ -13,7 +13,6 @@ export const useCalendarEvents = () => {
         .select("*");
       
       if (error) {
-        console.error("Error fetching events:", error);
         // Fallback to initial data if error (matching DataContext behavior roughly)
         // But in hook world, we might want to return throw or empty.
         // For now, let's return mock if empty only.

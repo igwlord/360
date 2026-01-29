@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -71,8 +72,29 @@ export default defineConfig({
           }
         ]
       }
+    }),
+    // Bundle analyzer - only in build mode
+    visualizer({
+      filename: './dist/stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query', '@tanstack/react-query-persist-client'],
+          'ui-vendor': ['lucide-react', 'recharts'],
+          'utils-vendor': ['jspdf', 'xlsx'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+        }
+      }
+    }
+  },
   optimizeDeps: {
     include: ['react-window', 'react-virtualized-auto-sizer']
   }

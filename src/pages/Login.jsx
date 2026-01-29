@@ -2,15 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Loader2, ArrowRight } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+
 
 const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
-    const { theme } = useTheme(); 
-    
-    // We force basic theme for Login if needed or use context
-    // Hardcoding a nice dark background for Login specifically for impact
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

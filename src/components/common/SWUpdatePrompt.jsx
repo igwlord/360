@@ -4,15 +4,15 @@ import { RefreshCw, X } from 'lucide-react';
 
 const SWUpdatePrompt = () => {
   const {
-    offlineReady: [offlineReady, setOfflineReady],
+    offlineReady: [, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(r) {
-      console.log('SW Registered: ' + r);
+    onRegistered() {
+      // Service Worker registered successfully
     },
-    onRegisterError(error) {
-      console.log('SW registration error', error);
+    onRegisterError() {
+      // Service Worker registration error - handled silently
     },
   });
 

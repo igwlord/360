@@ -189,8 +189,7 @@ const Projects = () => {
             try {
                 await updateProject(updated);
                 addToast(`Estado actualizado: ${newStatus}`, 'success');
-            } catch (error) {
-                console.error(error);
+            } catch {
                 addToast('Error al mover el proyecto', 'error');
             }
         }

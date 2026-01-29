@@ -407,8 +407,7 @@ const QuoteWizard = ({ isOpen, onClose, selectedItems = [], initialConfig = null
             
             doc.save(`Cotizacion-${config.projectName || 'Draft'}.pdf`);
             
-        } catch (error) {
-            console.error("Failed to load jsPDF", error);
+        } catch {
             alert("Funcionalidad en beta. Requiere instalar jspdf: npm install jspdf");
         }
     };

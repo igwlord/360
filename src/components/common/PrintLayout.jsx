@@ -9,7 +9,6 @@ const PrintLayout = ({ type, data, options }) => {
     
     // Recalculate Basic Totals for the view if filtered
     const totalBudget = displayCampaigns.reduce((sum, c) => sum + (parseFloat(c.cost?.replace(/[^0-9.]/g, '') || 0)), 0);
-    const totalExecuted = totalBudget; // Simplified for this view
 
     return (
         <div id="printable-content" className="hidden print:block bg-white text-black p-8 max-w-[210mm] mx-auto min-h-[297mm]">

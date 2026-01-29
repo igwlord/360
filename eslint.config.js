@@ -26,4 +26,32 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Cypress test files configuration
+  {
+    files: ['cypress/**/*.cy.js', 'cypress/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.mocha, // Cypress uses Mocha-style syntax
+        cy: 'readonly',
+        Cypress: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        before: 'readonly',
+        after: 'readonly',
+        context: 'readonly',
+      },
+    },
+  },
+  // Node.js scripts configuration
+  {
+    files: ['scripts/**/*.js', 'cypress.config.js', 'vite.config.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 ])

@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import FinancialPulse from '../widgets/FinancialPulse';
 import RetailerShareWidget from '../RetailerShareWidget';
 import BurnRateWidget from '../widgets/BurnRateWidget';
 import ObjectivesWidget from '../ObjectivesWidget';
+import TasksWidget from '../widgets/TasksWidget';
 
-const StrategicView = ({ metrics, isRoiExpanded, setIsRoiExpanded, dashboardConfig }) => {
+const StrategicView = memo(({ metrics, isRoiExpanded, setIsRoiExpanded, dashboardConfig, onOpenTaskModal }) => {
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
              {/* ZONE 1: FINANCIAL HEALTH (The "Big Picture") */}
@@ -25,14 +26,24 @@ const StrategicView = ({ metrics, isRoiExpanded, setIsRoiExpanded, dashboardConf
                 </div>
             </div>
 
-            {/* Objectives Section */}
-            {dashboardConfig.showObjectives && (
-                 <div className="grid grid-cols-1">
-                    <ObjectivesWidget />
-                 </div>
-            )}
+            {/* Tasks & Objectives Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Tasks Widget */}
+                <div className="lg:col-span-1">
+                    <TasksWidget onOpenModal={onOpenTaskModal} />
+                </div>
+
+                {/* Objectives Section */}
+                {dashboardConfig.showObjectives && (
+                    <div className="lg:col-span-2">
+                        <ObjectivesWidget />
+                    </div>
+                )}
+            </div>
         </div>
     );
-};
+});
+
+StrategicView.displayName = 'StrategicView';
 
 export default StrategicView;

@@ -29,11 +29,13 @@ export const useTasks = () => {
     });
 
     const addTaskMutation = useMutation({
-        mutationFn: async (text) => {
+        mutationFn: async ({ text, priority = 'medium' }) => {
             const current = await getTasks();
             const newTask = { 
                 id: Date.now(), 
                 text, 
+                priority,
+                rating: 0,
                 done: false, 
                 status: 'todo', 
                 date: new Date().toISOString() 

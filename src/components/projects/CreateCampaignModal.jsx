@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+
 import { useToast } from '../../context/ToastContext';
 import { DollarSign, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Trash2, Calendar, FileText, Users, Activity } from 'lucide-react';
 import Modal from '../common/Modal.tsx';
@@ -11,7 +11,7 @@ import { formatCurrency } from '../../utils/dataUtils';
 import { calculateBudget, calculateExecuted, calculateAvailable } from '../../utils/financialUtils';
 
 const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
-    const { theme } = useTheme();
+
     const { addToast } = useToast();
     
     // Mutations
@@ -35,7 +35,7 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [financeAmount, setFinanceAmount] = useState('');
-    const [transType, setTransType] = useState('expense');
+    const [transType /* setTransType */] = useState('expense');
     const [activeTab, setActiveTab] = useState('details'); // 'details' | 'financial'
 
     // Initialize
@@ -101,8 +101,7 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
                 addToast('Campaña creada', 'success');
             }
             onClose();
-        } catch (error) {
-            console.error(error);
+        } catch {
             addToast('Error al guardar', 'error');
         } finally {
             setIsSubmitting(false);
@@ -110,13 +109,15 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
     };
 
     // --- Financial Logic (Shared can be extracted to hook later) ---
-    const handleAddTransaction = () => {
+    const handleAddTransaction = (typeOverride) => {
         if (!financeAmount || parseFloat(financeAmount) <= 0) return;
         const amount = parseFloat(financeAmount.replace(/\./g, ''));
+        const type = typeOverride || transType;
+        
         const newTrans = {
             id: `new-${Date.now()}`,
             date: new Date().toISOString(),
-            type: transType,
+            type: type,
             amount: amount,
             note: document.getElementById('ccm-concept')?.value || 'Movimiento'
         };
@@ -168,22 +169,18 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
                             />
                         </div>
                         <div>
-                             <label className="text-xs text-white/50 mb-1 block uppercase tracking-wider font-medium">Estado</label>
-                             <div className="relative">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
-                                    <Activity size={16} />
-                                </div>
-                                <select 
-                                    value={form.status} 
-                                    onChange={e => setForm({...form, status: e.target.value})} 
-                                    className={`w-full ${theme.inputBg} border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#E8A631] outline-none appearance-none cursor-pointer`}
-                                >
-                                    <option>Planificación</option>
-                                    <option>En Curso</option>
-                                    <option>Pendiente</option>
-                                    <option>Finalizado</option>
-                                </select>
-                            </div>
+                            <GlassSelect 
+                                label="Estado"
+                                options={[
+                                    { value: 'Planificación', label: 'Planificación' },
+                                    { value: 'En Curso', label: 'En Curso' },
+                                    { value: 'Pendiente', label: 'Pendiente' },
+                                    { value: 'Finalizado', label: 'Finalizado' }
+                                ]}
+                                value={form.status}
+                                onChange={(val) => setForm({...form, status: val})}
+                                icon={<Activity size={16} />}
+                            />
                         </div>
                     </div>
 
@@ -277,8 +274,8 @@ const CreateCampaignModal = ({ isOpen, onClose, initialData = null }) => {
                              <DollarSign size={12} className="absolute left-2 top-2 text-white/40"/>
                              <input placeholder="0.00" value={financeAmount} onChange={handleAmountChange} className="w-28 bg-white/5 rounded-lg pl-6 pr-2 py-1 text-right text-white text-sm focus:outline-none" />
                          </div>
-                         <button onClick={() => { setTransType('income'); handleAddTransaction(); }} className="p-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30" title="Ingreso / Presupuesto Inicial"><ArrowUpRight size={16}/></button>
-                         <button onClick={() => { setTransType('expense'); handleAddTransaction(); }} className="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30" title="Gasto / Egreso"><ArrowDownRight size={16}/></button>
+                         <button onClick={() => handleAddTransaction('income')} className="p-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30" title="Ingreso / Presupuesto Inicial"><ArrowUpRight size={16}/></button>
+                         <button onClick={() => handleAddTransaction('expense')} className="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30" title="Gasto / Egreso"><ArrowDownRight size={16}/></button>
                     </div>
 
                     {/* List */}

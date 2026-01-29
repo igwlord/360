@@ -97,7 +97,7 @@ const GlassSelect: React.FC<GlassSelectProps> = ({
             </button>
 
             {/* Portal Dropdown */}
-            {isOpen && createPortal(
+            {isOpen && position.width > 0 && createPortal(
                 <div 
                     className={`glass-select-dropdown fixed flex flex-col ${theme.cardBg} backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-200`}
                     style={{ 

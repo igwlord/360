@@ -8,6 +8,7 @@ import CreateCampaignModal from '../projects/CreateCampaignModal';
 import { useToast } from '../../context/ToastContext';
 
 import { useCreateEvent, useUpdateEvent, useDeleteEvent } from '../../hooks/useMutateCalendarEvents';
+import { generateUniqueId } from '../../utils/dataUtils';
 
 const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId = null }) => {
     const { theme } = useTheme();
@@ -76,7 +77,7 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId
 
         const dateStr = date.toISOString().split('T')[0];
         const eventPayload = {
-            id: editingEventId || `evt-${Date.now()}`,
+            id: editingEventId || generateUniqueId('evt'),
             date: dateStr,
             title: newEventTitle,
             type: newEventTag,
@@ -200,7 +201,7 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId
                     )}
                 </div>
 
-                {/* Footer: Add Event */}
+                {/* Footer: Add / Edit Event (con botón Guardar explícito) */}
                 <div className="p-4 bg-black/20 border-t border-white/10">
                     <form onSubmit={handleAddEvent} className="flex flex-col gap-3">
                         <input 
@@ -227,8 +228,21 @@ const DayDetailModal = ({ isOpen, onClose, date, events = [], highlightedEventId
                                 <option value="deadline">Deadline</option>
                                 <option value="reminder">Recordatorio</option>
                             </select>
-                            <button type="submit" className={`px-4 py-2 rounded-xl font-bold text-black ${theme.accentBg} hover:opacity-90 flex items-center justify-center min-w-[50px]`}>
-                                {editingEventId ? <Tag size={20}/> : <Plus size={20} />}
+                            <button 
+                                type="submit" 
+                                className={`px-4 py-2 rounded-xl font-bold text-black ${theme.accentBg} hover:opacity-90 flex items-center justify-center min-w-[90px] text-sm gap-2`}
+                            >
+                                {editingEventId ? (
+                                    <>
+                                        <Tag size={16}/> 
+                                        <span>Guardar</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus size={16}/> 
+                                        <span>Agregar</span>
+                                    </>
+                                )}
                             </button>
                             {editingEventId && (
                                 <button type="button" onClick={cancelEdit} className="px-4 py-2 rounded-xl font-bold text-white bg-white/10 hover:bg-white/20">

@@ -1,28 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useCampaigns } from '../hooks/useCampaigns';
-import { useTasks } from '../hooks/useTasks';
+
 import { useRoiCalculator } from '../hooks/useRoiCalculator';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useCalendarEvents } from '../hooks/useCalendarEvents';
 import { isCampaignInPeriod } from '../utils/dataUtils';
-// ... imports
-// ... imports
-import { LayoutDashboard, TrendingUp, AlertCircle, Activity } from 'lucide-react';
 
 // Modular Components
 import Header from '../components/dashboard/Header';
 import StrategicView from '../components/dashboard/views/StrategicView';
 import OperationalView from '../components/dashboard/views/OperationalView';
+import CreateTaskModal from '../components/dashboard/modals/CreateTaskModal';
 
 const Dashboard = () => {
   // -- DATA LAYER --
   const { data: campaigns = [] } = useCampaigns();
   const { data: calendarEvents = [] } = useCalendarEvents();
-  const { addTask } = useTasks();
+
 
   // -- STATE LAYER --
   const [viewMode, setViewMode] = useState('strategic'); // 'strategic' | 'operational'
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [campaignFilter, setCampaignFilter] = useState('Todos'); 
   const [dateFilter, setDateFilter] = useState({ year: 'All', month: 'All' });
   const [isRoiExpanded, setIsRoiExpanded] = useState(false); // Strategy Card State
@@ -37,18 +36,27 @@ const Dashboard = () => {
   // -- CALCULATED METRICS --
   const metrics = useRoiCalculator(); 
 
-  const filteredCampaigns = campaigns.filter(c => {
-      if (campaignFilter !== 'Todos' && c.status !== campaignFilter) return false;
-      return isCampaignInPeriod(c.date, dateFilter.year, dateFilter.month);
-  });
+  // Memoize filtered campaigns to avoid recalculation on every render
+  const filteredCampaigns = useMemo(() => {
+      return campaigns.filter(c => {
+          if (campaignFilter !== 'Todos' && c.status !== campaignFilter) return false;
+          return isCampaignInPeriod(c.date, dateFilter.year, dateFilter.month);
+      });
+  }, [campaigns, campaignFilter, dateFilter.year, dateFilter.month]);
 
-  const months = ['All', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const months = useMemo(() => 
+      ['All', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+      []
+  );
 
   // -- HANDLERS --
-  const handleAddQuickTask = () => {
-      const text = prompt("Nueva Tarea Rápida:");
-      if(text) addTask(text);
-  };
+  const handleAddQuickTask = useCallback(() => {
+      setIsTaskModalOpen(true);
+  }, []);
+
+  const handleCloseTaskModal = useCallback(() => {
+      setIsTaskModalOpen(false);
+  }, []);
 
   return (
     <div className="pb-10 space-y-8">
@@ -74,6 +82,7 @@ const Dashboard = () => {
               isRoiExpanded={isRoiExpanded}
               setIsRoiExpanded={setIsRoiExpanded}
               dashboardConfig={dashboardConfig}
+              onOpenTaskModal={handleAddQuickTask}
           />
       ) : (
           <OperationalView 
@@ -84,6 +93,9 @@ const Dashboard = () => {
               handleAddQuickTask={handleAddQuickTask}
           />
       )}
+      
+      {/* Modals */}
+      <CreateTaskModal isOpen={isTaskModalOpen} onClose={handleCloseTaskModal} />
     </div>
   );
 };

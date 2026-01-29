@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { useCampaigns } from '../../hooks/useCampaigns';
+
 import { useTransactions } from '../../hooks/useTransactions';
 import { Target, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { formatCurrency } from '../../utils/dataUtils';

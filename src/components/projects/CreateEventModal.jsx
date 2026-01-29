@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { MapPin, Users, Calendar, Clock, Link, Music, Coffee, Truck } from 'lucide-react';
 import Modal from '../common/Modal';
@@ -12,7 +11,6 @@ import ResourceSelector from '../common/ResourceSelector';
 import { useCampaigns } from '../../hooks/useCampaigns';
 
 const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
-    const { theme } = useTheme();
     const { addToast } = useToast();
     const { data: projects = [] } = useCampaigns();
     const campaigns = projects.filter(p => p.type === 'Campaña');
@@ -73,7 +71,7 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
             if (isNaN(d.getTime())) return '';
             // Format to yyyy-MM-ddThh:mm
             return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-        } catch (_) {
+        } catch {
             return '';
         }
     };
@@ -118,7 +116,6 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
             }
             onClose();
         } catch (err) {
-            console.error(err);
             addToast('Error al guardar: ' + (err.message || ''), 'error');
         } finally {
             setIsSubmitting(false);
@@ -142,13 +139,17 @@ const CreateEventModal = ({ isOpen, onClose, initialData = null }) => {
                         />
                     </div>
                     <div className="w-1/3">
-                        <label className="text-xs text-white/50 mb-1 block">Estado</label>
-                         <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className={`w-full ${theme.inputBg} border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#E8A631] outline-none [&>option]:text-black`}>
-                                <option>Planificación</option>
-                                <option>En Curso</option>
-                                <option>Pendiente</option>
-                                <option>Finalizado</option>
-                        </select>
+                        <GlassSelect 
+                            label="Estado"
+                            options={[
+                                { value: 'Planificación', label: 'Planificación' },
+                                { value: 'En Curso', label: 'En Curso' },
+                                { value: 'Pendiente', label: 'Pendiente' },
+                                { value: 'Finalizado', label: 'Finalizado' }
+                            ]}
+                            value={form.status}
+                            onChange={(val) => setForm({...form, status: val})}
+                        />
                     </div>
                 </div>
 

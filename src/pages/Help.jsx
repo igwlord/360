@@ -376,19 +376,21 @@ const Help = () => {
 
 // Sub-components for structure
 // Enhanced Sub-components
-const Card = ({ icon: Icon, title, description }) => (
+// eslint-disable-next-line no-unused-vars
+const Card = ({ icon: IconComponent, title, description }) => (
     <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-        <Icon size={32} className="mb-4 text-white/80" />
+        <IconComponent size={32} className="mb-4 text-white/80" />
         <h3 className="text-xl font-bold mb-2 text-white">{title}</h3>
         <p className="text-sm text-white/60 leading-relaxed">{description}</p>
     </div>
 );
 
-const ModuleGuide = ({ title, icon: Icon, children }) => (
+// eslint-disable-next-line no-unused-vars
+const ModuleGuide = ({ title, icon: IconComponent, children }) => (
     <div className="space-y-8 animate-fadeIn">
         <div className="flex items-center gap-4 border-b border-white/10 pb-6">
             <div className="p-3 bg-white/10 rounded-xl">
-                <Icon size={32} className="text-white" />
+                <IconComponent size={32} className="text-white" />
             </div>
             <h1 className="text-3xl font-bold">{title}</h1>
         </div>

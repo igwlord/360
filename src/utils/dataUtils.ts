@@ -84,6 +84,16 @@ export const isCampaignInPeriod = (campaignDateStr: string | undefined, filterYe
     return monthIndex === targetMonthIndex;
 };
 
+// --- ID Generation ---
+
+/**
+ * Generates a unique ID using timestamp and random number
+ * Safe to use in event handlers (not during render)
+ */
+export const generateUniqueId = (prefix: string = 'id'): string => {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+};
+
 // --- Backup & Restore ---
 
 interface ExportResult {
@@ -108,8 +118,7 @@ export const exportData = (): ExportResult => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         return { success: true, message: 'Copia de seguridad descargada' };
-    } catch (error) {
-        console.error('Export error:', error);
+    } catch {
         return { success: false, message: 'Error al exportar datos' };
     }
 };
@@ -127,8 +136,7 @@ export const importData = (jsonString: string): ExportResult => {
         window.dispatchEvent(new Event('storage')); 
         
         return { success: true, message: 'Datos restaurados correctamente' };
-    } catch (error) {
-        console.error('Import error:', error);
+    } catch {
         return { success: false, message: 'Error: Archivo de respaldo inválido' };
     }
 };

@@ -346,17 +346,16 @@ const Calendar = () => {
     <div className="h-full flex gap-6 pb-4">
       
       {/* Sidebar Filter */}
-       {/* ... (Sidebar logic unchanged) ... */}
        <div className={`w-64 flex-shrink-0 ${theme.cardBg} backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col`}>
-           {/* ... existing sidebar content ... */}
             <div className="mb-6">
               <h2 className="text-xl font-bold text-white mb-1">Calendario</h2>
-              <p className="text-xs text-white/50">Filtros & Vistas</p>
+              <p className="text-xs text-white/50">Filtros & vistas</p>
             </div>
-             {/* ... Filters Buttons ... */}
+
+            {/* Filtros funcionales */}
              <div className="space-y-2 mb-8">
                {[
-                   { id: 'campaigns', label: 'Proyectos', color: 'bg-purple-500' },
+                   { id: 'campaigns', label: 'Mostrar Proyectos', color: 'bg-purple-500' },
                    { id: 'specials', label: 'Hitos & Especiales', color: 'bg-yellow-500' },
                    { id: 'marketing', label: 'Marketing', color: 'bg-blue-500' },
                    { id: 'deadlines', label: 'Deadlines', color: 'bg-red-500' },
@@ -376,7 +375,6 @@ const Calendar = () => {
                    </button>
                ))}
              </div>
-            {/* ... */}
        </div>
 
 

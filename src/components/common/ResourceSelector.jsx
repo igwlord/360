@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+
 import { useRateCard } from '../../hooks/useRateCard';
 import { Search, Plus, Trash2, Box, Info } from 'lucide-react';
-import { formatCurrency } from '../../utils/dataUtils';
+import { formatCurrency, generateUniqueId } from '../../utils/dataUtils';
 
 const ResourceSelector = ({ selectedResources = [], onChange, label = "Recursos & Costos" }) => {
-    const { theme } = useTheme();
+
     const { data: rateCardItems = [] } = useRateCard();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -20,11 +20,8 @@ const ResourceSelector = ({ selectedResources = [], onChange, label = "Recursos 
     }, [search, rateCardItems]);
 
     const handleAddItem = (item) => {
-        // Check if already exists? No, user might want to add same item twice as separate line
-        // But for simplicity let's assume if it exists we increment quantity?
-        // Let's create a new line item instance
         const newItem = {
-            id: `res-${Date.now()}`, // unique id for the line item
+            id: generateUniqueId('res'), // unique id for the line item
             itemId: item.id, // reference to rate card
             name: item.item,
             category: item.category,
@@ -108,7 +105,7 @@ const ResourceSelector = ({ selectedResources = [], onChange, label = "Recursos 
              {/* Selected Resources List */}
              {selectedResources.length > 0 ? (
                  <div className="bg-white/5 rounded-xl border border-white/5 overflow-hidden">
-                     {selectedResources.map((resource, index) => (
+                     {selectedResources.map((resource) => (
                          <div key={resource.id} className="flex items-center justify-between p-3 border-b border-white/5 last:border-0 group hover:bg-white/5 transition-colors">
                              <div className="flex-1 min-w-0 mr-4">
                                  <div className="text-sm font-bold text-white truncate">{resource.name}</div>

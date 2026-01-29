@@ -1,4 +1,3 @@
-/* eslint-env cypress */
 describe('Flow Crítico: Gestión de Campaña (Edición y Eliminación)', () => {
   beforeEach(() => {
     // Mock Supabase Auth

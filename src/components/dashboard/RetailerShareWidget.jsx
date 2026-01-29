@@ -1,32 +1,39 @@
 
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Cell } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { formatCurrency } from '../../utils/dataUtils';
 
-const RetailerShareWidget = ({ data = [] }) => {
+// CustomTooltip moved outside component to avoid recreation on each render
+const CustomTooltip = ({ active, payload, theme, total }) => {
+    if (active && payload && payload.length) {
+        const item = payload[0].payload;
+        return (
+            <div className={`${theme.tooltipBg} border border-white/10 p-2 rounded-lg shadow-xl backdrop-blur-xl`}>
+                <p className="text-xs font-bold text-white mb-1">{item.name}</p>
+                <p className="text-xs text-white/70">
+                    {formatCurrency(item.value)} 
+                    <span className="text-white/40 ml-1">({((item.value / total) * 100).toFixed(0)}%)</span>
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
+
+const RetailerShareWidget = memo(({ data = [] }) => {
     const { theme } = useTheme();
 
     // Sort by value desc
-    const sortedData = [...data].sort((a, b) => b.value - a.value).slice(0, 5);
-    const total = data.reduce((acc, curr) => acc + curr.value, 0);
+    const sortedData = useMemo(() => [...data].sort((a, b) => b.value - a.value).slice(0, 5), [data]);
+    const total = useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);
 
-    const CustomTooltip = ({ active, payload }) => {
-        if (active && payload && payload.length) {
-            const item = payload[0].payload;
-            return (
-                <div className={`${theme.tooltipBg} border border-white/10 p-2 rounded-lg shadow-xl backdrop-blur-xl`}>
-                    <p className="text-xs font-bold text-white mb-1">{item.name}</p>
-                    <p className="text-xs text-white/70">
-                        {formatCurrency(item.value)} 
-                        <span className="text-white/40 ml-1">({((item.value / total) * 100).toFixed(0)}%)</span>
-                    </p>
-                </div>
-            );
-        }
-        return null;
-    };
+    // Memoize tooltip content to avoid recreation
+    const tooltipContent = useMemo(() => 
+        (props) => <CustomTooltip {...props} theme={theme} total={total} />,
+        [theme, total]
+    );
 
     return (
         <div className={`${theme.cardBg} backdrop-blur-md rounded-[24px] p-6 border border-white/10 flex flex-col h-full relative overflow-hidden group hover:bg-white/5 transition-colors`}>
@@ -59,7 +66,7 @@ const RetailerShareWidget = ({ data = [] }) => {
                                 axisLine={false}
                                 tickLine={false}
                             />
-                            <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'white', opacity: 0.05 }} />
+                            <RechartsTooltip content={tooltipContent} cursor={{ fill: 'white', opacity: 0.05 }} />
                             <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>
                                 {sortedData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={index === 0 ? '#4ade80' : 'rgba(255,255,255,0.2)'} />
@@ -85,6 +92,8 @@ const RetailerShareWidget = ({ data = [] }) => {
             <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-tl from-white/5 to-transparent rounded-full blur-2xl pointer-events-none"></div>
         </div>
     );
-};
+});
+
+RetailerShareWidget.displayName = 'RetailerShareWidget';
 
 export default RetailerShareWidget;
